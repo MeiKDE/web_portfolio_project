@@ -20,19 +20,8 @@ import {
   RefreshCw,
   X,
 } from "lucide-react"
-import { useEffect } from 'react';
 
 export default function ProfilePage() {
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const response = await fetch('/api/profile');
-      const data = await response.json();
-      // Set the profile state with the fetched data
-    };
-
-    fetchProfile();
-  }, []);
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* Profile Header */}
