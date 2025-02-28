@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -67,6 +67,16 @@ export default function PortfolioPage() {
 
   const filteredProjects =
     currentCategory === "All" ? projects : projects.filter((project) => project.category === currentCategory)
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const response = await fetch('/api/portfolio');
+      const data = await response.json();
+      // Set the projects state with the fetched data
+    };
+
+    fetchProjects();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">
