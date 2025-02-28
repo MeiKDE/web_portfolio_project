@@ -2,15 +2,14 @@
 
 # dependencies
 /node_modules
-/client/node_modules
-/server/node_modules
+
 # next.js
-/client/.next/
+/.next/
 
 /out/
 
 # production
-/client/build
+/build
 
 # debug
 npm-debug.log*

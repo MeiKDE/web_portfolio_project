@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite", etc.
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String          @id @default(cuid())
+  name              String
+  title             String
+  location          String
+  bio               String
+  profileImageUrl   String?
+  aiGeneratedTagline String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  experiences       Experience[]
+  education         Education[]
+  skills            Skill[]
+  certifications    Certification[]
+  projects          Project[]
+  socialLinks       SocialLink[]
+  aiSuggestions     AISuggestion[]
+}
+
+model Experience {
+  id               String    @id @default(cuid())
+  position         String
+  company          String
+  companyLogoUrl   String?
+  startDate        DateTime
+  endDate          DateTime?
+  description      String
+  isCurrentPosition Boolean  @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}
+
+model Education {
+  id                String    @id @default(cuid())
+  institution       String
+  institutionLogoUrl String?
+  degree            String
+  fieldOfStudy      String
+  startYear         Int
+  endYear           Int
+  description       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+}
+
+model Skill {
+  id               String    @id @default(cuid())
+  name             String
+  category         String?
+  proficiencyLevel Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}
+
+model Certification {
+  id               String    @id @default(cuid())
+  name             String
+  issuer           String
+  issueDate        DateTime
+  expirationDate   DateTime?
+  credentialUrl    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}
+
+model Project {
+  id               String    @id @default(cuid())
+  title            String
+  description      String
+  technologies     String[]
+  category         String
+  imageUrl         String?
+  projectUrl       String?
+  githubUrl        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}
+
+model SocialLink {
+  id               String    @id @default(cuid())
+  platform         String
+  url              String
+  username         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}
+
+model AISuggestion {
+  id               String    @id @default(cuid())
+  targetType       String
+  targetId         String?
+  suggestion       String
+  status           String    @default("pending")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+}

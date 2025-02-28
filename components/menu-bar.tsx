@@ -24,7 +24,7 @@ export default function MenuBar() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="text-2xl font-bold">
-              MyPortfolio
+              My Resume Builder
             </Link>
           </div>
 
