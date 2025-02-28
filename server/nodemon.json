@@ -1,0 +1,6 @@
+{
+  "watch": ["*.mjs", "*.js", "routes/", "middleware/", "db/"],
+  "ext": "js,mjs,json",
+  "ignore": ["node_modules/", "client/"],
+  "exec": "node server.mjs"
+}
