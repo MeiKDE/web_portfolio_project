@@ -1,3 +1,6 @@
+//Summary
+// This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -7,7 +10,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const data = await request.json();
+    const data = await request.json(); //equivalent to request.body.data
     
     const education = await prisma.education.update({
       where: { id: params.id },

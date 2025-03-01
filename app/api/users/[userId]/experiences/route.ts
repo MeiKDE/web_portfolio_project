@@ -1,3 +1,6 @@
+//Summary
+// This file (experiences/route.ts) is focused on getting all experiences for a user. 
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 

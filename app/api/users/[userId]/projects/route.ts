@@ -1,3 +1,6 @@
+//Summary
+// This file (projects/route.ts) is focused on getting all projects for a user. 
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 

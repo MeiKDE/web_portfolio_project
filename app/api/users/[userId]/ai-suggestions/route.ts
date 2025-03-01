@@ -1,3 +1,6 @@
+//Summary
+// This file (generate/route.ts) is focused on creating new suggestions based on user input. 
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -7,7 +10,7 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const aiSuggestions = await prisma.aiSuggestion.findMany({
+    const aiSuggestions = await prisma.aiSuggestion.findMany({//findMany: retrieves multiple records from the database
       where: { 
         userId: params.userId,
         status: { not: 'rejected' } // Optionally filter out rejected suggestions
@@ -35,7 +38,7 @@ export async function POST(
     
     const aiSuggestion = await prisma.aiSuggestion.create({
       data: {
-        ...data,
+        ...data, //spread operator: spreads the properties of the data object into the new object
         userId: params.userId,
         status: 'pending',
       },

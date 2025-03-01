@@ -1,3 +1,7 @@
+//Summary
+// The file is responsible for managing AI suggestions providing API endpoints to update and delete AI suggestions in a Next.js application. 
+// It includes logic to handle the implications of accepting suggestions, such as creating new skills based on the suggestions.
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 

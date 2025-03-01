@@ -1,3 +1,6 @@
+//Summary
+// This file (skills/route.ts) is focused on getting all skills for a user. 
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 

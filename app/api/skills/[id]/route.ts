@@ -1,3 +1,7 @@
+//Summary
+// This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
+
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
