@@ -3,15 +3,18 @@ import prisma from '@/lib/prisma';
 
 // UPDATE an AI suggestion (e.g., accept, reject, regenerate)
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest, //extends Request object
+
+  //instead of accessing params through args.params, you can directly use params.
+  //indicates that params is an object that contains a property id, which is of type string.
+  { params }: { params: { id: string } } 
 ) {
   try {
-    const { status } = await request.json();
+    const { status } = await request.json(); //destructure: equivalent to request.body.status
     
     const aiSuggestion = await prisma.aiSuggestion.update({
-      where: { id: params.id },
-      data: { status },
+      where: { id: params.id }, // Accessing the id parameter
+      data: { status }, //update the status of the aiSuggestion
     });
 
     // If the suggestion was accepted, you might want to apply the suggestion
@@ -19,10 +22,11 @@ export async function PUT(
     if (status === 'accepted' && aiSuggestion.targetId) {
       // This would depend on the type of suggestion and target
       // For example, if it's a skill suggestion:
-      if (aiSuggestion.targetType === 'skill' && aiSuggestion.suggestion.includes('Add')) {
+      if (aiSuggestion.targetType === 'skill' && aiSuggestion.suggestion.includes('Add')) { 
         // Extract the skill name from the suggestion
         const skillName = aiSuggestion.suggestion.split('Add ')[1].split(' to')[0];
-        
+        console.log(`ln28: skillName: ${skillName}`);
+
         // Check if the skill already exists
         const existingSkill = await prisma.skill.findFirst({
           where: {
@@ -30,7 +34,7 @@ export async function PUT(
             name: skillName,
           },
         });
-        
+        console.log(`ln30: existingSkill: ${existingSkill}`);
         // If not, create it
         if (!existingSkill) {
           await prisma.skill.create({
@@ -56,8 +60,8 @@ export async function PUT(
 
 // DELETE an AI suggestion
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest, //extends Request object
+  { params }: { params: { id: string } } //indicates that params is an object that contains a property id, which is of type string.
 ) {
   try {
     await prisma.aiSuggestion.delete({
