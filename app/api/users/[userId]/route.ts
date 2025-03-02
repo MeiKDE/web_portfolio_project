@@ -7,11 +7,11 @@ import prisma from '@/lib/prisma';
 // GET user by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { userId: string } }
 ) {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: params.userId },
     });
 
     if (!user) {
