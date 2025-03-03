@@ -8,6 +8,8 @@ export function useUser(id: string) {
     fetcher
   );
 
+  console.log("ln11: data from useUser.ts", data);
+
   return {
     user: data,
     isLoading,

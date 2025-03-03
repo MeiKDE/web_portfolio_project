@@ -35,8 +35,8 @@ export function useCreateExperience() {
 }
 
 export function useUpdateExperience() {
-  return async (id: string, experienceData: any) => {
-    const response = await fetch(`/api/experiences/${id}`, {
+  return async (userId: string, experienceData: any) => {
+    const response = await fetch(`/api/experiences/${userId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -53,8 +53,8 @@ export function useUpdateExperience() {
 }
 
 export function useDeleteExperience() {
-  return async (id: string) => {
-    const response = await fetch(`/api/experiences/${id}`, {
+  return async (userId: string) => {
+    const response = await fetch(`/api/experiences/${userId}`, {
       method: 'DELETE',
     });
     

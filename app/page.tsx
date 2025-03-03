@@ -20,8 +20,14 @@ import {
   RefreshCw,
   X,
 } from "lucide-react"
+import { useUser } from '@/lib/hooks/useUser';
 
 export default function ProfilePage() {
+  const { user, isLoading, isError } = useUser("cm7t0m7490000mwl7u541rwr1"); // Replace 'user_id_here' with the actual user ID
+
+  if (isLoading) return <div>Loading...</div>;
+  if (isError) return <div>Error loading profile</div>;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* Profile Header */}
@@ -30,18 +36,18 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-shrink-0">
               <Avatar className="h-32 w-32">
-                <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Profile picture" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src={user.profileImageUrl || "/placeholder.svg?height=128&width=128"} alt="Profile picture" />
+                <AvatarFallback>{user.name ? user.name.charAt(0) : "?"}</AvatarFallback>
               </Avatar>
             </div>
             <div className="flex-grow space-y-2">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold">Jane Doe</h1>
-                  <h2 className="text-xl text-muted-foreground">Senior Full Stack Developer</h2>
+                  <h1 className="text-2xl font-bold">{user.name || "Loading..."}</h1>
+                  <h2 className="text-xl text-muted-foreground">{user.title || "Loading..."}</h2>
                   <div className="flex items-center mt-1 text-muted-foreground">
                     <MapPin className="h-4 w-4 mr-1" />
-                    <span>San Francisco, CA</span>
+                    <span>{user.location || "Loading..."}</span>
                   </div>
                 </div>
                 <Button className="w-full sm:w-auto" variant="outline">
@@ -50,17 +56,13 @@ export default function ProfilePage() {
                 </Button>
               </div>
               <div className="mt-4">
-                <p>
-                  Passionate full-stack developer with 7+ years of experience building scalable web applications.
-                  Specialized in React, Node.js, and cloud architecture.
-                </p>
+                <p>{user.bio || "Loading..."}</p>
               </div>
               <div className="mt-2 p-3 bg-muted rounded-md border border-border">
                 <div className="flex items-start gap-2">
                   <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm italic">
-                    "Innovative problem-solver transforming complex challenges into elegant solutions through code and
-                    creativity."
+                    {user.aiGeneratedTagline || "AI-generated tagline"}
                     <span className="block text-xs text-muted-foreground mt-1">AI-generated tagline</span>
                   </p>
                 </div>

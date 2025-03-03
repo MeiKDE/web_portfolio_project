@@ -2,17 +2,23 @@
 // This file ([id]/route.ts) is focused on managing existing suggestions (getting and updating).
 
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+// import prisma from '@/lib/prisma';
+const prisma = new PrismaClient();
 
-// GET user by ID
+// GET user by ID from User table
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+
+    const user = await prisma.user.findFirst({
+      where: { id: params.userId},
     });
+
+    // Log the user data retrieved from the database
+    console.log('User data retrieved for ID', params.userId, ':', user);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -25,19 +31,21 @@ export async function GET(
       { error: 'Failed to fetch user' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
 // UPDATE user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { userId: string } }
 ) {
   try {
     const data = await request.json();
     
-    const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+    const updatedUser = await prisma.User.update({
+      where: { id: params.userId },
       data,
     });
 
