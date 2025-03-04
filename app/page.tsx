@@ -22,11 +22,28 @@ import {
 } from "lucide-react"
 import { useUser } from '@/lib/hooks/useUser';
 import { useEffect, useState } from 'react';
+import Education from "@/components/education";
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then((res) => {
+  console.log("ln4: response from fetcher", res);
+  return res.json()});
 
 export default function ProfilePage() {
-  const { user, isLoading, isError } = useUser("cm7t0m7490000mwl7u541rwr1"); // Replace 'user_id_here' with the actual user ID
+  const { user, isLoading, isError } = useUser("cm7um1v5v0000mw2h38fw1xxc"); 
+
   const [experiences, setExperiences] = useState([]);
   const [error, setError] = useState(null);
+
+  const { data: educationData, error: educationError, isLoading: isEducationLoading, mutate:  educationMutate } = useSWR(
+    `/api/users/cm7um1v5v0000mw2h38fw1xxc/education`,
+    fetcher
+  );
+  console.log(`ln41: educationData from useSWR`, educationData);
+  console.log(`ln42: educationError from useSWR`, educationError);
+  console.log(`ln43: isEducationLoading from useSWR`, isEducationLoading);
+  console.log(`ln44: educationMutate from useSWR`, educationMutate);  
+
 
   useEffect(() => {
     const fetchExperiences = async () => {
@@ -38,7 +55,7 @@ export default function ProfilePage() {
         const data = await response.json();
         setExperiences(data);
       } catch (error) {
-        setError(error.message);
+        setError(error instanceof Error ? error.message : 'An unknown error occurred');
       }
     };
 
@@ -182,35 +199,9 @@ export default function ProfilePage() {
           </Card>
 
           {/* Education Section */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold flex items-center">
-                  <GraduationCap className="h-5 w-5 mr-2" />
-                  Education
-                </h3>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-shrink-0">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src="/placeholder.svg?height=48&width=48" alt="University logo" />
-                    <AvatarFallback>SU</AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="flex-grow">
-                  <h4 className="font-semibold">Stanford University</h4>
-                  <p className="text-muted-foreground">Master of Science in Computer Science</p>
-                  <p className="text-sm text-muted-foreground">2015 - 2017</p>
-                  <p className="mt-2">Specialized in Artificial Intelligence and Machine Learning</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Education 
+            education={educationData}
+          />
 
           {/* Skills Section */}
           <Card>
