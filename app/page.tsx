@@ -21,9 +21,29 @@ import {
   X,
 } from "lucide-react"
 import { useUser } from '@/lib/hooks/useUser';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
   const { user, isLoading, isError } = useUser("cm7t0m7490000mwl7u541rwr1"); // Replace 'user_id_here' with the actual user ID
+  const [experiences, setExperiences] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        const response = await fetch('/api/experiences');
+        if (!response.ok) {
+          throw new Error('Failed to fetch experiences');
+        }
+        const data = await response.json();
+        setExperiences(data);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
+    fetchExperiences();
+  }, []);
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading profile</div>;
