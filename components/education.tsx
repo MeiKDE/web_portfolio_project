@@ -1,5 +1,5 @@
 "use client"
-
+import { useState } from "react";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -7,6 +7,7 @@ import { GraduationCap, Edit } from "lucide-react"
 
 interface EducationProps {
   education?: {
+    id: string;
     institution: string;
     degree: string;
     startYear: string;
@@ -15,7 +16,9 @@ interface EducationProps {
   editable?: boolean;
 }
 
-export default function Education({ education = [], editable = true }: EducationProps) {
+export default function Education({ education = [] }: EducationProps) {
+    const [editable, setEditable] = useState(true);
+    const [educationData, setEducationData] = useState(education);
   return (
     <Card>
       <CardContent className="p-6">
@@ -25,15 +28,17 @@ export default function Education({ education = [], editable = true }: Education
             Education
           </h3>
           {editable && (
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => {
+                setEditable(false);
+              }} >
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
           )}
         </div>
  
-        {education.length > 0 ? (
-          education.map((edu, index) => (
+        {educationData.length > 0 ? (
+          educationData.map((edu, index) => (
             <div key={index} className="flex flex-col sm:flex-row gap-4">
               <div className="flex-shrink-0">
                 <Avatar className="h-12 w-12">
@@ -42,7 +47,21 @@ export default function Education({ education = [], editable = true }: Education
                 </Avatar>
               </div>
               <div className="flex-grow">
-                <h4 className="font-semibold">{edu.institution}</h4>
+                <h4 className="font-semibold">
+                    {editable? edu.institution:
+                    <input type="text" value={edu.institution} onChange={(e) => {
+                        setEducationData((prev) => {
+                            return prev.map((item, i) => {
+                                if (i === index) {
+                                    return { ...item, institution: e.target.value };
+                                }
+                                return item;
+                            });
+                        });
+                        // saveEducation(edu.id, edu.institution); to database.
+                    }} />
+                    }
+                </h4>
                 <p className="text-muted-foreground">{edu.degree}</p>
                 <p className="text-sm text-muted-foreground">{edu.startYear}</p>
                 {edu.description && <p className="mt-2">{edu.description}</p>}
