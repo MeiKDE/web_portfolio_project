@@ -1,4 +1,3 @@
-//directive is used in Next.js to indicate that the component should be rendered on the client side.  This is important for components that rely on client-side features like hooks (useState, useEffect) or any browser-specific APIs. It ensures that the component is not pre-rendered on the server, which is crucial for components that need to interact with the browser environment or manage state dynamically.
 "use client"  
 
 import { useState, useEffect } from 'react';
@@ -33,7 +32,7 @@ interface ExperienceProps {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 //The Experience component is defined as a functional component that takes userId as a prop.
-export default function Experience({ userId }: ExperienceProps) {
+export default function Experiences({ userId }: ExperienceProps) {
     // A state variable error is initialized to null.
     const [localError, setLocalError] = useState<string | null>(null);
     const [experienceData, setExperienceData] = useState<Experience[]>([]);

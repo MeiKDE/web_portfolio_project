@@ -11,9 +11,6 @@ export function useUser(id: string) {
     id ? `/api/users/${id}` : null,
     fetcher
   );
-  console.log("ln12: check if id exist from userUser.ts of useUser function", id);
-  console.log("ln13: data from useUser.ts of useUser function", data);
-  console.log("ln14: error from useUser.ts of useUser function", error);
 
   return {
     user: data,

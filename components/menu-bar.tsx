@@ -12,7 +12,6 @@ const menuItems = [
   { name: "Portfolio", href: "/portfolio", icon: Briefcase },
   { name: "Contact", href: "/contact", icon: Mail },
 ]
-
 export default function MenuBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()

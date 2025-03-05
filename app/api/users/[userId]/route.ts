@@ -18,7 +18,7 @@ export async function GET(
     });
 
     // Log the user data retrieved from the database
-    console.log('User data retrieved for ID', params.userId, ':', user);
+    // console.log('User data retrieved for ID', params.userId, ':', user);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

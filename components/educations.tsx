@@ -8,11 +8,11 @@ import useSWR from 'swr';
 
 interface EducationProps {
     userId: string;
-    }
+}
 
-    const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-    export default function Education({ userId }: EducationProps) {
+export default function Educations({ userId }: EducationProps) {
     const [editable, setEditable] = useState(true);
 
     const { data, error, isLoading, mutate } = useSWR(
@@ -87,4 +87,4 @@ interface EducationProps {
         </CardContent>
     </Card>
     )
-}
+} 

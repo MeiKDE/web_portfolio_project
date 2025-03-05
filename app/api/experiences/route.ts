@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const experiences = await prisma.experience.findMany();
-    console.log("ln8: experiences from route.ts", experiences);
+    // console.log("ln8: experiences from route.ts", experiences);
     return NextResponse.json(experiences);
   } catch (error) {
     console.error('Error fetching experiences:', error);

@@ -22,8 +22,8 @@ import {
 } from "lucide-react"
 import { useUser } from '@/lib/hooks/useUser';
 import { useState } from 'react';
-import Education from "@/components/education";
-import Experience from "@/components/experience";
+import Educations from "@/components/educations";
+import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
 
 export default function ProfilePage() {
@@ -82,10 +82,10 @@ export default function ProfilePage() {
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          <Experience userId="cm7vaqj1i0000mwytdesnb2f7" />
+          <Experiences userId="cm7vaqj1i0000mwytdesnb2f7" />
 
           {/* Education Section */}
-          <Education userId="cm7vaqj1i0000mwytdesnb2f7" />
+          <Educations userId="cm7vaqj1i0000mwytdesnb2f7" />
 
           {/* Skills Section */}
           <Skills userId="cm7vaqj1i0000mwytdesnb2f7" />

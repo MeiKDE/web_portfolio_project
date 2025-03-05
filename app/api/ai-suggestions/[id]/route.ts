@@ -28,7 +28,7 @@ export async function PUT(
       if (aiSuggestion.targetType === 'skill' && aiSuggestion.suggestion.includes('Add')) { 
         // Extract the skill name from the suggestion
         const skillName = aiSuggestion.suggestion.split('Add ')[1].split(' to')[0];
-        console.log(`ln28: skillName: ${skillName}`);
+        // console.log(`ln28: skillName: ${skillName}`);
 
         // Check if the skill already exists
         const existingSkill = await prisma.skill.findFirst({
@@ -37,7 +37,7 @@ export async function PUT(
             name: skillName,
           },
         });
-        console.log(`ln30: existingSkill: ${existingSkill}`);
+        // console.log(`ln30: existingSkill: ${existingSkill}`);
         // If not, create it
         if (!existingSkill) {
           await prisma.skill.create({

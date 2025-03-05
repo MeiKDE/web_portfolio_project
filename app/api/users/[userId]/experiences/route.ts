@@ -11,14 +11,14 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    console.log(`ln13: Fetching experiences for user ID: ${params.userId}`);
+    // console.log(`ln14: Fetching experiences for user ID: ${params.userId}`);
 
     const experiences = await prisma.experience.findMany({
       where: { userId: params.userId },
       orderBy: { startDate: 'desc' },
     });
 
-    console.log(`ln15: Fetched experiences:`, experiences);
+    // console.log(`ln15: Fetched experiences:`, experiences);
 
     return NextResponse.json(experiences);
   } catch (error) {

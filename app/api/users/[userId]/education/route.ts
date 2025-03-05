@@ -10,12 +10,12 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    console.log(`ln13: params from education/route.ts`, params);
+    // console.log(`ln13: params from education/route.ts`, params);
     const education = await prisma.education.findMany({
       where: { userId: params.userId },
       orderBy: { endYear: 'desc' },
     });
-    console.log(`ln16: education from education/route.ts`, education);
+    // console.log(`ln16: education from education/route.ts`, education);
     return NextResponse.json(education);
   } catch (error) {
     console.error('Error fetching education:', error);
