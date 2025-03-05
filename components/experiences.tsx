@@ -34,6 +34,21 @@ interface ExperienceProps {
 //A utility function fetcher is defined to fetch data from a given URL and parse it as JSON.
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+// Utility function to format date to yyyy-MM-dd for input fields
+const formatDateForInput = (isoDate: string) => {
+  const date = new Date(isoDate);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Utility function to format date to ISO-8601 format for database
+const formatDateForDatabase = (date: string) => {
+  const d = new Date(date);
+  return d.toISOString(); // Converts to ISO-8601 format
+};
+
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
   // A state variable error is initialized to null.
@@ -65,18 +80,6 @@ export default function Experiences({ userId }: ExperienceProps) {
     return `${year}-${month}-${day}`;
   };
 
-  // Utility function to format date to ISO-8601 format
-  const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(date.getUTCDate()).padStart(2, "0");
-    const hours = String(date.getUTCHours()).padStart(2, "0");
-    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
-    const seconds = String(date.getUTCSeconds()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
-  };
-
   const handleEditToggle = () => {
     if (isEditing) {
       saveChanges();
@@ -85,9 +88,11 @@ export default function Experiences({ userId }: ExperienceProps) {
         experienceData.map((exp) => ({
           ...exp,
           startDate: exp.startDate
-            ? formatDate(exp.startDate)
+            ? formatDateForInput(exp.startDate)
             : getCurrentDate(),
-          endDate: exp.endDate ? formatDate(exp.endDate) : getCurrentDate(),
+          endDate: exp.endDate
+            ? formatDateForInput(exp.endDate)
+            : getCurrentDate(),
         }))
       );
     }
@@ -115,8 +120,10 @@ export default function Experiences({ userId }: ExperienceProps) {
           },
           body: JSON.stringify({
             company: experience.company,
-            startDate: formatDate(experience.startDate),
-            endDate: experience.endDate ? formatDate(experience.endDate) : null,
+            startDate: formatDateForDatabase(experience.startDate), // Format for DB
+            endDate: experience.endDate
+              ? formatDateForDatabase(experience.endDate)
+              : null, // Format for DB
             description: experience.description,
             // Add any other fields you want to update
           }),
@@ -207,7 +214,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                         <div className="flex gap-2 mb-2">
                           <Input
                             type="date"
-                            value={experience.startDate}
+                            value={formatDateForInput(experience.startDate)}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
@@ -220,7 +227,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                           />
                           <Input
                             type="date"
-                            value={experience.endDate || ""}
+                            value={
+                              experience.endDate
+                                ? formatDateForInput(experience.endDate)
+                                : ""
+                            }
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
@@ -252,8 +263,10 @@ export default function Experiences({ userId }: ExperienceProps) {
                           {experience.company}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {experience.startDate} -{" "}
-                          {experience.endDate || "Present"}
+                          {formatDateForInput(experience.startDate)} -{" "}
+                          {experience.endDate
+                            ? formatDateForInput(experience.endDate)
+                            : "Present"}
                         </p>
                         <p className="mt-2">{experience.description}</p>
                       </>
