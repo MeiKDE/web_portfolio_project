@@ -14,5 +14,5 @@ node prisma/seed.cjs
 
 npx prisma studio
 
-
-
+### To override the remote branch, run the following command: 
+git push --force-with-lease

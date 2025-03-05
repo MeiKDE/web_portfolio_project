@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
-  console.log("ln4: response from fetcher", res);
+  // console.log("ln4: response from fetcher", res);
   return res.json()});
 
 
