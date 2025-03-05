@@ -24,9 +24,8 @@ interface Experience {
     description: string;
 }
 
-//Defines the props for the Experience component, which includes an optional experiences array and a userId.
+//Defines the props for the Experience component, which includes a userId.
 interface ExperienceProps {
-    experiences?: Experience[];
     userId: string;
 }
 
@@ -36,17 +35,25 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experience({ userId }: ExperienceProps) {
     // A state variable error is initialized to null.
-    const [error, setError] = useState<string | null>(null);
+    const [localError, setLocalError] = useState<string | null>(null);
+    const [experienceData, setExperienceData] = useState<Experience[]>([]);
 
     //The useSWR hook is used to fetch the experiences data from the API.
-    const { data: experiences, error: swrError, isLoading, mutate } = useSWR(
+    const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/experiences`,
     fetcher
     );
 
+    // Update local state when data is fetched
+    useEffect(() => {
+        if (data) {
+            setExperienceData(data);
+        }
+    }, [data]);
+
     if (isLoading) return <div>Loading experiences...</div>;
-    if (swrError) return <div>Error loading experiences: {swrError.message}</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (error) return <div>Error loading experiences: {error.message}</div>;
+    if (localError) return <div>Error: {localError}</div>;
 
     return (
     <Card>
@@ -62,11 +69,11 @@ export default function Experience({ userId }: ExperienceProps) {
             </Button>
         </div>
 
-        {experiences && experiences.length > 0 ? (
-            experiences.map((experience, index) => (
+        {experienceData && experienceData.length > 0 ? (
+            experienceData.map((experience: Experience, index: number) => (
             <div 
                 key={experience.id} 
-                className={`mb-6 ${index < experiences.length - 1 ? 'border-b pb-6' : ''}`}
+                className={`mb-6 ${index < experienceData.length - 1 ? 'border-b pb-6' : ''}`}
             >
                 <div className="flex flex-col sm:flex-row gap-4">
                 <div className="flex-shrink-0">
