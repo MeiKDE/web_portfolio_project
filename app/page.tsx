@@ -25,6 +25,7 @@ import { useState } from 'react';
 import Educations from "@/components/educations";
 import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
+import Certifications from "@/components/certifications";
 
 export default function ProfilePage() {
   const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7"); 
@@ -90,38 +91,8 @@ export default function ProfilePage() {
           {/* Skills Section */}
           <Skills userId="cm7vaqj1i0000mwytdesnb2f7" />
 
-          {/* Certifications */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">Certifications</h3>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </div>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
-                    <CheckCircle className="h-4 w-4" />
-                  </Badge>
-                  <div>
-                    <h4 className="font-medium">AWS Certified Solutions Architect</h4>
-                    <p className="text-sm text-muted-foreground">Amazon Web Services · Issued Jan 2022</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
-                    <CheckCircle className="h-4 w-4" />
-                  </Badge>
-                  <div>
-                    <h4 className="font-medium">Google Cloud Professional Developer</h4>
-                    <p className="text-sm text-muted-foreground">Google · Issued Mar 2021</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Certifications Section */}
+          <Certifications userId="cm7vaqj1i0000mwytdesnb2f7" />
         </div>
 
         {/* Right Column - Portfolio, Cover Letter, Contact */}
