@@ -112,7 +112,7 @@ export default function Experiences({ userId }: ExperienceProps) {
   const saveChanges = async () => {
     try {
       for (const experience of editedExperiences) {
-        console.log("ln104: Updating experience:", experience); // Log the data
+        // console.log("ln104: Updating experience:", experience); // Log the data
         const response = await fetch(`/api/experiences/${experience.id}`, {
           method: "PUT",
           headers: {
