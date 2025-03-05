@@ -26,6 +26,7 @@ import Educations from "@/components/educations";
 import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
 import Certifications from "@/components/certifications";
+import User from "@/components/user";
 
 export default function ProfilePage() {
   const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7"); 
@@ -36,47 +37,8 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {/* Profile Header */}
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src={user.profileImageUrl || "/placeholder.svg?height=128&width=128"} alt="Profile picture" />
-                <AvatarFallback>{user.name ? user.name.charAt(0) : "?"}</AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex-grow space-y-2">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                <div>
-                  <h1 className="text-2xl font-bold">{user.name || "Loading..."}</h1>
-                  <h2 className="text-xl text-muted-foreground">{user.title || "Loading..."}</h2>
-                  <div className="flex items-center mt-1 text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <span>{user.location || "Loading..."}</span>
-                  </div>
-                </div>
-                <Button className="w-full sm:w-auto" variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-              </div>
-              <div className="mt-4">
-                <p>{user.bio || "Loading..."}</p>
-              </div>
-              <div className="mt-2 p-3 bg-muted rounded-md border border-border">
-                <div className="flex items-start gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm italic">
-                    {user.aiGeneratedTagline || "AI-generated tagline"}
-                    <span className="block text-xs text-muted-foreground mt-1">AI-generated tagline</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Profile Header - Replace with User component */}
+      <User userId="cm7vaqj1i0000mwytdesnb2f7" />
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
