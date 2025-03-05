@@ -46,7 +46,6 @@ async function main() {
           {
             position: 'Senior Full Stack Developer',
             company: 'TechCorp Inc.',
-            companyLogoUrl: '/placeholder.svg?height=48&width=48',
             startDate: new Date('2020-01-01'),
             description: 'Led development of the company\'s flagship SaaS platform, improving performance by 40% and reducing infrastructure costs.',
             isCurrentPosition: true,
@@ -54,7 +53,6 @@ async function main() {
           {
             position: 'Full Stack Developer',
             company: 'InnoSoft Solutions',
-            companyLogoUrl: '/placeholder.svg?height=48&width=48',
             startDate: new Date('2017-03-01'),
             endDate: new Date('2019-12-31'),
             description: 'Developed and maintained multiple client web applications using React, Node.js, and AWS.',

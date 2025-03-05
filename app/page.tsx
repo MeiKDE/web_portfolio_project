@@ -23,28 +23,54 @@ import {
 import { useUser } from '@/lib/hooks/useUser';
 import { useEffect, useState } from 'react';
 import Education from "@/components/education";
+import Experience from "@/components/experience";
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
-  console.log("ln4: response from fetcher", res);
+  // console.log("ln4: response from fetcher", res);
   return res.json()});
 
 export default function ProfilePage() {
-  const { user, isLoading, isError } = useUser("cm7um1v5v0000mw2h38fw1xxc"); 
+  const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7"); 
 
-  const [experiences, setExperiences] = useState([]);
-  const [error, setError] = useState(null);
+  // const [experiences, setExperiences] uses array destructuring returns an array with two elements:
+  // The current state value (in this case, experiences).
+  // A function to update that state (in this case, setExperiences).
+  // <any[]>: This is a type annotation that tells TypeScript that the experiences state can hold an array of any type.
+  // []: This is the initial value of the experiences state. It's an empty array of any type.
+  const [experiences, setExperiences] = useState<any[]>([]);
 
-  const { data: educationData, error: educationError, isLoading: isEducationLoading, mutate:  educationMutate } = useSWR(
-    `/api/users/cm7um1v5v0000mw2h38fw1xxc/education`,
+
+  // React Hook returns 2 values:
+  // The current state value (in this case, error).
+  // A function to update that state (in this case, setError).
+  // <string | null>: This is a type annotation that tells TypeScript that the error state can hold a string or null.
+  // null: This is the initial value of the error state. It's a null value. 
+  const [error, setError] = useState<string | null>(null);
+
+  // useSWR Hook returns 4 values:
+  // The current state value (in this case, education).
+  // The current state value (in this case, educationError).
+  // The current state value (in this case, isEducationLoading).
+  // A function to update that state (in this case, educationMutate).
+  const { data: education, error: educationError, isLoading: isEducationLoading, mutate:  educationMutate } = useSWR(
+    `/api/users/cm7vaqj1i0000mwytdesnb2f7/education`,
     fetcher
   );
-  console.log(`ln41: educationData from useSWR`, educationData);
-  console.log(`ln42: educationError from useSWR`, educationError);
-  console.log(`ln43: isEducationLoading from useSWR`, isEducationLoading);
-  console.log(`ln44: educationMutate from useSWR`, educationMutate);  
+  // console.log(`ln41: education from useSWR`, education);
+  // console.log(`ln42: educationError from useSWR`, educationError);
+  // console.log(`ln43: isEducationLoading from useSWR`, isEducationLoading);
+  // console.log(`ln44: educationMutate from useSWR`, educationMutate);  
 
 
+  // useEffect Hook: runs data fetching or side effects after a component mounts/renders.
+  // The empty dependency array ([]) means it runs only once
+
+  // One-Time Fetch: Runs once on mount due to [].
+  // Error Handling: Robustly manages fetch failures.
+  // One-Time Fetch: Runs once on mount due to [].
+  // Error Handling: Robustly manages fetch failures.
+  // State Updates: Updates UI via state changes.
   useEffect(() => {
     const fetchExperiences = async () => {
       try {
@@ -114,93 +140,11 @@ export default function ProfilePage() {
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  Experience
-                </h3>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </div>
-
-              {/* Experience Item with AI Suggestion */}
-              <div className="mb-6 border-b pb-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-shrink-0">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src="/placeholder.svg?height=48&width=48" alt="Company logo" />
-                      <AvatarFallback>TC</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="flex-grow">
-                    <h4 className="font-semibold">Senior Full Stack Developer</h4>
-                    <p className="text-muted-foreground">TechCorp Inc.</p>
-                    <p className="text-sm text-muted-foreground">Jan 2020 - Present · 3 yrs 8 mos</p>
-                    <p className="mt-2">
-                      Led development of the company's flagship SaaS platform, improving performance by 40% and reducing
-                      infrastructure costs.
-                    </p>
-
-                    {/* AI Suggestion */}
-                    <div className="mt-3 p-3 bg-muted rounded-md border border-border">
-                      <div className="flex items-start gap-2">
-                        <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                        <div className="flex-grow">
-                          <p className="text-sm font-medium">AI Suggestion:</p>
-                          <p className="text-sm">
-                            Replace "Led development" with a stronger action verb like "Spearheaded" or "Architected" to
-                            showcase leadership.
-                          </p>
-                          <div className="flex gap-2 mt-2">
-                            <Button size="sm" variant="outline" className="h-7 text-xs">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Accept
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs">
-                              <RefreshCw className="h-3 w-3 mr-1" />
-                              Regenerate
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-xs">
-                              <X className="h-3 w-3 mr-1" />
-                              Dismiss
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Experience Item */}
-              <div className="mb-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-shrink-0">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src="/placeholder.svg?height=48&width=48" alt="Company logo" />
-                      <AvatarFallback>IS</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="flex-grow">
-                    <h4 className="font-semibold">Full Stack Developer</h4>
-                    <p className="text-muted-foreground">InnoSoft Solutions</p>
-                    <p className="text-sm text-muted-foreground">Mar 2017 - Dec 2019 · 2 yrs 10 mos</p>
-                    <p className="mt-2">
-                      Developed and maintained multiple client web applications using React, Node.js, and AWS.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Experience userId="cm7vaqj1i0000mwytdesnb2f7" />
 
           {/* Education Section */}
           <Education 
-            education={educationData}
+            education={education}
           />
 
           {/* Skills Section */}

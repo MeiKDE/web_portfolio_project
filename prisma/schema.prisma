@@ -35,7 +35,6 @@ model Experience {
   id               String    @id @default(cuid())
   position         String
   company          String
-  companyLogoUrl   String?
   startDate        DateTime
   endDate          DateTime?
   description      String
