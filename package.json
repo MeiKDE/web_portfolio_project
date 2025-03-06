@@ -79,6 +79,6 @@
     "typescript": "^5.8.2"
   },
   "prisma": {
-    "seed": "ts-node --transpile-only --compiler-options '{\"module\":\"ESNext\"}' prisma/seed.ts"
+    "seed": "node --loader ts-node/esm prisma/seed.ts"
   }
 }
