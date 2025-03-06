@@ -1,10 +1,15 @@
-"use client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Briefcase,
   GraduationCap,
@@ -19,9 +24,9 @@ import {
   CheckCircle,
   RefreshCw,
   X,
-} from "lucide-react"
-import { useUser } from '@/lib/hooks/useUser';
-import { useState } from 'react';
+} from "lucide-react";
+import { useUser } from "@/lib/hooks/useUser";
+import { useState } from "react";
 import Educations from "@/components/educations";
 import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
@@ -29,7 +34,7 @@ import Certifications from "@/components/certifications";
 import User from "@/components/user";
 
 export default function ProfilePage() {
-  const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7"); 
+  const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7");
   const [error, setError] = useState<string | null>(null);
 
   if (isLoading) return <div>Loading...</div>;
@@ -81,33 +86,55 @@ export default function ProfilePage() {
                   <Card>
                     <CardContent className="p-4">
                       <h4 className="font-semibold">E-commerce Platform</h4>
-                      <p className="text-sm text-muted-foreground">Full Stack · React, Node.js, MongoDB</p>
+                      <p className="text-sm text-muted-foreground">
+                        Full Stack · React, Node.js, MongoDB
+                      </p>
                       <p className="text-sm mt-2">
-                        A complete e-commerce solution with payment processing and inventory management.
+                        A complete e-commerce solution with payment processing
+                        and inventory management.
                       </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold">Real-time Analytics Dashboard</h4>
-                      <p className="text-sm text-muted-foreground">Frontend · React, D3.js, WebSockets</p>
-                      <p className="text-sm mt-2">Interactive dashboard for visualizing real-time data streams.</p>
+                      <h4 className="font-semibold">
+                        Real-time Analytics Dashboard
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Frontend · React, D3.js, WebSockets
+                      </p>
+                      <p className="text-sm mt-2">
+                        Interactive dashboard for visualizing real-time data
+                        streams.
+                      </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <h4 className="font-semibold">API Gateway Service</h4>
-                      <p className="text-sm text-muted-foreground">Backend · Node.js, Express, Redis</p>
-                      <p className="text-sm mt-2">Microservice gateway with rate limiting and caching capabilities.</p>
+                      <p className="text-sm text-muted-foreground">
+                        Backend · Node.js, Express, Redis
+                      </p>
+                      <p className="text-sm mt-2">
+                        Microservice gateway with rate limiting and caching
+                        capabilities.
+                      </p>
                     </CardContent>
                   </Card>
                 </TabsContent>
                 <TabsContent value="frontend" className="space-y-4">
                   <Card>
                     <CardContent className="p-4">
-                      <h4 className="font-semibold">Real-time Analytics Dashboard</h4>
-                      <p className="text-sm text-muted-foreground">Frontend · React, D3.js, WebSockets</p>
-                      <p className="text-sm mt-2">Interactive dashboard for visualizing real-time data streams.</p>
+                      <h4 className="font-semibold">
+                        Real-time Analytics Dashboard
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Frontend · React, D3.js, WebSockets
+                      </p>
+                      <p className="text-sm mt-2">
+                        Interactive dashboard for visualizing real-time data
+                        streams.
+                      </p>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -115,8 +142,13 @@ export default function ProfilePage() {
                   <Card>
                     <CardContent className="p-4">
                       <h4 className="font-semibold">API Gateway Service</h4>
-                      <p className="text-sm text-muted-foreground">Backend · Node.js, Express, Redis</p>
-                      <p className="text-sm mt-2">Microservice gateway with rate limiting and caching capabilities.</p>
+                      <p className="text-sm text-muted-foreground">
+                        Backend · Node.js, Express, Redis
+                      </p>
+                      <p className="text-sm mt-2">
+                        Microservice gateway with rate limiting and caching
+                        capabilities.
+                      </p>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -124,9 +156,12 @@ export default function ProfilePage() {
                   <Card>
                     <CardContent className="p-4">
                       <h4 className="font-semibold">E-commerce Platform</h4>
-                      <p className="text-sm text-muted-foreground">Full Stack · React, Node.js, MongoDB</p>
+                      <p className="text-sm text-muted-foreground">
+                        Full Stack · React, Node.js, MongoDB
+                      </p>
                       <p className="text-sm mt-2">
-                        A complete e-commerce solution with payment processing and inventory management.
+                        A complete e-commerce solution with payment processing
+                        and inventory management.
                       </p>
                     </CardContent>
                   </Card>
@@ -140,52 +175,29 @@ export default function ProfilePage() {
                   <div className="flex-grow">
                     <p className="text-sm font-medium">AI Suggestion:</p>
                     <p className="text-sm">
-                      Based on your skills, consider adding a GraphQL project to showcase your expertise in this
-                      technology.
+                      Based on your skills, consider adding a GraphQL project to
+                      showcase your expertise in this technology.
                     </p>
                     <div className="flex gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="h-7 text-xs">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                      >
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Create Project
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                      >
                         <X className="h-3 w-3 mr-1" />
                         Dismiss
                       </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* AI-Generated Cover Letter */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">AI Cover Letter</h3>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Generate
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Generate a custom cover letter based on your profile</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div className="p-4 border rounded-md bg-muted/50">
-                <p className="text-sm italic text-muted-foreground">
-                  Generate a custom cover letter for your job applications based on your resume and the job description.
-                </p>
-                <Button className="mt-3 w-full">
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  Create Cover Letter
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -229,6 +241,5 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
