@@ -19,7 +19,7 @@ export async function PUT(
         name: data.name,
         issuer: data.issuer,
         issueDate: data.issueDate,
-        expiryDate: data.expiryDate,
+        expirationDate: data.expirationDate,
         credentialUrl: data.credentialUrl,
       },
     });
@@ -31,6 +31,8 @@ export async function PUT(
       { error: "Failed to update certification" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -51,5 +53,7 @@ export async function DELETE(
       { error: "Failed to delete certification" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
