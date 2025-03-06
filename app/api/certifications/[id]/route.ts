@@ -1,27 +1,34 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-// UPDATE a certification (professional, education, etc)
+// UPDATE a certification
 export async function PUT(
-  request: NextRequest, //extends Request object
-  { params }: { params: { id: string } } //indicates that params is an object that contains a property id, which is of type string.
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const data = await request.json(); //equivalent to request.body.data
-    
+    const data = await request.json();
+
+    // Ensure all fields are included in the update
     const certification = await prisma.certification.update({
       where: { id: params.id },
-      data,
+      data: {
+        name: data.name,
+        issuer: data.issuer,
+        issueDate: data.issueDate,
+        expiryDate: data.expiryDate,
+        credentialUrl: data.credentialUrl,
+      },
     });
 
     return NextResponse.json(certification);
   } catch (error) {
-    console.error('Error updating certification:', error);
+    console.error("Error updating certification:", error);
     return NextResponse.json(
-      { error: 'Failed to update certification' },
+      { error: "Failed to update certification" },
       { status: 500 }
     );
   }
@@ -37,12 +44,12 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    return NextResponse.json({ message: 'Certification deleted successfully' });
+    return NextResponse.json({ message: "Certification deleted successfully" });
   } catch (error) {
-    console.error('Error deleting certification:', error);
+    console.error("Error deleting certification:", error);
     return NextResponse.json(
-      { error: 'Failed to delete certification' },
+      { error: "Failed to delete certification" },
       { status: 500 }
     );
   }
-} 
+}
