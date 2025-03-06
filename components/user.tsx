@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Edit, Lightbulb } from "lucide-react";
 import useSWR from "swr";
-import Skills from "@/components/skills";
 
 interface UserProps {
   userId: string;
@@ -91,11 +90,6 @@ export default function User({ userId }: UserProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Add Skills component */}
-      <div className="mb-8">
-        <Skills userId={userId} />
-      </div>
     </>
   );
 }
