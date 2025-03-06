@@ -4,8 +4,8 @@ import MenuBar from "@/components/menu-bar";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Resume Builder",
-  description: "Build your professional resume",
+  title: "Professional Portfolio",
+  description: "Build and showcase your professional portfolio",
 };
 
 export default function RootLayout({
