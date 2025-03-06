@@ -1,24 +1,26 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import MenuBar from "@/components/menu-bar"
+import { AuthProvider } from "@/context/AuthContext";
+import "./globals.css";
+import MenuBar from "@/components/menu-bar";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
-}
+  title: "Resume Builder",
+  description: "Build your professional resume",
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>
-        <MenuBar />
-        <main>{children}</main>
+        <AuthProvider>
+          <MenuBar />
+          <main>{children}</main>
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }
