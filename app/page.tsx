@@ -24,6 +24,7 @@ import {
   CheckCircle,
   RefreshCw,
   X,
+  LogOut,
 } from "lucide-react";
 import { useUser } from "@/lib/hooks/useUser";
 import { useState, useEffect } from "react";
@@ -39,7 +40,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 export default function ProfilePage() {
   const { user, isLoading, isError } = useUser("cm7vaqj1i0000mwytdesnb2f7");
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, loading, user: authUser } = useAuth();
+  const { isAuthenticated, loading, user: authUser, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -47,6 +48,11 @@ export default function ProfilePage() {
       router.push("/login");
     }
   }, [isAuthenticated, loading, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   if (loading) {
     return (
@@ -253,9 +259,9 @@ export default function ProfilePage() {
                     </a>
                   </div>
                 </div>
-                <Button className="w-full mt-4">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Hire Me
+                <Button className="w-full mt-4" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
                 </Button>
               </CardContent>
             </Card>

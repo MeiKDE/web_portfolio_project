@@ -1,20 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { User, FileText, Briefcase, Mail, Menu, X } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { User, FileText, Briefcase, Mail, Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
   { name: "Profile", href: "/", icon: User },
   { name: "Resume", href: "/resume-builder", icon: FileText },
   { name: "Portfolio", href: "/portfolio", icon: Briefcase },
   { name: "Contact", href: "/contact", icon: Mail },
-]
+];
+
 export default function MenuBar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const { logout, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
+  if (!isAuthenticated) {
+    return null; // Don't show menu bar if not authenticated
+  }
 
   return (
     <nav className="bg-background border-b">
@@ -30,22 +43,42 @@ export default function MenuBar() {
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-4">
             {menuItems.map((item) => {
-              const Icon = item.icon
+              const Icon = item.icon;
               return (
                 <Link key={item.name} href={item.href}>
-                  <Button variant={pathname === item.href ? "default" : "ghost"} className="flex items-center">
+                  <Button
+                    variant={pathname === item.href ? "default" : "ghost"}
+                    className="flex items-center"
+                  >
                     <Icon className="h-4 w-4 mr-2" />
                     {item.name}
                   </Button>
                 </Link>
-              )
+              );
             })}
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              className="flex items-center"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden">
-            <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
           </div>
         </div>
@@ -56,7 +89,7 @@ export default function MenuBar() {
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {menuItems.map((item) => {
-              const Icon = item.icon
+              const Icon = item.icon;
               return (
                 <Link key={item.name} href={item.href}>
                   <Button
@@ -68,12 +101,23 @@ export default function MenuBar() {
                     {item.name}
                   </Button>
                 </Link>
-              )
+              );
             })}
+            {/* Mobile Logout Button */}
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogout();
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
       )}
     </nav>
-  )
+  );
 }
-
