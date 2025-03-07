@@ -23,22 +23,12 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      // Use the login method from AuthContext instead of direct fetch
-      const success = await login(email, password);
-
-      if (success) {
-        // Redirect to home page on successful login
-        router.push("/");
-      } else {
-        setError("Invalid email or password");
-      }
+      await login(email, password);
+      // The redirect is handled in the login function
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
     }
   };
 

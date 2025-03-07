@@ -1,9 +1,20 @@
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { NextRequest } from "next/server";
-import { AuthOptions } from "next-auth";
+import { AuthOptions, NextAuthOptions, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import * as crypto from "crypto";
+import { JWT } from "next-auth/jwt";
+
+// Add type for the session
+interface ExtendedSession extends Session {
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    image?: string | null;
+  };
+}
 
 function verifyPassword(password: string, hash: string, salt: string): boolean {
   const verifyHash = crypto
@@ -12,7 +23,7 @@ function verifyPassword(password: string, hash: string, salt: string): boolean {
   return hash === verifyHash;
 }
 
-export const authOptions: AuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -53,6 +64,25 @@ export const authOptions: AuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    // Add JWT callback to include user ID in the token
+    jwt: async ({ token, user }) => {
+      console.log("JWT callback - token:", token, "user:", user);
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    // Update session callback to get ID from token
+    session: async ({ session, token }) => {
+      console.log("Session callback - session:", session, "token:", token);
+      if (session?.user) {
+        (session.user as any).id = token.id;
+      }
+      return session;
+    },
   },
   pages: {
     signIn: "/login",

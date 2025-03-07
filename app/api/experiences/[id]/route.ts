@@ -3,6 +3,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 
 // Define the same schema as in the other file
@@ -22,37 +24,48 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const data = await request.json();
-
-    // Validate the incoming data
-    const validationResult = experienceSchema.partial().safeParse(data);
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid experience data",
-          details: validationResult.error.format(),
-        },
-        { status: 400 }
-      );
+    // Get the session to verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const experience = await prisma.experience.update({
+    // Get the experience to check ownership
+    const experience = await prisma.experience.findUnique({
       where: { id: params.id },
-      data: validationResult.data,
     });
 
-    return NextResponse.json(experience);
-  } catch (error) {
-    console.error("Error updating experience:", error);
-
-    if (error instanceof Error) {
+    if (!experience) {
       return NextResponse.json(
-        { error: "Failed to update experience", message: error.message },
-        { status: 500 }
+        { error: "Experience not found" },
+        { status: 404 }
       );
     }
 
+    // Verify the user is modifying their own data
+    if (experience.userId !== (session.user as any).id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Parse the request body
+    const { position, company, startDate, endDate, description } =
+      await request.json();
+
+    // Update the experience
+    const updatedExperience = await prisma.experience.update({
+      where: { id: params.id },
+      data: {
+        position,
+        company,
+        startDate,
+        endDate,
+        description,
+      },
+    });
+
+    return NextResponse.json(updatedExperience);
+  } catch (error) {
+    console.error("Error updating experience:", error);
     return NextResponse.json(
       { error: "Failed to update experience" },
       { status: 500 }
@@ -66,6 +79,29 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Get the session to verify the user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the experience to check ownership
+    const experience = await prisma.experience.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!experience) {
+      return NextResponse.json(
+        { error: "Experience not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify the user is modifying their own data
+    if (experience.userId !== (session.user as any).id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     await prisma.experience.delete({
       where: { id: params.id },
     });

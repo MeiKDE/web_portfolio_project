@@ -3,7 +3,9 @@
 // If successful, it sends back the list of experiences as a JSON response.
 
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { z } from "zod"; // You would need to install zod for validation
 
 // Define a schema for experience data validation
@@ -50,40 +52,48 @@ export async function POST(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const data = await request.json();
+    // Get the session to verify the user is authenticated
+    const session = await getServerSession(authOptions);
 
-    // Validate the incoming data
-    const validationResult = experienceSchema.safeParse(data);
+    console.log(
+      "POST /api/users/[userId]/experiences - Session:",
+      JSON.stringify(session)
+    );
+    console.log("User ID from params:", params.userId);
 
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: "Invalid experience data",
-          details: validationResult.error.format(),
-        },
-        { status: 400 }
-      );
+    if (!session || !session.user) {
+      console.log("No session or user, returning 401");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const experience = await prisma.experience.create({
+    console.log("Session user:", session.user);
+
+    // Verify the user is modifying their own data
+    if ((session.user as any).id !== params.userId) {
+      console.log("Session user ID:", (session.user as any).id);
+      console.log("Params user ID:", params.userId);
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Parse the request body
+    const { position, company, startDate, endDate, description } =
+      await request.json();
+
+    // Create the new experience
+    const newExperience = await prisma.experience.create({
       data: {
-        ...validationResult.data,
+        position,
+        company,
+        startDate,
+        endDate,
+        description,
         userId: params.userId,
       },
     });
 
-    return NextResponse.json(experience, { status: 201 });
+    return NextResponse.json(newExperience, { status: 201 });
   } catch (error) {
     console.error("Error creating experience:", error);
-
-    // More specific error handling
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: "Failed to create experience", message: error.message },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json(
       { error: "Failed to create experience" },
       { status: 500 }

@@ -1,4 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { Providers } from "@/components/Providers";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import MenuBar from "@/components/menu-bar";
 import type { Metadata } from "next";
@@ -6,6 +8,8 @@ import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { headers } from "next/headers";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Professional Portfolio",
@@ -54,11 +58,13 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body suppressHydrationWarning={true}>
-        <AuthProvider>
-          <MenuBar />
-          <main>{children}</main>
-        </AuthProvider>
+      <body suppressHydrationWarning={true} className={inter.className}>
+        <Providers>
+          <AuthProvider>
+            <MenuBar />
+            <main>{children}</main>
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

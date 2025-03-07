@@ -1,95 +1,64 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  title: string;
-  // Add other user properties as needed
-}
+import { signIn, signOut, useSession } from "next-auth/react";
+import { Session } from "next-auth";
 
 interface AuthContextType {
-  user: User | null;
-  loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  loading: boolean;
+  user: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const [user, setUser] = useState<AuthContextType["user"]>(null);
   const router = useRouter();
 
-  const refreshUser = async () => {
-    try {
-      const response = await fetch("/api/auth/me");
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error("Error refreshing user:", error);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    refreshUser();
-  }, []);
+    console.log("Session data:", session);
+    if (session?.user) {
+      console.log("Setting user from session:", session.user);
+      setUser(session.user as AuthContextType["user"]);
+    } else {
+      console.log("No session user, setting user to null");
+      setUser(null);
+    }
+  }, [session]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setUser(data.user);
-        return true;
-      } else {
-        // Handle specific error messages from the API
-        throw new Error(data.error || "Login failed");
+      if (result?.error) {
+        throw new Error(result.error);
       }
+
+      router.push("/");
     } catch (error) {
       console.error("Login error:", error);
-      throw error; // Re-throw to allow the login page to handle the error
+      throw error;
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        setUser(null);
-      } else {
-        console.error("Logout failed:", await response.text());
-      }
+      await signOut({ redirect: false });
+      router.push("/login");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -98,12 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
-        loading,
         isAuthenticated: !!user,
+        loading: status === "loading",
+        user,
         login,
         logout,
-        refreshUser,
       }}
     >
       {children}

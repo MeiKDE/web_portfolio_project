@@ -19,12 +19,12 @@ export default function ProtectedRoute({
   }, [isAuthenticated, loading, router]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? <>{children}</> : null;
+  if (!isAuthenticated) {
+    return null; // Will redirect via useEffect
+  }
+
+  return <>{children}</>;
 }

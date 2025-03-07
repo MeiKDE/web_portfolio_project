@@ -19,7 +19,7 @@ import useSWR from "swr";
 
 interface Experience {
   id: string;
-  title: string; // Keeping in interface for API compatibility
+  position: string; // Changed from title to position
   company: string;
   startDate: string;
   endDate: string | null;
@@ -32,7 +32,10 @@ interface ExperienceProps {
 }
 
 //A utility function fetcher is defined to fetch data from a given URL and parse it as JSON.
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) =>
+  fetch(url, {
+    credentials: "include",
+  }).then((res) => res.json());
 
 // Utility function to format date to yyyy-MM-dd for input fields
 const formatDateForInput = (isoDate: string) => {
@@ -49,6 +52,15 @@ const formatDateForDatabase = (date: string) => {
   return d.toISOString(); // Converts to ISO-8601 format
 };
 
+// Get current date in YYYY-MM-DD format for date input max attribute
+const getCurrentDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
   // A state variable error is initialized to null.
@@ -56,6 +68,15 @@ export default function Experiences({ userId }: ExperienceProps) {
   const [experienceData, setExperienceData] = useState<Experience[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editedExperiences, setEditedExperiences] = useState<Experience[]>([]);
+  // Add state for adding new experience
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newExperience, setNewExperience] = useState<Omit<Experience, "id">>({
+    position: "", // Changed from title to position
+    company: "",
+    startDate: getCurrentDate(),
+    endDate: null,
+    description: "",
+  });
 
   //The useSWR hook is used to fetch the experiences data from the API.
   const { data, error, isLoading, mutate } = useSWR(
@@ -70,15 +91,6 @@ export default function Experiences({ userId }: ExperienceProps) {
       setEditedExperiences(JSON.parse(JSON.stringify(data))); // Deep copy for editing
     }
   }, [data]);
-
-  // Get current date in YYYY-MM-DD format for date input max attribute
-  const getCurrentDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -112,26 +124,34 @@ export default function Experiences({ userId }: ExperienceProps) {
   const saveChanges = async () => {
     try {
       for (const experience of editedExperiences) {
-        // console.log("ln104: Updating experience:", experience); // Log the data
         const response = await fetch(`/api/experiences/${experience.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
+            position: experience.position,
             company: experience.company,
-            startDate: formatDateForDatabase(experience.startDate), // Format for DB
+            startDate: formatDateForDatabase(experience.startDate),
             endDate: experience.endDate
               ? formatDateForDatabase(experience.endDate)
-              : null, // Format for DB
+              : null,
             description: experience.description,
-            // Add any other fields you want to update
           }),
         });
 
         if (!response.ok) {
+          const errorData = await response.json();
+          if (response.status === 401) {
+            // Handle unauthorized - redirect to login
+            window.location.href = "/login";
+            return;
+          }
           throw new Error(
-            `Failed to update experience: ${response.statusText}`
+            `Failed to update experience: ${
+              errorData.error || response.statusText
+            }`
           );
         }
       }
@@ -148,6 +168,70 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
+  const handleAddNew = () => {
+    setIsAddingNew(true);
+    setNewExperience({
+      position: "", // Changed from title to position
+      company: "",
+      startDate: getCurrentDate(),
+      endDate: null,
+      description: "",
+    });
+  };
+
+  const handleCancelAdd = () => {
+    setIsAddingNew(false);
+  };
+
+  const handleNewExperienceChange = (
+    field: keyof Omit<Experience, "id">,
+    value: string | null
+  ) => {
+    setNewExperience((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveNewExperience = async () => {
+    try {
+      const response = await fetch(`/api/users/${userId}/experiences`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          ...newExperience,
+          startDate: formatDateForDatabase(newExperience.startDate),
+          endDate: newExperience.endDate
+            ? formatDateForDatabase(newExperience.endDate)
+            : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 401) {
+          // Handle unauthorized - redirect to login
+          window.location.href = "/login";
+          return;
+        }
+        throw new Error(
+          `Failed to add experience: ${errorData.error || response.statusText}`
+        );
+      }
+
+      // Refresh the data
+      mutate();
+      setIsAddingNew(false);
+    } catch (error) {
+      if (error instanceof Error) {
+        setLocalError(error.message);
+      } else {
+        setLocalError("An unknown error occurred while adding experience");
+      }
+      console.error("Error adding experience:", error);
+    }
+  };
+
   if (isLoading) return <div>Loading experiences...</div>;
   if (error) return <div>Error loading experiences: {error.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
@@ -161,172 +245,279 @@ export default function Experiences({ userId }: ExperienceProps) {
             Experience
           </h3>
 
-          {isEditing ? (
-            <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Done
-              </>
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-              {" "}
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </>
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {!isAddingNew && !isEditing && (
+              <Button variant="outline" size="sm" onClick={handleAddNew}>
+                Add New
+              </Button>
+            )}
+
+            {isEditing ? (
+              <Button variant="ghost" size="sm" onClick={handleEditToggle}>
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Done
+                </>
+              </Button>
+            ) : (
+              !isAddingNew && (
+                <Button variant="ghost" size="sm" onClick={handleEditToggle}>
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </>
+                </Button>
+              )
+            )}
+          </div>
         </div>
 
-        {(isEditing ? editedExperiences : experienceData) &&
-        (isEditing ? editedExperiences : experienceData).length > 0 ? (
-          (isEditing ? editedExperiences : experienceData).map(
-            (experience: Experience, index: number) => (
-              <div
-                key={experience.id}
-                className={`mb-6 ${
-                  index < experienceData.length - 1 ? "border-b pb-6" : ""
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-shrink-0">
-                    <Avatar className="h-12 w-12">
-                      <AvatarFallback>
-                        {experience.company.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+        {/* Add New Experience Form */}
+        {isAddingNew && (
+          <div className="mb-6 border-b pb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-shrink-0">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback>
+                    {newExperience.company.substring(0, 2).toUpperCase() ||
+                      "NE"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="flex-grow">
+                <Input
+                  value={newExperience.position}
+                  onChange={(e) =>
+                    handleNewExperienceChange("position", e.target.value)
+                  }
+                  className="text-muted-foreground mb-2"
+                  placeholder="Position/Job Title"
+                />
+                <Input
+                  value={newExperience.company}
+                  onChange={(e) =>
+                    handleNewExperienceChange("company", e.target.value)
+                  }
+                  className="text-muted-foreground mb-2"
+                  placeholder="Company Name"
+                />
+                <div className="flex gap-2 mb-2">
+                  <div className="w-1/2">
+                    <label className="text-xs text-muted-foreground">
+                      Start Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={newExperience.startDate}
+                      onChange={(e) =>
+                        handleNewExperienceChange("startDate", e.target.value)
+                      }
+                      className="text-sm text-muted-foreground"
+                      max={getCurrentDate()}
+                    />
                   </div>
-                  <div className="flex-grow">
-                    {isEditing ? (
-                      <>
-                        <Input
-                          value={experience.company}
-                          onChange={(e) =>
-                            handleInputChange(
-                              experience.id,
-                              "company",
-                              e.target.value
-                            )
-                          }
-                          className="text-muted-foreground mb-2"
-                        />
-                        <div className="flex gap-2 mb-2">
+                  <div className="w-1/2">
+                    <label className="text-xs text-muted-foreground">
+                      End Date (or leave empty for Present)
+                    </label>
+                    <Input
+                      type="date"
+                      value={newExperience.endDate || ""}
+                      onChange={(e) =>
+                        handleNewExperienceChange(
+                          "endDate",
+                          e.target.value || null
+                        )
+                      }
+                      className="text-sm text-muted-foreground"
+                      placeholder="Present"
+                      max={getCurrentDate()}
+                    />
+                  </div>
+                </div>
+                <Textarea
+                  value={newExperience.description}
+                  onChange={(e) =>
+                    handleNewExperienceChange("description", e.target.value)
+                  }
+                  className="mt-2"
+                  rows={4}
+                  placeholder="Describe your responsibilities and achievements..."
+                />
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" size="sm" onClick={handleCancelAdd}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSaveNewExperience}>
+                    Save Experience
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(isEditing ? editedExperiences : experienceData) &&
+        (isEditing ? editedExperiences : experienceData).length > 0
+          ? (isEditing ? editedExperiences : experienceData).map(
+              (experience: Experience, index: number) => (
+                <div
+                  key={experience.id}
+                  className={`mb-6 ${
+                    index < experienceData.length - 1 ? "border-b pb-6" : ""
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-shrink-0">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback>
+                          {experience.company.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div className="flex-grow">
+                      {isEditing ? (
+                        <>
                           <Input
-                            type="date"
-                            value={formatDateForInput(experience.startDate)}
+                            value={experience.position}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
-                                "startDate",
+                                "position",
                                 e.target.value
                               )
                             }
-                            className="text-sm text-muted-foreground w-1/2"
-                            max={getCurrentDate()}
+                            className="font-medium mb-2"
+                            placeholder="Position/Job Title"
                           />
                           <Input
-                            type="date"
-                            value={
-                              experience.endDate
-                                ? formatDateForInput(experience.endDate)
-                                : ""
-                            }
+                            value={experience.company}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
-                                "endDate",
-                                e.target.value || null
+                                "company",
+                                e.target.value
                               )
                             }
-                            className="text-sm text-muted-foreground w-1/2"
-                            placeholder="Present"
-                            max={getCurrentDate()}
+                            className="text-muted-foreground mb-2"
                           />
-                        </div>
-                        <Textarea
-                          value={experience.description}
-                          onChange={(e) =>
-                            handleInputChange(
-                              experience.id,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                          className="mt-2"
-                          rows={4}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-muted-foreground">
-                          {experience.company}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDateForInput(experience.startDate)} -{" "}
-                          {experience.endDate
-                            ? formatDateForInput(experience.endDate)
-                            : "Present"}
-                        </p>
-                        <p className="mt-2">{experience.description}</p>
-                      </>
-                    )}
+                          <div className="flex gap-2 mb-2">
+                            <Input
+                              type="date"
+                              value={formatDateForInput(experience.startDate)}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  experience.id,
+                                  "startDate",
+                                  e.target.value
+                                )
+                              }
+                              className="text-sm text-muted-foreground w-1/2"
+                              max={getCurrentDate()}
+                            />
+                            <Input
+                              type="date"
+                              value={
+                                experience.endDate
+                                  ? formatDateForInput(experience.endDate)
+                                  : ""
+                              }
+                              onChange={(e) =>
+                                handleInputChange(
+                                  experience.id,
+                                  "endDate",
+                                  e.target.value || null
+                                )
+                              }
+                              className="text-sm text-muted-foreground w-1/2"
+                              placeholder="Present"
+                              max={getCurrentDate()}
+                            />
+                          </div>
+                          <Textarea
+                            value={experience.description}
+                            onChange={(e) =>
+                              handleInputChange(
+                                experience.id,
+                                "description",
+                                e.target.value
+                              )
+                            }
+                            className="mt-2"
+                            rows={4}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-medium">{experience.position}</p>
+                          <p className="text-muted-foreground">
+                            {experience.company}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDateForInput(experience.startDate)} -{" "}
+                            {experience.endDate
+                              ? formatDateForInput(experience.endDate)
+                              : "Present"}
+                          </p>
+                          <p className="mt-2">{experience.description}</p>
+                        </>
+                      )}
 
-                    {/* AI Suggestion for the first item as an example */}
-                    {!isEditing && index === 0 && (
-                      <div className="mt-3 p-3 bg-muted rounded-md border border-border">
-                        <div className="flex items-start gap-2">
-                          <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                          <div className="flex-grow">
-                            <p className="text-sm font-medium">
-                              AI Suggestion:
-                            </p>
-                            <p className="text-sm">
-                              Replace "Led development" with a stronger action
-                              verb like "Spearheaded" or "Architected" to
-                              showcase leadership.
-                            </p>
-                            <div className="flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <RefreshCw className="h-3 w-3 mr-1" />
-                                Regenerate
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                Dismiss
-                              </Button>
+                      {/* AI Suggestion for the first item as an example */}
+                      {!isEditing && index === 0 && (
+                        <div className="mt-3 p-3 bg-muted rounded-md border border-border">
+                          <div className="flex items-start gap-2">
+                            <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                            <div className="flex-grow">
+                              <p className="text-sm font-medium">
+                                AI Suggestion:
+                              </p>
+                              <p className="text-sm">
+                                Replace "Led development" with a stronger action
+                                verb like "Spearheaded" or "Architected" to
+                                showcase leadership.
+                              </p>
+                              <div className="flex gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Accept
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Regenerate
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs"
+                                >
+                                  <X className="h-3 w-3 mr-1" />
+                                  Dismiss
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )
-          )
-        ) : (
-          <div className="text-center py-4 text-muted-foreground">
-            No experience entries found. Add your work history to complete your
-            profile.
-          </div>
-        )}
+          : !isAddingNew && (
+              <div className="text-center py-4 text-muted-foreground">
+                No experience entries found. Click "Add New" to add your work
+                history.
+              </div>
+            )}
       </CardContent>
     </Card>
   );
