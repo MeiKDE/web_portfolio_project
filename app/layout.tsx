@@ -20,7 +20,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   // Protected routes logic
-  const isProtectedRoute = (pathname) => {
+  const isProtectedRoute = (pathname: string) => {
     return pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
   };
 
@@ -32,8 +32,29 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning={true}>
+      <head>
+        {/* This script suppresses the specific browser extension warnings */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const originalConsoleError = console.error;
+                console.error = function(msg) {
+                  if (typeof msg === 'string' && 
+                      (msg.includes('data-new-gr-c-s-check-loaded') || 
+                       msg.includes('data-gr-ext-installed') ||
+                       msg.includes('data-lt-installed'))) {
+                    return;
+                  }
+                  originalConsoleError.apply(console, arguments);
+                };
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body suppressHydrationWarning={true}>
         <AuthProvider>
           <MenuBar />
           <main>{children}</main>

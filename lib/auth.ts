@@ -3,10 +3,7 @@ import prisma from "@/lib/prisma";
 import { NextRequest } from "next/server";
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
 import * as crypto from "crypto";
-
-const prismaClient = new PrismaClient();
 
 function verifyPassword(password: string, hash: string, salt: string): boolean {
   const verifyHash = crypto
@@ -28,7 +25,7 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        const user = await prismaClient.user.findUnique({
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
@@ -61,6 +58,7 @@ export const authOptions: AuthOptions = {
     signIn: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 };
 
 // Make sure to export the config as default as well
@@ -93,8 +91,8 @@ export async function getCurrentUser() {
     }
 
     // Return the user without the password
-    const { password, ...userWithoutPassword } = session.user;
-    return userWithoutPassword;
+    const { hashedPassword, salt, ...userWithoutSensitiveData } = session.user;
+    return userWithoutSensitiveData;
   } catch (error) {
     console.error("Error getting current user:", error);
     return null;
