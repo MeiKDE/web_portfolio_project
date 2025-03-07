@@ -12,15 +12,11 @@ const loginSchema = z.object({
 });
 
 // Function to verify password
-function verifyPassword(
-  storedPassword: string,
-  suppliedPassword: string
-): boolean {
-  const [salt, hash] = storedPassword.split(":");
-  const suppliedHash = crypto
-    .pbkdf2Sync(suppliedPassword, salt, 1000, 64, "sha512")
+function verifyPassword(password: string, hash: string, salt: string): boolean {
+  const verifyHash = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
     .toString("hex");
-  return hash === suppliedHash;
+  return hash === verifyHash;
 }
 
 export async function POST(request: NextRequest) {
@@ -43,7 +39,8 @@ export async function POST(request: NextRequest) {
       where: { email },
     });
 
-    if (!user || !user.password) {
+    // Check if user exists and has password credentials
+    if (!user || !user.hashedPassword || !user.salt) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -51,7 +48,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password using our custom function
-    const isPasswordValid = verifyPassword(user.password, password);
+    const isPasswordValid = verifyPassword(
+      password,
+      user.hashedPassword,
+      user.salt
+    );
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -87,12 +88,12 @@ export async function POST(request: NextRequest) {
       sameSite: "lax",
     });
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove sensitive data from response
+    const { hashedPassword, salt, ...userWithoutSensitiveData } = user;
 
     return NextResponse.json({
       message: "Login successful",
-      user: userWithoutPassword,
+      user: userWithoutSensitiveData,
     });
   } catch (error) {
     console.error("Login error:", error);

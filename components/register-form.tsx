@@ -14,14 +14,41 @@ export default function RegisterForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Add password validation function
+  const validatePassword = (password: string) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*]/.test(password),
+    };
+
+    return {
+      isValid: Object.values(requirements).every(Boolean),
+      requirements,
+    };
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error when user starts typing
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate password before submission
+    const { isValid, requirements } = validatePassword(formData.password);
+    if (!isValid) {
+      setError("Please meet all password requirements");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -47,6 +74,9 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
+
+  // Check password strength as user types
+  const passwordCheck = validatePassword(formData.password);
 
   return (
     <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
@@ -116,6 +146,58 @@ export default function RegisterForm() {
             value={formData.password}
             onChange={handleChange}
           />
+
+          {/* Password requirements checklist */}
+          <div className="mt-2 text-sm space-y-1">
+            <p className="font-medium text-gray-700">Password must contain:</p>
+            <ul className="space-y-1 text-gray-600">
+              <li
+                className={
+                  passwordCheck.requirements.length
+                    ? "text-green-600"
+                    : "text-gray-600"
+                }
+              >
+                ✓ At least 8 characters
+              </li>
+              <li
+                className={
+                  passwordCheck.requirements.uppercase
+                    ? "text-green-600"
+                    : "text-gray-600"
+                }
+              >
+                ✓ At least one uppercase letter
+              </li>
+              <li
+                className={
+                  passwordCheck.requirements.lowercase
+                    ? "text-green-600"
+                    : "text-gray-600"
+                }
+              >
+                ✓ At least one lowercase letter
+              </li>
+              <li
+                className={
+                  passwordCheck.requirements.number
+                    ? "text-green-600"
+                    : "text-gray-600"
+                }
+              >
+                ✓ At least one number
+              </li>
+              <li
+                className={
+                  passwordCheck.requirements.special
+                    ? "text-green-600"
+                    : "text-gray-600"
+                }
+              >
+                ✓ At least one special character (!@#$%^&*)
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div>

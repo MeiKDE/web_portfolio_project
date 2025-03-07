@@ -38,10 +38,19 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // prisma/seed.ts test data
 var client_1 = require("@prisma/client");
+var crypto = require("crypto");
 var prisma = new client_1.PrismaClient();
+// Function to hash password using crypto (same as in the register route)
+function hashPassword(password) {
+    var salt = crypto.randomBytes(16).toString("hex");
+    var hash = crypto
+        .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+        .toString("hex");
+    return { salt: salt, hash: hash };
+}
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var users;
+        var johnPassword, socialAuthPassword, users;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: 
@@ -71,6 +80,8 @@ function main() {
                     return [4 /*yield*/, prisma.user.deleteMany({})];
                 case 8:
                     _a.sent();
+                    johnPassword = hashPassword("password123");
+                    socialAuthPassword = hashPassword("password456");
                     return [4 /*yield*/, Promise.all([
                             // User with email (traditional signup)
                             prisma.user.create({
@@ -82,6 +93,10 @@ function main() {
                                     bio: "Passionate developer with 5+ years of experience building web applications with modern technologies.",
                                     profileImageUrl: "/placeholder.svg?height=128&width=128",
                                     aiGeneratedTagline: "Innovative full-stack developer transforming ideas into scalable digital solutions",
+                                    hashedPassword: johnPassword.hash,
+                                    salt: johnPassword.salt,
+                                    createdAt: new Date(),
+                                    updatedAt: new Date(),
                                     // Create skills
                                     skills: {
                                         create: [
@@ -250,6 +265,10 @@ function main() {
                                     bio: "Passionate developer with 5+ years of experience building web applications with modern technologies.",
                                     profileImageUrl: "/placeholder.svg?height=128&width=128",
                                     aiGeneratedTagline: "Innovative full-stack developer transforming ideas into scalable digital solutions",
+                                    hashedPassword: socialAuthPassword.hash,
+                                    salt: socialAuthPassword.salt,
+                                    createdAt: new Date(),
+                                    updatedAt: new Date(),
                                     // Create skills
                                     skills: {
                                         create: [

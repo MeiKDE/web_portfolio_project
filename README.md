@@ -4,7 +4,15 @@
 2. echo $DATABASE_URL path should match to .env file, ex: postgresql://mei:mei@localhost:5432/profile_db?schema=public
 3. prisma.user user needs to be lowercase in the route.ts file
 
-### To run the seed file, run the following command:
+### 1 how to apply schema changes
+
+npx prisma migrate reset --force --skip-seed
+
+### 2 run the Prisma migrations to create the tables
+
+npx prisma migrate dev
+
+### 3. To run the seed file, run the following command:
 
 npx tsc prisma/seed.ts
 mv prisma/seed.js prisma/seed.cjs

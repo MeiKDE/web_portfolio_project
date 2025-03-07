@@ -1,7 +1,18 @@
 // prisma/seed.ts test data
 import { PrismaClient } from "@prisma/client";
+import * as crypto from "crypto";
 
 const prisma = new PrismaClient();
+
+// Function to hash password using crypto (same as in the register route)
+function hashPassword(password: string): { salt: string; hash: string } {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .toString("hex");
+
+  return { salt, hash };
+}
 
 async function main() {
   // First, delete existing data to avoid duplicates
@@ -13,6 +24,10 @@ async function main() {
   await prisma.education.deleteMany({});
   await prisma.experience.deleteMany({});
   await prisma.user.deleteMany({});
+
+  // Generate password hash and salt once
+  const johnPassword = hashPassword("password123");
+  const socialAuthPassword = hashPassword("password456");
 
   // Create users with different authentication scenarios
   const users = await Promise.all([
@@ -27,6 +42,10 @@ async function main() {
         profileImageUrl: "/placeholder.svg?height=128&width=128",
         aiGeneratedTagline:
           "Innovative full-stack developer transforming ideas into scalable digital solutions",
+        hashedPassword: johnPassword.hash,
+        salt: johnPassword.salt,
+        createdAt: new Date(),
+        updatedAt: new Date(),
 
         // Create skills
         skills: {
@@ -215,6 +234,10 @@ async function main() {
         profileImageUrl: "/placeholder.svg?height=128&width=128",
         aiGeneratedTagline:
           "Innovative full-stack developer transforming ideas into scalable digital solutions",
+        hashedPassword: socialAuthPassword.hash,
+        salt: socialAuthPassword.salt,
+        createdAt: new Date(),
+        updatedAt: new Date(),
 
         // Create skills
         skills: {
