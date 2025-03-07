@@ -18,7 +18,7 @@ export async function GET(
     // Map proficiencyLevel to proficiency for the frontend
     const mappedSkills = skills.map((skill) => ({
       ...skill,
-      proficiency: skill.proficiencyLevel, // Add this field for the frontend
+      proficiencyLevel: skill.proficiencyLevel, // Add this field for the frontend
     }));
 
     return NextResponse.json(mappedSkills);
@@ -51,11 +51,11 @@ export async function POST(
       data: prismaData,
     });
 
-    // Return the skill with proficiency field for the frontend
+    // Return the skill with proficiencyLevel field for the frontend
     return NextResponse.json(
       {
         ...skill,
-        proficiency: skill.proficiencyLevel,
+        proficiencyLevel: skill.proficiencyLevel,
       },
       { status: 201 }
     );

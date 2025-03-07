@@ -2,9 +2,7 @@
 // This file ([id]/route.ts) is focused on managing existing suggestions (getting and updating).
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-// import prisma from '@/lib/prisma';
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 // GET user by ID from User table
 export async function GET(
