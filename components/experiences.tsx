@@ -14,6 +14,8 @@ import {
   RefreshCw,
   X,
   Save,
+  Work,
+  Plus,
 } from "lucide-react";
 import useSWR from "swr";
 
@@ -24,6 +26,8 @@ interface Experience {
   startDate: string;
   endDate: string | null;
   description: string;
+  location: string;
+  isCurrentPosition: boolean;
 }
 
 //Defines the props for the Experience component, which includes a userId.
@@ -76,7 +80,12 @@ export default function Experiences({ userId }: ExperienceProps) {
     startDate: getCurrentDate(),
     endDate: null,
     description: "",
+    location: "",
+    isCurrentPosition: false,
   });
+
+  // Add a state for tracking submission status
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   //The useSWR hook is used to fetch the experiences data from the API.
   const { data, error, isLoading, mutate } = useSWR(
@@ -123,6 +132,8 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   const saveChanges = async () => {
     try {
+      setIsSubmitting(true);
+
       for (const experience of editedExperiences) {
         const response = await fetch(`/api/experiences/${experience.id}`, {
           method: "PUT",
@@ -138,6 +149,8 @@ export default function Experiences({ userId }: ExperienceProps) {
               ? formatDateForDatabase(experience.endDate)
               : null,
             description: experience.description,
+            location: experience.location,
+            isCurrentPosition: experience.isCurrentPosition,
           }),
         });
 
@@ -159,12 +172,10 @@ export default function Experiences({ userId }: ExperienceProps) {
       setExperienceData(editedExperiences);
       mutate();
     } catch (error) {
-      if (error instanceof Error) {
-        setLocalError(error.message);
-      } else {
-        setLocalError("An unknown error occurred while saving changes");
-      }
       console.error("Error saving changes:", error);
+      alert("Failed to save changes. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -176,6 +187,8 @@ export default function Experiences({ userId }: ExperienceProps) {
       startDate: getCurrentDate(),
       endDate: null,
       description: "",
+      location: "",
+      isCurrentPosition: false,
     });
   };
 
@@ -232,6 +245,35 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
+  const handleDeleteExperience = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this experience?")) {
+      return;
+    }
+
+    try {
+      // If it's a temporary ID (new unsaved entry), just remove it from state
+      if (id.startsWith("temp-")) {
+        setEditedExperiences(editedExperiences.filter((exp) => exp.id !== id));
+        return;
+      }
+
+      const response = await fetch(`/api/experiences/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete experience: ${response.statusText}`);
+      }
+
+      // Remove from local state and refresh data
+      setEditedExperiences(editedExperiences.filter((exp) => exp.id !== id));
+      mutate();
+    } catch (error) {
+      console.error("Error deleting experience:", error);
+      alert("Failed to delete experience. Please try again.");
+    }
+  };
+
   if (isLoading) return <div>Loading experiences...</div>;
   if (error) return <div>Error loading experiences: {error.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
@@ -247,16 +289,24 @@ export default function Experiences({ userId }: ExperienceProps) {
 
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <Button variant="outline" size="sm" onClick={handleAddNew}>
-                Add New
+              <Button variant="ghost" size="sm" onClick={handleAddNew}>
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </>
               </Button>
             )}
 
             {isEditing ? (
-              <Button variant="ghost" size="sm" onClick={handleEditToggle}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEditToggle}
+                disabled={isSubmitting}
+              >
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Done
+                  {isSubmitting ? "Saving..." : "Done"}
                 </>
               </Button>
             ) : (
@@ -291,7 +341,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                     handleNewExperienceChange("position", e.target.value)
                   }
                   className="text-muted-foreground mb-2"
-                  placeholder="Position/Job Title"
+                  placeholder="Position*"
                 />
                 <Input
                   value={newExperience.company}
@@ -299,7 +349,15 @@ export default function Experiences({ userId }: ExperienceProps) {
                     handleNewExperienceChange("company", e.target.value)
                   }
                   className="text-muted-foreground mb-2"
-                  placeholder="Company Name"
+                  placeholder="Company*"
+                />
+                <Input
+                  value={newExperience.location}
+                  onChange={(e) =>
+                    handleNewExperienceChange("location", e.target.value)
+                  }
+                  className="text-muted-foreground mb-2"
+                  placeholder="Location"
                 />
                 <div className="flex gap-2 mb-2">
                   <div className="w-1/2">
@@ -335,6 +393,26 @@ export default function Experiences({ userId }: ExperienceProps) {
                     />
                   </div>
                 </div>
+                <div className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    id={`current-${newExperience.id}`}
+                    checked={newExperience.isCurrentPosition}
+                    onChange={(e) =>
+                      handleNewExperienceChange(
+                        "isCurrentPosition",
+                        e.target.checked
+                      )
+                    }
+                    className="mr-2"
+                  />
+                  <label
+                    htmlFor={`current-${newExperience.id}`}
+                    className="text-sm"
+                  >
+                    Current Position
+                  </label>
+                </div>
                 <Textarea
                   value={newExperience.description}
                   onChange={(e) =>
@@ -363,151 +441,186 @@ export default function Experiences({ userId }: ExperienceProps) {
               (experience: Experience, index: number) => (
                 <div
                   key={experience.id}
-                  className={`mb-6 ${
-                    index < experienceData.length - 1 ? "border-b pb-6" : ""
-                  }`}
+                  className="flex flex-col sm:flex-row gap-4 mb-6 relative border-b pb-4 last:border-b-0"
                 >
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-shrink-0">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback>
-                          {experience.company.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex-grow">
-                      {isEditing ? (
-                        <>
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback>
+                        {experience.company.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="flex-grow">
+                    {isEditing ? (
+                      <>
+                        <Input
+                          value={experience.position}
+                          onChange={(e) =>
+                            handleInputChange(
+                              experience.id,
+                              "position",
+                              e.target.value
+                            )
+                          }
+                          className="font-semibold mb-2 w-full p-1 border rounded"
+                          placeholder="Position*"
+                        />
+                        <Input
+                          value={experience.company}
+                          onChange={(e) =>
+                            handleInputChange(
+                              experience.id,
+                              "company",
+                              e.target.value
+                            )
+                          }
+                          className="text-muted-foreground mb-2 w-full p-1 border rounded"
+                          placeholder="Company*"
+                        />
+                        <Input
+                          value={experience.location}
+                          onChange={(e) =>
+                            handleInputChange(
+                              experience.id,
+                              "location",
+                              e.target.value
+                            )
+                          }
+                          className="text-muted-foreground mb-2 w-full p-1 border rounded"
+                          placeholder="Location"
+                        />
+                        <div className="flex gap-2 mb-2">
                           <Input
-                            value={experience.position}
+                            type="date"
+                            value={experience.startDate}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
-                                "position",
+                                "startDate",
                                 e.target.value
                               )
                             }
-                            className="font-medium mb-2"
-                            placeholder="Position/Job Title"
+                            className="text-sm text-muted-foreground w-1/2 p-1 border rounded"
                           />
                           <Input
-                            value={experience.company}
+                            type="date"
+                            value={experience.endDate ? experience.endDate : ""}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
-                                "company",
-                                e.target.value
+                                "endDate",
+                                e.target.value || null
                               )
                             }
-                            className="text-muted-foreground mb-2"
+                            className="text-sm text-muted-foreground w-1/2 p-1 border rounded"
                           />
-                          <div className="flex gap-2 mb-2">
-                            <Input
-                              type="date"
-                              value={formatDateForInput(experience.startDate)}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  experience.id,
-                                  "startDate",
-                                  e.target.value
-                                )
-                              }
-                              className="text-sm text-muted-foreground w-1/2"
-                              max={getCurrentDate()}
-                            />
-                            <Input
-                              type="date"
-                              value={
-                                experience.endDate
-                                  ? formatDateForInput(experience.endDate)
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                handleInputChange(
-                                  experience.id,
-                                  "endDate",
-                                  e.target.value || null
-                                )
-                              }
-                              className="text-sm text-muted-foreground w-1/2"
-                              placeholder="Present"
-                              max={getCurrentDate()}
-                            />
-                          </div>
-                          <Textarea
-                            value={experience.description}
+                        </div>
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            id={`current-${experience.id}`}
+                            checked={experience.isCurrentPosition}
                             onChange={(e) =>
                               handleInputChange(
                                 experience.id,
-                                "description",
-                                e.target.value
+                                "isCurrentPosition",
+                                e.target.checked
                               )
                             }
-                            className="mt-2"
-                            rows={4}
+                            className="mr-2"
                           />
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-medium">{experience.position}</p>
-                          <p className="text-muted-foreground">
-                            {experience.company}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDateForInput(experience.startDate)} -{" "}
-                            {experience.endDate
-                              ? formatDateForInput(experience.endDate)
-                              : "Present"}
-                          </p>
-                          <p className="mt-2">{experience.description}</p>
-                        </>
-                      )}
+                          <label
+                            htmlFor={`current-${experience.id}`}
+                            className="text-sm"
+                          >
+                            Current Position
+                          </label>
+                        </div>
+                        <Textarea
+                          value={experience.description}
+                          onChange={(e) =>
+                            handleInputChange(
+                              experience.id,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="mt-2 w-full p-1 border rounded"
+                          rows={4}
+                          placeholder="Description (optional)"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium">{experience.position}</p>
+                        <p className="text-muted-foreground">
+                          {experience.company}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDateForInput(experience.startDate)} -{" "}
+                          {experience.endDate
+                            ? formatDateForInput(experience.endDate)
+                            : "Present"}
+                        </p>
+                        <p className="mt-2">{experience.description}</p>
+                      </>
+                    )}
 
-                      {/* AI Suggestion for the first item as an example */}
-                      {!isEditing && index === 0 && (
-                        <div className="mt-3 p-3 bg-muted rounded-md border border-border">
-                          <div className="flex items-start gap-2">
-                            <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                            <div className="flex-grow">
-                              <p className="text-sm font-medium">
-                                AI Suggestion:
-                              </p>
-                              <p className="text-sm">
-                                Replace "Led development" with a stronger action
-                                verb like "Spearheaded" or "Architected" to
-                                showcase leadership.
-                              </p>
-                              <div className="flex gap-2 mt-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Accept
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                >
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Regenerate
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-xs"
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Dismiss
-                                </Button>
-                              </div>
+                    {/* AI Suggestion for the first item as an example */}
+                    {!isEditing && index === 0 && (
+                      <div className="mt-3 p-3 bg-muted rounded-md border border-border">
+                        <div className="flex items-start gap-2">
+                          <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                          <div className="flex-grow">
+                            <p className="text-sm font-medium">
+                              AI Suggestion:
+                            </p>
+                            <p className="text-sm">
+                              Replace "Led development" with a stronger action
+                              verb like "Spearheaded" or "Architected" to
+                              showcase leadership.
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Regenerate
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs"
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Dismiss
+                              </Button>
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {isEditing && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-0 right-0 text-red-500"
+                        onClick={() => handleDeleteExperience(experience.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
