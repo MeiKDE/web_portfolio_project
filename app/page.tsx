@@ -46,51 +46,51 @@ export default function ProfilePage() {
     router.push("/login");
   };
 
-  // if (!session) {
-  //   return (
-  //     <div className="container mx-auto px-4 py-8">
-  //       <h1 className="text-3xl font-bold mb-6">Welcome to Portfolio App</h1>
+  if (!session) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Welcome to Portfolio App</h1>
 
-  //       <div>
-  //         <p className="mb-4">Please log in to access your portfolio.</p>
-  //         <Link
-  //           href="/login"
-  //           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-4"
-  //         >
-  //           Login
-  //         </Link>
-  //         <Link
-  //           href="/register"
-  //           className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-  //         >
-  //           Register
-  //         </Link>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+        <div>
+          <p className="mb-4">Please log in to access your portfolio.</p>
+          <Link
+            href="/login"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-4"
+          >
+            Login
+          </Link>
+          <Link
+            href="/register"
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+          >
+            Register
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Profile Header - Replace with User component */}
-        <User userId={session?.user.id || ""} />
+        <User userId={session.user.id || ""} />
 
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column - Resume */}
           <div className="md:col-span-2 space-y-8">
             {/* Experience Section */}
-            <Experiences userId={session?.user.id || ""} />
+            <Experiences userId={session.user.id || ""} />
 
             {/* Education Section */}
-            <Educations userId={session?.user.id || ""} />
+            <Educations userId={session.user.id || ""} />
 
             {/* Skills Section */}
-            <Skills userId={session?.user.id || ""} />
+            <Skills userId={session.user.id || ""} />
 
             {/* Certifications Section */}
-            <Certifications userId={session?.user.id || ""} />
+            <Certifications userId={session.user.id || ""} />
           </div>
 
           {/* Right Column - Portfolio, Cover Letter, Contact */}

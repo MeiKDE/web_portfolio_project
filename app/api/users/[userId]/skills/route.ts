@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// GET all skills for a specific user
+// GET all skills for a user
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
@@ -12,15 +12,13 @@ export async function GET(
   try {
     const skills = await prisma.skill.findMany({
       where: { userId: params.userId },
-      orderBy: { updatedAt: "desc" },
+      orderBy: [{ category: "asc" }, { name: "asc" }],
     });
 
-    // Map proficiencyLevel to proficiency for frontend consistency
+    // Map proficiencyLevel to proficiency for the frontend
     const mappedSkills = skills.map((skill) => ({
-      id: skill.id,
-      name: skill.name,
-      proficiency: skill.proficiencyLevel,
-      category: skill.category,
+      ...skill,
+      proficiencyLevel: skill.proficiencyLevel, // Add this field for the frontend
     }));
 
     return NextResponse.json(mappedSkills);
@@ -33,7 +31,7 @@ export async function GET(
   }
 }
 
-// POST a new skill for a specific user
+// POST a new skill for a user
 export async function POST(
   request: NextRequest,
   { params }: { params: { userId: string } }
@@ -41,7 +39,7 @@ export async function POST(
   try {
     const data = await request.json();
 
-    // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
+    // Map proficiency to proficiencyLevel for Prisma
     const prismaData = {
       name: data.name,
       proficiencyLevel: data.proficiency, // Map to the correct field name
@@ -53,15 +51,14 @@ export async function POST(
       data: prismaData,
     });
 
-    // Map back to frontend format
-    const mappedSkill = {
-      id: skill.id,
-      name: skill.name,
-      proficiency: skill.proficiencyLevel,
-      category: skill.category,
-    };
-
-    return NextResponse.json(mappedSkill);
+    // Return the skill with proficiencyLevel field for the frontend
+    return NextResponse.json(
+      {
+        ...skill,
+        proficiencyLevel: skill.proficiencyLevel,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating skill:", error);
     return NextResponse.json(

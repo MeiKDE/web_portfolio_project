@@ -104,7 +104,7 @@ export default function Skills({ userId }: SkillsProps) {
       const createPromises = editedSkills
         .filter((skill) => skill.id.startsWith("temp-"))
         .map((skill) => {
-          return fetch(`/api/skills`, {
+          return fetch(`/api/users/${userId}/skills`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -178,30 +178,17 @@ export default function Skills({ userId }: SkillsProps) {
             <Lightbulb className="h-5 w-5 mr-2" />
             Skills
           </h3>
-          <div className="flex items-center gap-2">
-            {editable ? (
-              <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-                <Save className="h-4 w-4 mr-2" />
-                Done
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditable(true)}
-                  className="text-muted-foreground"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </>
-            )}
-          </div>
+          {editable ? (
+            <Button variant="ghost" size="sm" onClick={handleEditToggle}>
+              <Save className="h-4 w-4 mr-2" />
+              Done
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={handleEditToggle}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          )}
         </div>
 
         {Object.entries(groupedSkills).length > 0 ? (
