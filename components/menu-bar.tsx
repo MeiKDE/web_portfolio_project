@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { User, FileText, Briefcase, Mail, Menu, X, LogOut } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useSession, signOut } from "next-auth/react";
 
 const menuItems = [
   { name: "Profile", href: "/", icon: User },
@@ -17,15 +17,15 @@ const menuItems = [
 export default function MenuBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { logout, isAuthenticated } = useAuth();
+  const { data: session } = useSession();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
     router.push("/login");
   };
 
-  if (!isAuthenticated) {
+  if (!session) {
     return null; // Don't show menu bar if not authenticated
   }
 

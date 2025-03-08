@@ -1,5 +1,4 @@
-import { AuthProvider } from "@/context/AuthContext";
-import { Providers } from "@/components/Providers";
+import Providers from "@/components/Providers";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import MenuBar from "@/components/menu-bar";
@@ -60,10 +59,8 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
         <Providers>
-          <AuthProvider>
-            <MenuBar />
-            <main>{children}</main>
-          </AuthProvider>
+          <MenuBar />
+          <main>{children}</main>
         </Providers>
       </body>
     </html>

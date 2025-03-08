@@ -33,62 +33,64 @@ import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
 import Certifications from "@/components/certifications";
 import User from "@/components/user";
-import { useAuth } from "@/context/AuthContext";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Link from "next/link";
 
 export default function ProfilePage() {
-  // First get the auth context data
-  const { isAuthenticated, loading, user: authUser, logout } = useAuth();
-  // Then use authUser in the useUser hook
-  const { user, isLoading, isError } = useUser(authUser?.id || "");
-  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, loading, router]);
-
   const handleLogout = () => {
-    logout();
     router.push("/login");
   };
 
-  if (loading) {
+  if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Welcome to Portfolio App</h1>
+
+        <div>
+          <p className="mb-4">Please log in to access your portfolio.</p>
+          <Link
+            href="/login"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-4"
+          >
+            Login
+          </Link>
+          <Link
+            href="/register"
+            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+          >
+            Register
+          </Link>
+        </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null; // Will redirect to login page via useEffect
   }
 
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Profile Header - Replace with User component */}
-        <User userId={authUser?.id || ""} />
+        <User userId={session.user.id || ""} />
 
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column - Resume */}
           <div className="md:col-span-2 space-y-8">
             {/* Experience Section */}
-            <Experiences userId={authUser?.id || ""} />
+            <Experiences userId={session.user.id || ""} />
 
             {/* Education Section */}
-            <Educations userId={authUser?.id || ""} />
+            <Educations userId={session.user.id || ""} />
 
             {/* Skills Section */}
-            <Skills userId={authUser?.id || ""} />
+            <Skills userId={session.user.id || ""} />
 
             {/* Certifications Section */}
-            <Certifications userId={authUser?.id || ""} />
+            <Certifications userId={session.user.id || ""} />
           </div>
 
           {/* Right Column - Portfolio, Cover Letter, Contact */}

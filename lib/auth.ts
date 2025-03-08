@@ -5,6 +5,7 @@ import { AuthOptions, NextAuthOptions, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import * as crypto from "crypto";
 import { JWT } from "next-auth/jwt";
+import GoogleProvider from "next-auth/providers/google";
 
 // Add type for the session
 interface ExtendedSession extends Session {
@@ -61,27 +62,34 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
   ],
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    // Add JWT callback to include user ID in the token
-    jwt: async ({ token, user }) => {
-      console.log("JWT callback - token:", token, "user:", user);
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    // Update session callback to get ID from token
-    session: async ({ session, token }) => {
-      console.log("Session callback - session:", session, "token:", token);
-      if (session?.user) {
-        (session.user as any).id = token.id;
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
   pages: {
