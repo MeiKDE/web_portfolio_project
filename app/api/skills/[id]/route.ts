@@ -1,5 +1,5 @@
 //Summary
-// This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
+// This file ([id]/route.ts) is focused on managing existing skills (updating and deleting).
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -24,7 +24,15 @@ export async function PUT(
       data: prismaData,
     });
 
-    return NextResponse.json(skill);
+    // Map back to frontend format
+    const mappedSkill = {
+      id: skill.id,
+      name: skill.name,
+      proficiencyLevel: skill.proficiencyLevel,
+      category: skill.category,
+    };
+
+    return NextResponse.json(mappedSkill);
   } catch (error) {
     console.error("Error updating skill:", error);
     return NextResponse.json(
