@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { certificationSchema } from "@/lib/validations";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 // GET all certifications for a user
 export async function GET(
@@ -17,13 +19,10 @@ export async function GET(
       orderBy: { issueDate: "desc" },
     });
 
-    return NextResponse.json(certifications);
+    return successResponse(certifications);
   } catch (error) {
     console.error("Error fetching certifications:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch certifications" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch certifications");
   }
 }
 
@@ -34,11 +33,13 @@ export async function POST(
 ) {
   try {
     const data = await request.json();
+    console.log("Received certification data:", data);
 
     // Validate the incoming data
     const validationResult = certificationSchema.safeParse(data);
 
     if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error.format());
       return errorResponse(
         "Invalid certification data",
         400,
@@ -46,6 +47,7 @@ export async function POST(
       );
     }
 
+    // Create the certification in the database
     const certification = await prisma.certification.create({
       data: {
         ...validationResult.data,

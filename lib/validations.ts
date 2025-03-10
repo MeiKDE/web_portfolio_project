@@ -13,11 +13,11 @@ export const experienceSchema = z.object({
 
 // Certification validation schema
 export const certificationSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Certification name is required"),
   issuer: z.string().min(1, "Issuer is required"),
-  issueDate: z.string().or(z.date()),
-  expirationDate: z.string().or(z.date()).optional(),
-  credentialUrl: z.string().url().optional(),
+  issueDate: z.string().min(1, "Issue date is required"),
+  expirationDate: z.string().nullable().optional(),
+  credentialUrl: z.string().url("Invalid URL format").nullable().optional(),
 });
 
 // Add other validation schemas as needed
