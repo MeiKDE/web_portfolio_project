@@ -228,6 +228,7 @@ async function main() {
     prisma.user.create({
       data: {
         name: "Social Auth User",
+        email: "social@example.com",
         title: "Full Stack Developer",
         location: "San Francisco, CA",
         bio: "Passionate developer with 5+ years of experience building web applications with modern technologies.",

@@ -14,7 +14,6 @@ import {
   RefreshCw,
   X,
   Save,
-  Work,
   Plus,
 } from "lucide-react";
 import useSWR from "swr";
@@ -123,7 +122,7 @@ export default function Experiences({ userId }: ExperienceProps) {
   const handleInputChange = (
     id: string,
     field: keyof Experience,
-    value: string | null
+    value: string | boolean | null
   ) => {
     setEditedExperiences((prev) =>
       prev.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
@@ -198,49 +197,58 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   const handleNewExperienceChange = (
     field: keyof Omit<Experience, "id">,
-    value: string | null
+    value: string | boolean | null
   ) => {
     setNewExperience((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveNewExperience = async () => {
+  const handleSaveNewExperience = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     try {
+      // Format dates properly
+      const formattedExperience = {
+        ...newExperience,
+        startDate: newExperience.startDate
+          ? new Date(newExperience.startDate).toISOString()
+          : new Date().toISOString(), // Provide a default if missing
+        endDate:
+          newExperience.endDate && !newExperience.isCurrentPosition
+            ? new Date(newExperience.endDate).toISOString()
+            : null,
+        isCurrentPosition: newExperience.isCurrentPosition || false,
+      };
+
       const response = await fetch(`/api/users/${userId}/experiences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify({
-          ...newExperience,
-          startDate: formatDateForDatabase(newExperience.startDate),
-          endDate: newExperience.endDate
-            ? formatDateForDatabase(newExperience.endDate)
-            : null,
-        }),
+        body: JSON.stringify(formattedExperience),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        if (response.status === 401) {
-          // Handle unauthorized - redirect to login
-          window.location.href = "/login";
-          return;
-        }
         throw new Error(
           `Failed to add experience: ${errorData.error || response.statusText}`
         );
       }
 
+      // Reset form and refresh data
+      setIsAddingNew(false);
+      setNewExperience({
+        position: "",
+        company: "",
+        location: "",
+        startDate: "",
+        endDate: "",
+        description: "",
+        isCurrentPosition: false,
+      });
+
       // Refresh the data
       mutate();
-      setIsAddingNew(false);
     } catch (error) {
-      if (error instanceof Error) {
-        setLocalError(error.message);
-      } else {
-        setLocalError("An unknown error occurred while adding experience");
-      }
       console.error("Error adding experience:", error);
     }
   };
@@ -396,7 +404,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                 <div className="flex items-center mb-2">
                   <input
                     type="checkbox"
-                    id={`current-${newExperience.id}`}
+                    id="current-new-experience"
                     checked={newExperience.isCurrentPosition}
                     onChange={(e) =>
                       handleNewExperienceChange(
@@ -406,10 +414,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                     }
                     className="mr-2"
                   />
-                  <label
-                    htmlFor={`current-${newExperience.id}`}
-                    className="text-sm"
-                  >
+                  <label htmlFor="current-new-experience" className="text-sm">
                     Current Position
                   </label>
                 </div>
