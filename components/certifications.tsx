@@ -82,7 +82,17 @@ export default function Certifications({ userId }: CertificationsProps) {
   useEffect(() => {
     if (data) {
       setCertificationsData(data);
-      setEditedCertifications(JSON.parse(JSON.stringify(data))); // Deep copy for editing
+
+      // Format dates properly for the edit form
+      const formattedData = data.map((cert) => ({
+        ...cert,
+        issueDate: formatDateForInput(cert.issueDate),
+        expirationDate: cert.expirationDate
+          ? formatDateForInput(cert.expirationDate)
+          : "",
+      }));
+
+      setEditedCertifications(formattedData);
     }
   }, [data]);
 
@@ -90,18 +100,16 @@ export default function Certifications({ userId }: CertificationsProps) {
     if (editable) {
       saveChanges();
     } else {
-      // Prepare data for editing
-      setEditedCertifications(
-        certificationsData.map((cert) => ({
-          ...cert,
-          issueDate: cert.issueDate
-            ? formatDateForInput(cert.issueDate)
-            : getCurrentDate(),
-          expirationDate: cert.expirationDate
-            ? formatDateForInput(cert.expirationDate)
-            : "",
-        }))
-      );
+      // Make sure dates are properly formatted for editing
+      const formattedData = certificationsData.map((cert) => ({
+        ...cert,
+        issueDate: formatDateForInput(cert.issueDate),
+        expirationDate: cert.expirationDate
+          ? formatDateForInput(cert.expirationDate)
+          : "",
+      }));
+
+      setEditedCertifications(formattedData);
     }
     setEditable(!editable);
   };
