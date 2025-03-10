@@ -86,6 +86,11 @@ export default function Experiences({ userId }: ExperienceProps) {
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Add state for tracking validation errors
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: { [field: string]: boolean };
+  }>({});
+
   //The useSWR hook is used to fetch the experiences data from the API.
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/experiences`,
@@ -100,8 +105,44 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   }, [data]);
 
+  const validateExperience = (
+    experience: Experience | Omit<Experience, "id">,
+    id?: string
+  ) => {
+    const errors: { [field: string]: boolean } = {};
+
+    // Check required fields
+    if (!experience.position.trim()) errors.position = true;
+    if (!experience.company.trim()) errors.company = true;
+    if (!experience.startDate) errors.startDate = true;
+
+    // If it has an ID, update the validation errors state
+    if (id) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [id]: errors,
+      }));
+    }
+
+    return Object.keys(errors).length === 0;
+  };
+
   const handleEditToggle = () => {
     if (isEditing) {
+      // Validate all experiences before saving
+      let hasErrors = false;
+
+      editedExperiences.forEach((exp) => {
+        if (!validateExperience(exp, exp.id)) {
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        alert("Please fill out all required fields before saving.");
+        return;
+      }
+
       saveChanges();
     } else {
       setEditedExperiences(
@@ -115,6 +156,8 @@ export default function Experiences({ userId }: ExperienceProps) {
             : getCurrentDate(),
         }))
       );
+      // Reset validation errors when entering edit mode
+      setValidationErrors({});
     }
     setIsEditing(!isEditing);
   };
@@ -127,6 +170,17 @@ export default function Experiences({ userId }: ExperienceProps) {
     setEditedExperiences((prev) =>
       prev.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
     );
+
+    // Clear validation error for this field if it exists
+    if (validationErrors[id]?.[field]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [field]: false,
+        },
+      }));
+    }
   };
 
   const saveChanges = async () => {
@@ -204,6 +258,19 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   const handleSaveNewExperience = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate the new experience
+    if (!validateExperience(newExperience)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        new: {
+          position: !newExperience.position.trim(),
+          company: !newExperience.company.trim(),
+          startDate: !newExperience.startDate,
+        },
+      }));
+      return;
+    }
 
     try {
       // Format dates properly
@@ -348,7 +415,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                   onChange={(e) =>
                     handleNewExperienceChange("position", e.target.value)
                   }
-                  className="text-muted-foreground mb-2"
+                  className={`text-muted-foreground mb-2 ${
+                    validationErrors.new?.position
+                      ? "border-red-500 ring-red-500"
+                      : ""
+                  }`}
                   placeholder="Position*"
                 />
                 <Input
@@ -356,7 +427,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                   onChange={(e) =>
                     handleNewExperienceChange("company", e.target.value)
                   }
-                  className="text-muted-foreground mb-2"
+                  className={`text-muted-foreground mb-2 ${
+                    validationErrors.new?.company
+                      ? "border-red-500 ring-red-500"
+                      : ""
+                  }`}
                   placeholder="Company*"
                 />
                 <Input
@@ -370,7 +445,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                 <div className="flex gap-2 mb-2">
                   <div className="w-1/2">
                     <label className="text-xs text-muted-foreground">
-                      Start Date
+                      Start Date*
                     </label>
                     <Input
                       type="date"
@@ -378,7 +453,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                       onChange={(e) =>
                         handleNewExperienceChange("startDate", e.target.value)
                       }
-                      className="text-sm text-muted-foreground"
+                      className={`text-sm text-muted-foreground ${
+                        validationErrors.new?.startDate
+                          ? "border-red-500 ring-red-500"
+                          : ""
+                      }`}
                       max={getCurrentDate()}
                     />
                   </div>
@@ -467,7 +546,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                               e.target.value
                             )
                           }
-                          className="font-semibold mb-2 w-full p-1 border rounded"
+                          className={`font-semibold mb-2 w-full p-1 border rounded ${
+                            validationErrors[experience.id]?.position
+                              ? "border-red-500 ring-red-500"
+                              : ""
+                          }`}
                           placeholder="Position*"
                         />
                         <Input
@@ -479,7 +562,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                               e.target.value
                             )
                           }
-                          className="text-muted-foreground mb-2 w-full p-1 border rounded"
+                          className={`text-muted-foreground mb-2 w-full p-1 border rounded ${
+                            validationErrors[experience.id]?.company
+                              ? "border-red-500 ring-red-500"
+                              : ""
+                          }`}
                           placeholder="Company*"
                         />
                         <Input
@@ -505,7 +592,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                                 e.target.value
                               )
                             }
-                            className="text-sm text-muted-foreground w-1/2 p-1 border rounded"
+                            className={`text-sm text-muted-foreground w-1/2 p-1 border rounded ${
+                              validationErrors[experience.id]?.startDate
+                                ? "border-red-500 ring-red-500"
+                                : ""
+                            }`}
                           />
                           <Input
                             type="date"
@@ -636,6 +727,13 @@ export default function Experiences({ userId }: ExperienceProps) {
                 history.
               </div>
             )}
+
+        {/* Add a note about required fields */}
+        {(isEditing || isAddingNew) && (
+          <div className="text-sm text-muted-foreground mt-4">
+            * Required fields
+          </div>
+        )}
       </CardContent>
     </Card>
   );
