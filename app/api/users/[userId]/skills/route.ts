@@ -12,13 +12,15 @@ export async function GET(
   try {
     const skills = await prisma.skill.findMany({
       where: { userId: params.userId },
-      orderBy: [{ category: "asc" }, { name: "asc" }],
+      orderBy: { name: "asc" },
     });
 
-    // Map proficiencyLevel to proficiency for the frontend
+    // Map proficiencyLevel to proficiency for frontend consistency
     const mappedSkills = skills.map((skill) => ({
-      ...skill,
-      proficiencyLevel: skill.proficiencyLevel, // Add this field for the frontend
+      id: skill.id,
+      name: skill.name,
+      proficiency: skill.proficiencyLevel,
+      category: skill.category,
     }));
 
     return NextResponse.json(mappedSkills);
@@ -31,7 +33,7 @@ export async function GET(
   }
 }
 
-// POST a new skill for a user
+// CREATE a new skill for a user
 export async function POST(
   request: NextRequest,
   { params }: { params: { userId: string } }
@@ -39,26 +41,23 @@ export async function POST(
   try {
     const data = await request.json();
 
-    // Map proficiency to proficiencyLevel for Prisma
-    const prismaData = {
-      name: data.name,
-      proficiencyLevel: data.proficiency, // Map to the correct field name
-      category: data.category,
-      userId: params.userId,
-    };
-
+    // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
     const skill = await prisma.skill.create({
-      data: prismaData,
+      data: {
+        name: data.name,
+        proficiencyLevel: data.proficiency, // Map from frontend's proficiency to DB's proficiencyLevel
+        category: data.category,
+        user: { connect: { id: params.userId } },
+      },
     });
 
-    // Return the skill with proficiencyLevel field for the frontend
-    return NextResponse.json(
-      {
-        ...skill,
-        proficiencyLevel: skill.proficiencyLevel,
-      },
-      { status: 201 }
-    );
+    // Map back to frontend format
+    return NextResponse.json({
+      id: skill.id,
+      name: skill.name,
+      proficiency: skill.proficiencyLevel,
+      category: skill.category,
+    });
   } catch (error) {
     console.error("Error creating skill:", error);
     return NextResponse.json(

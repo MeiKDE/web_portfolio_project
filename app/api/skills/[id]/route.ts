@@ -13,18 +13,22 @@ export async function PUT(
     const data = await request.json();
 
     // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
-    const prismaData = {
-      name: data.name,
-      proficiencyLevel: data.proficiency, // Map to the correct field name
-      category: data.category,
-    };
-
     const skill = await prisma.skill.update({
       where: { id: params.id },
-      data: prismaData,
+      data: {
+        name: data.name,
+        proficiencyLevel: data.proficiency, // Map from frontend's proficiency to DB's proficiencyLevel
+        category: data.category,
+      },
     });
 
-    return NextResponse.json(skill);
+    // Map back to frontend format
+    return NextResponse.json({
+      id: skill.id,
+      name: skill.name,
+      proficiency: skill.proficiencyLevel,
+      category: skill.category,
+    });
   } catch (error) {
     console.error("Error updating skill:", error);
     return NextResponse.json(
