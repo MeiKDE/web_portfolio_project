@@ -356,8 +356,9 @@ export default function Educations({ userId }: EducationProps) {
             </div>
           ))
         ) : (
-          <div className="text-muted-foreground text-sm">
-            No education information available
+          <div className="text-center py-4 text-muted-foreground">
+            No education information available. Click "Add" to add your
+            education history.
           </div>
         )}
       </CardContent>

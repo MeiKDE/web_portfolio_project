@@ -1,96 +1,43 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Briefcase,
-  GraduationCap,
-  MapPin,
-  Edit,
-  Github,
-  Linkedin,
-  Twitter,
-  Globe,
-  MessageSquare,
-  Lightbulb,
-  CheckCircle,
-  RefreshCw,
-  X,
-  LogOut,
-} from "lucide-react";
-import { useUser } from "@/lib/hooks/useUser";
-import { useState, useEffect } from "react";
+import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Educations from "@/components/educations";
 import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
 import Certifications from "@/components/certifications";
 import User from "@/components/user";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Link from "next/link";
+import SocialLinks from "@/components/social-links";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    router.push("/login");
-  };
-
-  if (!session) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Welcome to Portfolio App</h1>
-
-        <div>
-          <p className="mb-4">Please log in to access your portfolio.</p>
-          <Link
-            href="/login"
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-4"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-          >
-            Register
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // ... existing code ...
 
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Profile Header - Replace with User component */}
-        <User userId={session.user.id || ""} />
+        <User userId={session?.user.id || ""} />
 
         {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Left Column - Resume */}
           <div className="md:col-span-2 space-y-8">
             {/* Experience Section */}
-            <Experiences userId={session.user.id || ""} />
+            <Experiences userId={session?.user.id || ""} />
 
             {/* Education Section */}
-            <Educations userId={session.user.id || ""} />
+            <Educations userId={session?.user.id || ""} />
 
             {/* Skills Section */}
-            <Skills userId={session.user.id || ""} />
+            <Skills userId={session?.user.id || ""} />
 
             {/* Certifications Section */}
-            <Certifications userId={session.user.id || ""} />
+            <Certifications userId={session?.user.id || ""} />
           </div>
 
           {/* Right Column - Portfolio, Cover Letter, Contact */}
@@ -236,37 +183,7 @@ export default function ProfilePage() {
             {/* Contact & Social Links */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-4">Contact & Social</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Github className="h-5 w-5" />
-                    <a href="#" className="text-primary hover:underline">
-                      github.com/janedoe
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Linkedin className="h-5 w-5" />
-                    <a href="#" className="text-primary hover:underline">
-                      linkedin.com/in/janedoe
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Twitter className="h-5 w-5" />
-                    <a href="#" className="text-primary hover:underline">
-                      twitter.com/janedoe
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-5 w-5" />
-                    <a href="#" className="text-primary hover:underline">
-                      janedoe.dev
-                    </a>
-                  </div>
-                </div>
-                <Button className="w-full mt-4" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
+                <SocialLinks />
               </CardContent>
             </Card>
           </div>
