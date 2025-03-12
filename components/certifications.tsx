@@ -86,7 +86,7 @@ export default function Certifications({ userId }: CertificationsProps) {
 
       try {
         // Format dates properly for the edit form
-        const formattedData = data.map((cert) => ({
+        const formattedData = data.map((cert: Certification) => ({
           ...cert,
           issueDate: formatDateForInput(cert.issueDate),
           expirationDate: cert.expirationDate
@@ -95,8 +95,11 @@ export default function Certifications({ userId }: CertificationsProps) {
         }));
 
         setEditedCertifications(formattedData);
-      } catch (error) {
-        console.error("Error formatting certification dates:", error);
+      } catch (error: unknown) {
+        console.log(
+          "Error formatting certification dates:",
+          error instanceof Error ? error.message : String(error)
+        );
         // Fallback to unformatted data if there's an error
         setEditedCertifications(data);
       }

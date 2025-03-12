@@ -3,12 +3,16 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export function successResponse(data: any, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json({ success: true, data }, { status });
 }
 
 export function errorResponse(message: string, status = 500, details?: any) {
   return NextResponse.json(
-    { error: message, ...(details && { details }) },
+    {
+      success: false,
+      error: message,
+      ...(details ? { details } : {}),
+    },
     { status }
   );
 }

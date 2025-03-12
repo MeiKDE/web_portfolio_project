@@ -1,3 +1,6 @@
+// This file should be removed as NextAuth.js handles logout functionality
+// NextAuth.js provides a signOut() function that should be used instead
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
