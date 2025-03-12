@@ -17,6 +17,34 @@ import {
   Plus,
 } from "lucide-react";
 import useSWR from "swr";
+import { z } from "zod"; // Import zod for validation
+
+// Define Zod schema for experience validation
+const experienceSchema = z
+  .object({
+    position: z.string().min(1, "Position is required"),
+    company: z.string().min(1, "Company is required"),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().nullable(),
+    description: z.string().optional(),
+    location: z.string().optional(),
+    isCurrentPosition: z.boolean().default(false),
+  })
+  .refine(
+    (data) => {
+      // Skip validation if end date is null or empty (current position)
+      if (!data.endDate || data.isCurrentPosition) return true;
+
+      // Compare dates - start date should be before or equal to end date
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
+      return startDate <= endDate;
+    },
+    {
+      message: "Start date cannot be after end date",
+      path: ["startDate", "endDate"], // This will mark both fields as having an error
+    }
+  );
 
 interface Experience {
   id: string;
@@ -64,6 +92,19 @@ const getCurrentDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Add a function to handle date relationship validation in the UI
+const validateDateRange = (
+  startDate: string,
+  endDate: string | null,
+  isCurrentPosition: boolean
+) => {
+  if (!endDate || isCurrentPosition) return true;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return start <= end;
+};
+
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
   // A state variable error is initialized to null.
@@ -86,9 +127,9 @@ export default function Experiences({ userId }: ExperienceProps) {
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update validation errors state to include error messages
+  // Update validation errors state to include zod validation results
   const [validationErrors, setValidationErrors] = useState<{
-    [key: string]: { [field: string]: boolean };
+    [key: string]: z.ZodIssue[] | { [field: string]: boolean };
   }>({});
 
   //The useSWR hook is used to fetch the experiences data from the API.
@@ -109,22 +150,32 @@ export default function Experiences({ userId }: ExperienceProps) {
     experience: Experience | Omit<Experience, "id">,
     id?: string
   ) => {
-    const errors: { [field: string]: boolean } = {};
+    try {
+      // Validate with Zod schema
+      experienceSchema.parse(experience);
 
-    // Check required fields
-    if (!experience.position.trim()) errors.position = true;
-    if (!experience.company.trim()) errors.company = true;
-    if (!experience.startDate) errors.startDate = true;
+      // If validation passes and we have an ID, clear any existing errors
+      if (id) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          [id]: [],
+        }));
+      }
 
-    // If it has an ID, update the validation errors state
-    if (id) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [id]: errors,
-      }));
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Store Zod validation issues
+        if (id) {
+          setValidationErrors((prev) => ({
+            ...prev,
+            [id]: error.issues,
+          }));
+        }
+        return false;
+      }
+      return false;
     }
-
-    return Object.keys(errors).length === 0;
   };
 
   const handleEditToggle = () => {
@@ -167,19 +218,111 @@ export default function Experiences({ userId }: ExperienceProps) {
     field: keyof Experience,
     value: string | boolean | null
   ) => {
-    setEditedExperiences((prev) =>
-      prev.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
-    );
+    // First update the experience in state
+    const updatedExperiences = editedExperiences.map((exp) => {
+      if (exp.id === id) {
+        const updatedExp = { ...exp, [field]: value };
 
-    // Clear validation error for this field if it exists
-    if (validationErrors[id]?.[field]) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [id]: {
-          ...prev[id],
-          [field]: false,
-        },
-      }));
+        // If changing dates or current position status, validate the date relationship
+        if (
+          field === "startDate" ||
+          field === "endDate" ||
+          field === "isCurrentPosition"
+        ) {
+          // Only validate if we have both dates and it's not marked as current position
+          if (
+            updatedExp.startDate &&
+            updatedExp.endDate &&
+            !updatedExp.isCurrentPosition
+          ) {
+            const isValid = validateDateRange(
+              updatedExp.startDate,
+              updatedExp.endDate,
+              updatedExp.isCurrentPosition
+            );
+
+            // If invalid, update validation errors
+            if (!isValid) {
+              setValidationErrors((prev) => ({
+                ...prev,
+                [id]: Array.isArray(prev[id])
+                  ? [
+                      ...(prev[id] as z.ZodIssue[]).filter(
+                        (issue) =>
+                          !issue.path.includes("startDate") &&
+                          !issue.path.includes("endDate")
+                      ),
+                      {
+                        code: "custom",
+                        path: ["startDate", "endDate"],
+                        message: "Start date cannot be after end date",
+                      },
+                    ]
+                  : [
+                      {
+                        code: "custom",
+                        path: ["startDate", "endDate"],
+                        message: "Start date cannot be after end date",
+                      },
+                    ],
+              }));
+            } else {
+              // Clear date relationship errors if valid
+              setValidationErrors((prev) => {
+                if (!Array.isArray(prev[id])) return prev;
+
+                return {
+                  ...prev,
+                  [id]: (prev[id] as z.ZodIssue[]).filter(
+                    (issue) =>
+                      !(
+                        issue.path.includes("startDate") &&
+                        issue.path.includes("endDate")
+                      )
+                  ),
+                };
+              });
+            }
+          }
+        }
+
+        return updatedExp;
+      }
+      return exp;
+    });
+
+    setEditedExperiences(updatedExperiences);
+
+    // Clear individual field validation errors as before
+    if (validationErrors[id]) {
+      // If using Zod issues array
+      if (Array.isArray(validationErrors[id])) {
+        const issues = validationErrors[id] as z.ZodIssue[];
+        const updatedIssues = issues.filter(
+          (issue) =>
+            !issue.path.includes(field as string) ||
+            (issue.path.length > 1 &&
+              issue.path.includes("startDate") &&
+              issue.path.includes("endDate"))
+        );
+
+        setValidationErrors((prev) => ({
+          ...prev,
+          [id]: updatedIssues,
+        }));
+      } else {
+        // For backward compatibility with the old validation format
+        const errors = validationErrors[id] as { [field: string]: boolean };
+        if (errors[field as string]) {
+          setValidationErrors((prev) => ({
+            ...prev,
+            [id]: {
+              ...(prev[id] as { [field: string]: boolean }),
+              [field]: false,
+            },
+          }));
+        }
+      }
     }
   };
 
@@ -253,23 +396,87 @@ export default function Experiences({ userId }: ExperienceProps) {
     field: keyof Omit<Experience, "id">,
     value: string | boolean | null
   ) => {
-    setNewExperience((prev) => ({ ...prev, [field]: value }));
+    const updatedExperience = { ...newExperience, [field]: value };
+    setNewExperience(updatedExperience);
+
+    // If changing dates or current position status, validate the date relationship
+    if (
+      field === "startDate" ||
+      field === "endDate" ||
+      field === "isCurrentPosition"
+    ) {
+      // Only validate if we have both dates and it's not marked as current position
+      if (
+        updatedExperience.startDate &&
+        updatedExperience.endDate &&
+        !updatedExperience.isCurrentPosition
+      ) {
+        const isValid = validateDateRange(
+          updatedExperience.startDate,
+          updatedExperience.endDate,
+          updatedExperience.isCurrentPosition
+        );
+
+        // If invalid, update validation errors
+        if (!isValid) {
+          setValidationErrors((prev) => ({
+            ...prev,
+            new: Array.isArray(prev.new)
+              ? [
+                  ...(prev.new as z.ZodIssue[]).filter(
+                    (issue) =>
+                      !issue.path.includes("startDate") &&
+                      !issue.path.includes("endDate")
+                  ),
+                  {
+                    code: "custom",
+                    path: ["startDate", "endDate"],
+                    message: "Start date cannot be after end date",
+                  },
+                ]
+              : [
+                  {
+                    code: "custom",
+                    path: ["startDate", "endDate"],
+                    message: "Start date cannot be after end date",
+                  },
+                ],
+          }));
+        } else {
+          // Clear date relationship errors if valid
+          setValidationErrors((prev) => {
+            if (!Array.isArray(prev.new)) return prev;
+
+            return {
+              ...prev,
+              new: (prev.new as z.ZodIssue[]).filter(
+                (issue) =>
+                  !(
+                    issue.path.includes("startDate") &&
+                    issue.path.includes("endDate")
+                  )
+              ),
+            };
+          });
+        }
+      }
+    }
   };
 
   const handleSaveNewExperience = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate the new experience
-    if (!validateExperience(newExperience)) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        new: {
-          position: !newExperience.position.trim(),
-          company: !newExperience.company.trim(),
-          startDate: !newExperience.startDate,
-        },
-      }));
-      return;
+    // Validate the new experience with Zod
+    try {
+      experienceSchema.parse(newExperience);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          new: error.issues,
+        }));
+        return;
+      }
     }
 
     try {
@@ -349,6 +556,50 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
+  // Helper function to get field error message
+  const getFieldError = (id: string, field: string): string | null => {
+    if (!validationErrors[id]) return null;
+
+    if (Array.isArray(validationErrors[id])) {
+      const issues = validationErrors[id] as z.ZodIssue[];
+      const issue = issues.find((i) => i.path.includes(field));
+      return issue ? issue.message : null;
+    } else {
+      const errors = validationErrors[id] as { [field: string]: boolean };
+      return errors[field]
+        ? `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+        : null;
+    }
+  };
+
+  // Add a function to check if a field has a date relationship error
+  const hasDateRangeError = (id: string): boolean => {
+    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
+      return false;
+
+    const issues = validationErrors[id] as z.ZodIssue[];
+    return issues.some(
+      (issue) =>
+        issue.path.includes("startDate") &&
+        issue.path.includes("endDate") &&
+        issue.message === ""
+    );
+  };
+
+  // Add a function to get the date range error message
+  const getDateRangeError = (id: string): string | null => {
+    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
+      return null;
+
+    const issues = validationErrors[id] as z.ZodIssue[];
+    const issue = issues.find(
+      (issue) =>
+        issue.path.includes("startDate") && issue.path.includes("endDate")
+    );
+
+    return issue ? issue.message : null;
+  };
+
   if (isLoading) return <div>Loading experiences...</div>;
   if (error) return <div>Error loading experiences: {error.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
@@ -417,15 +668,15 @@ export default function Experiences({ userId }: ExperienceProps) {
                       handleNewExperienceChange("position", e.target.value)
                     }
                     className={`text-muted-foreground ${
-                      validationErrors.new?.position
+                      getFieldError("new", "position")
                         ? "border-red-500 ring-red-500"
                         : ""
                     }`}
                     placeholder="Position*"
                   />
-                  {validationErrors.new?.position && (
+                  {getFieldError("new", "position") && (
                     <p className="text-red-500 text-xs mt-1">
-                      Position is required
+                      {getFieldError("new", "position")}
                     </p>
                   )}
                 </div>
@@ -437,15 +688,15 @@ export default function Experiences({ userId }: ExperienceProps) {
                       handleNewExperienceChange("company", e.target.value)
                     }
                     className={`text-muted-foreground ${
-                      validationErrors.new?.company
+                      getFieldError("new", "company")
                         ? "border-red-500 ring-red-500"
                         : ""
                     }`}
                     placeholder="Company*"
                   />
-                  {validationErrors.new?.company && (
+                  {getFieldError("new", "company") && (
                     <p className="text-red-500 text-xs mt-1">
-                      Company is required
+                      {getFieldError("new", "company")}
                     </p>
                   )}
                 </div>
@@ -470,15 +721,16 @@ export default function Experiences({ userId }: ExperienceProps) {
                         handleNewExperienceChange("startDate", e.target.value)
                       }
                       className={`text-sm text-muted-foreground ${
-                        validationErrors.new?.startDate
+                        getFieldError("new", "startDate") ||
+                        hasDateRangeError("new")
                           ? "border-red-500 ring-red-500"
                           : ""
                       }`}
                       max={getCurrentDate()}
                     />
-                    {validationErrors.new?.startDate && (
+                    {getFieldError("new", "startDate") && (
                       <p className="text-red-500 text-xs mt-1">
-                        Start date is required
+                        {getFieldError("new", "startDate")}
                       </p>
                     )}
                   </div>
@@ -495,12 +747,21 @@ export default function Experiences({ userId }: ExperienceProps) {
                           e.target.value || null
                         )
                       }
-                      className="text-sm text-muted-foreground"
+                      className={`text-sm text-muted-foreground ${
+                        hasDateRangeError("new")
+                          ? "border-red-500 ring-red-500"
+                          : ""
+                      }`}
                       placeholder="Present"
                       max={getCurrentDate()}
                     />
                   </div>
                 </div>
+                {hasDateRangeError("new") && (
+                  <p className="text-red-500 text-xs mt-1 mb-2">
+                    {getDateRangeError("new")}
+                  </p>
+                )}
                 <div className="flex items-center mb-2">
                   <input
                     type="checkbox"
@@ -569,15 +830,15 @@ export default function Experiences({ userId }: ExperienceProps) {
                               )
                             }
                             className={`font-semibold w-full p-1 border rounded ${
-                              validationErrors[experience.id]?.position
+                              getFieldError(experience.id, "position")
                                 ? "border-red-500 ring-red-500"
                                 : ""
                             }`}
                             placeholder="Position*"
                           />
-                          {validationErrors[experience.id]?.position && (
+                          {getFieldError(experience.id, "position") && (
                             <p className="text-red-500 text-xs mt-1">
-                              Position is required
+                              {getFieldError(experience.id, "position")}
                             </p>
                           )}
                         </div>
@@ -593,15 +854,15 @@ export default function Experiences({ userId }: ExperienceProps) {
                               )
                             }
                             className={`text-muted-foreground w-full p-1 border rounded ${
-                              validationErrors[experience.id]?.company
+                              getFieldError(experience.id, "company")
                                 ? "border-red-500 ring-red-500"
                                 : ""
                             }`}
                             placeholder="Company*"
                           />
-                          {validationErrors[experience.id]?.company && (
+                          {getFieldError(experience.id, "company") && (
                             <p className="text-red-500 text-xs mt-1">
-                              Company is required
+                              {getFieldError(experience.id, "company")}
                             </p>
                           )}
                         </div>
@@ -631,14 +892,16 @@ export default function Experiences({ userId }: ExperienceProps) {
                                 )
                               }
                               className={`text-sm text-muted-foreground p-1 border rounded ${
-                                validationErrors[experience.id]?.startDate
+                                getFieldError(experience.id, "startDate") ||
+                                hasDateRangeError(experience.id)
                                   ? "border-red-500 ring-red-500"
                                   : ""
                               }`}
+                              max={getCurrentDate()}
                             />
-                            {validationErrors[experience.id]?.startDate && (
+                            {getFieldError(experience.id, "startDate") && (
                               <p className="text-red-500 text-xs mt-1">
-                                Start date is required
+                                {getFieldError(experience.id, "startDate")}
                               </p>
                             )}
                           </div>
@@ -655,10 +918,20 @@ export default function Experiences({ userId }: ExperienceProps) {
                                   e.target.value || null
                                 )
                               }
-                              className="text-sm text-muted-foreground p-1 border rounded"
+                              className={`text-sm text-muted-foreground p-1 border rounded ${
+                                hasDateRangeError(experience.id)
+                                  ? "border-red-500 ring-red-500"
+                                  : ""
+                              }`}
+                              max={getCurrentDate()}
                             />
                           </div>
                         </div>
+                        {hasDateRangeError(experience.id) && (
+                          <p className="text-red-500 text-xs mt-1 mb-2">
+                            {getDateRangeError(experience.id)}
+                          </p>
+                        )}
                         <div className="flex items-center mb-2">
                           <input
                             type="checkbox"
