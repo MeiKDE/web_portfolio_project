@@ -59,7 +59,7 @@ export default function Skills({ userId }: SkillsProps) {
 
         setSkillsData(mappedData);
         // Create a deep copy using spread operator for each object
-        setEditedSkills(mappedData.map((skill) => ({ ...skill })));
+        setEditedSkills(mappedData.map((skill: Skill) => ({ ...skill })));
       } catch (error) {
         console.error("Error processing skills data:", error);
         // Fallback to original data if mapping fails
