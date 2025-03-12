@@ -36,7 +36,7 @@ export default function MenuBar() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="text-2xl font-bold">
-              AI-Assisted Resume Builder
+              ResuMe AI
             </Link>
           </div>
 
