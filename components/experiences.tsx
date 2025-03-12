@@ -86,7 +86,7 @@ export default function Experiences({ userId }: ExperienceProps) {
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Add state for tracking validation errors
+  // Update validation errors state to include error messages
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: { [field: string]: boolean };
   }>({});
@@ -410,30 +410,46 @@ export default function Experiences({ userId }: ExperienceProps) {
                 </Avatar>
               </div>
               <div className="flex-grow">
-                <Input
-                  value={newExperience.position}
-                  onChange={(e) =>
-                    handleNewExperienceChange("position", e.target.value)
-                  }
-                  className={`text-muted-foreground mb-2 ${
-                    validationErrors.new?.position
-                      ? "border-red-500 ring-red-500"
-                      : ""
-                  }`}
-                  placeholder="Position*"
-                />
-                <Input
-                  value={newExperience.company}
-                  onChange={(e) =>
-                    handleNewExperienceChange("company", e.target.value)
-                  }
-                  className={`text-muted-foreground mb-2 ${
-                    validationErrors.new?.company
-                      ? "border-red-500 ring-red-500"
-                      : ""
-                  }`}
-                  placeholder="Company*"
-                />
+                <div className="mb-2">
+                  <Input
+                    value={newExperience.position}
+                    onChange={(e) =>
+                      handleNewExperienceChange("position", e.target.value)
+                    }
+                    className={`text-muted-foreground ${
+                      validationErrors.new?.position
+                        ? "border-red-500 ring-red-500"
+                        : ""
+                    }`}
+                    placeholder="Position*"
+                  />
+                  {validationErrors.new?.position && (
+                    <p className="text-red-500 text-xs mt-1">
+                      Position is required
+                    </p>
+                  )}
+                </div>
+
+                <div className="mb-2">
+                  <Input
+                    value={newExperience.company}
+                    onChange={(e) =>
+                      handleNewExperienceChange("company", e.target.value)
+                    }
+                    className={`text-muted-foreground ${
+                      validationErrors.new?.company
+                        ? "border-red-500 ring-red-500"
+                        : ""
+                    }`}
+                    placeholder="Company*"
+                  />
+                  {validationErrors.new?.company && (
+                    <p className="text-red-500 text-xs mt-1">
+                      Company is required
+                    </p>
+                  )}
+                </div>
+
                 <Input
                   value={newExperience.location}
                   onChange={(e) =>
@@ -460,6 +476,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                       }`}
                       max={getCurrentDate()}
                     />
+                    {validationErrors.new?.startDate && (
+                      <p className="text-red-500 text-xs mt-1">
+                        Start date is required
+                      </p>
+                    )}
                   </div>
                   <div className="w-1/2">
                     <label className="text-xs text-muted-foreground">
@@ -537,38 +558,54 @@ export default function Experiences({ userId }: ExperienceProps) {
                   <div className="flex-grow">
                     {isEditing ? (
                       <>
-                        <Input
-                          value={experience.position}
-                          onChange={(e) =>
-                            handleInputChange(
-                              experience.id,
-                              "position",
-                              e.target.value
-                            )
-                          }
-                          className={`font-semibold mb-2 w-full p-1 border rounded ${
-                            validationErrors[experience.id]?.position
-                              ? "border-red-500 ring-red-500"
-                              : ""
-                          }`}
-                          placeholder="Position*"
-                        />
-                        <Input
-                          value={experience.company}
-                          onChange={(e) =>
-                            handleInputChange(
-                              experience.id,
-                              "company",
-                              e.target.value
-                            )
-                          }
-                          className={`text-muted-foreground mb-2 w-full p-1 border rounded ${
-                            validationErrors[experience.id]?.company
-                              ? "border-red-500 ring-red-500"
-                              : ""
-                          }`}
-                          placeholder="Company*"
-                        />
+                        <div className="mb-2">
+                          <Input
+                            value={experience.position}
+                            onChange={(e) =>
+                              handleInputChange(
+                                experience.id,
+                                "position",
+                                e.target.value
+                              )
+                            }
+                            className={`font-semibold w-full p-1 border rounded ${
+                              validationErrors[experience.id]?.position
+                                ? "border-red-500 ring-red-500"
+                                : ""
+                            }`}
+                            placeholder="Position*"
+                          />
+                          {validationErrors[experience.id]?.position && (
+                            <p className="text-red-500 text-xs mt-1">
+                              Position is required
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="mb-2">
+                          <Input
+                            value={experience.company}
+                            onChange={(e) =>
+                              handleInputChange(
+                                experience.id,
+                                "company",
+                                e.target.value
+                              )
+                            }
+                            className={`text-muted-foreground w-full p-1 border rounded ${
+                              validationErrors[experience.id]?.company
+                                ? "border-red-500 ring-red-500"
+                                : ""
+                            }`}
+                            placeholder="Company*"
+                          />
+                          {validationErrors[experience.id]?.company && (
+                            <p className="text-red-500 text-xs mt-1">
+                              Company is required
+                            </p>
+                          )}
+                        </div>
+
                         <Input
                           value={experience.location}
                           onChange={(e) =>
@@ -582,34 +619,45 @@ export default function Experiences({ userId }: ExperienceProps) {
                           placeholder="Location"
                         />
                         <div className="flex gap-2 mb-2">
-                          <Input
-                            type="date"
-                            value={experience.startDate}
-                            onChange={(e) =>
-                              handleInputChange(
-                                experience.id,
-                                "startDate",
-                                e.target.value
-                              )
-                            }
-                            className={`text-sm text-muted-foreground w-1/2 p-1 border rounded ${
-                              validationErrors[experience.id]?.startDate
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
-                          />
-                          <Input
-                            type="date"
-                            value={experience.endDate ? experience.endDate : ""}
-                            onChange={(e) =>
-                              handleInputChange(
-                                experience.id,
-                                "endDate",
-                                e.target.value || null
-                              )
-                            }
-                            className="text-sm text-muted-foreground w-1/2 p-1 border rounded"
-                          />
+                          <div className="w-1/2">
+                            <Input
+                              type="date"
+                              value={experience.startDate}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  experience.id,
+                                  "startDate",
+                                  e.target.value
+                                )
+                              }
+                              className={`text-sm text-muted-foreground p-1 border rounded ${
+                                validationErrors[experience.id]?.startDate
+                                  ? "border-red-500 ring-red-500"
+                                  : ""
+                              }`}
+                            />
+                            {validationErrors[experience.id]?.startDate && (
+                              <p className="text-red-500 text-xs mt-1">
+                                Start date is required
+                              </p>
+                            )}
+                          </div>
+                          <div className="w-1/2">
+                            <Input
+                              type="date"
+                              value={
+                                experience.endDate ? experience.endDate : ""
+                              }
+                              onChange={(e) =>
+                                handleInputChange(
+                                  experience.id,
+                                  "endDate",
+                                  e.target.value || null
+                                )
+                              }
+                              className="text-sm text-muted-foreground p-1 border rounded"
+                            />
+                          </div>
                         </div>
                         <div className="flex items-center mb-2">
                           <input
