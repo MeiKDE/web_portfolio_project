@@ -230,8 +230,6 @@ export default function ResumeBuilder() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold mb-6">AI-Assisted Resume Builder</h1>
-
         <Tabs defaultValue="upload" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="upload">Upload Resume</TabsTrigger>
