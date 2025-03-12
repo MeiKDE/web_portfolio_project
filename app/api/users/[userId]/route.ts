@@ -3,6 +3,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // GET user by ID from User table
 export async function GET(
@@ -10,12 +12,26 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const user = await prisma.user.findFirst({
-      where: { id: params.userId },
-    });
+    const userId = params.userId;
 
-    // Log the user data retrieved from the database
-    // console.log('User data retrieved for ID', params.userId, ':', user);
+    // Check authentication
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch the user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        // Include any other non-sensitive fields you need
+      },
+    });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -28,8 +44,6 @@ export async function GET(
       { error: "Failed to fetch user" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

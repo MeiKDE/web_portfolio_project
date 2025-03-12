@@ -10,7 +10,7 @@ import useSWR from "swr";
 interface Skill {
   id: string;
   name: string;
-  proficiency: number;
+  proficiencyLevel: number;
   category?: string;
 }
 
@@ -31,7 +31,7 @@ export default function Skills({ userId }: SkillsProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSkill, setNewSkill] = useState<Omit<Skill, "id">>({
     name: "",
-    proficiency: 3,
+    proficiencyLevel: 3,
     category: "Frontend", // Default category
   });
 
@@ -43,8 +43,16 @@ export default function Skills({ userId }: SkillsProps) {
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
-      setSkillsData(data);
-      setEditedSkills(JSON.parse(JSON.stringify(data))); // Deep copy for editing
+      console.error("skill Data:", data);
+      // Map the API response to match our component's expected format
+      const mappedData = data.map((skill: any) => ({
+        id: skill.id,
+        name: skill.name,
+        proficiencyLevel: skill.proficiencyLevel, // Map from API's proficiencyLevel to component's proficiency
+        category: skill.category,
+      }));
+      setSkillsData(mappedData);
+      setEditedSkills(JSON.parse(JSON.stringify(mappedData))); // Deep copy for editing
     }
   }, [data]);
 
@@ -78,7 +86,7 @@ export default function Skills({ userId }: SkillsProps) {
     setIsAddingNew(true);
     setNewSkill({
       name: "",
-      proficiency: 3,
+      proficiencyLevel: 3,
       category: "Frontend",
     });
   };
@@ -112,7 +120,7 @@ export default function Skills({ userId }: SkillsProps) {
       setIsAddingNew(false);
       setNewSkill({
         name: "",
-        proficiency: 3,
+        proficiencyLevel: 3,
         category: "Frontend",
       });
 
@@ -161,7 +169,7 @@ export default function Skills({ userId }: SkillsProps) {
           credentials: "include",
           body: JSON.stringify({
             name: skill.name,
-            proficiency: skill.proficiency,
+            proficiencyLevel: skill.proficiencyLevel,
             category: skill.category,
           }),
         });
@@ -189,8 +197,8 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
-  const getProficiencyLabel = (proficiency: number) => {
-    switch (proficiency) {
+  const getProficiencyLabel = (proficiencyLevel: number) => {
+    switch (proficiencyLevel) {
       case 1:
         return "Beginner";
       case 2:
@@ -307,9 +315,12 @@ export default function Skills({ userId }: SkillsProps) {
                   Proficiency Level
                 </label>
                 <select
-                  value={newSkill.proficiency}
+                  value={newSkill.proficiencyLevel}
                   onChange={(e) =>
-                    handleNewSkillChange("proficiency", Number(e.target.value))
+                    handleNewSkillChange(
+                      "proficiencyLevel",
+                      Number(e.target.value)
+                    )
                   }
                   className="w-full p-2 border rounded"
                 >
@@ -360,11 +371,11 @@ export default function Skills({ userId }: SkillsProps) {
                             className="w-32"
                           />
                           <select
-                            value={skill.proficiency}
+                            value={skill.proficiencyLevel}
                             onChange={(e) =>
                               handleInputChange(
                                 skill.id,
-                                "proficiency",
+                                "proficiencyLevel",
                                 Number(e.target.value)
                               )
                             }
@@ -406,7 +417,7 @@ export default function Skills({ userId }: SkillsProps) {
                       ) : (
                         <Badge variant="outline" className="px-3 py-1">
                           {skill.name} -{" "}
-                          {getProficiencyLabel(skill.proficiency)}
+                          {getProficiencyLabel(skill.proficiencyLevel)}
                         </Badge>
                       )}
                     </div>

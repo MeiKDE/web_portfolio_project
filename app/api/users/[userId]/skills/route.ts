@@ -2,16 +2,28 @@
 // This file (skills/route.ts) is focused on getting all skills for a user.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 
-// GET all skills for a user
+// GET skills for a specific user
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
+    const userId = params.userId;
+
+    // Check authentication
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Fetch the skills for the specified user
     const skills = await prisma.skill.findMany({
-      where: { userId: params.userId },
+      where: { userId: userId },
       orderBy: { name: "asc" },
     });
 
@@ -19,7 +31,7 @@ export async function GET(
     const mappedSkills = skills.map((skill) => ({
       id: skill.id,
       name: skill.name,
-      proficiency: skill.proficiencyLevel,
+      proficiency: skill.proficiencyLevel, // Map from DB's proficiencyLevel to frontend's proficiency
       category: skill.category,
     }));
 
@@ -33,31 +45,45 @@ export async function GET(
   }
 }
 
-// CREATE a new skill for a user
+// POST a new skill for a specific user
 export async function POST(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
+    const userId = params.userId;
+
+    // Check authentication
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the current user from the session
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user?.email as string },
+    });
+
+    // Only allow users to add skills to their own profile
+    if (!currentUser || currentUser.id !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Get the skill data from the request
     const data = await request.json();
 
-    // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
+    // Create the new skill
     const skill = await prisma.skill.create({
       data: {
         name: data.name,
-        proficiencyLevel: data.proficiency, // Map from frontend's proficiency to DB's proficiencyLevel
         category: data.category,
-        user: { connect: { id: params.userId } },
+        proficiencyLevel: data.proficiency,
+        userId: userId,
       },
     });
 
-    // Map back to frontend format
-    return NextResponse.json({
-      id: skill.id,
-      name: skill.name,
-      proficiency: skill.proficiencyLevel,
-      category: skill.category,
-    });
+    return NextResponse.json(skill, { status: 201 });
   } catch (error) {
     console.error("Error creating skill:", error);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await getCurrentUser();
 
@@ -9,11 +9,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json(user);
   } catch (error) {
-    console.error("Error getting current user:", error);
+    console.error("Error in /me route:", error);
     return NextResponse.json(
-      { error: "Failed to get user information" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

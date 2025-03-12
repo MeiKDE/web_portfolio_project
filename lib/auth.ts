@@ -6,6 +6,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import * as crypto from "crypto";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
+import { getServerSession } from "next-auth/next";
+import { authOptions as nextAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Add type for the session
 interface ExtendedSession extends Session {
@@ -102,34 +104,31 @@ export const authOptions: NextAuthOptions = {
 // Make sure to export the config as default as well
 export default authOptions;
 
-// Get the current user from the session
+export async function getSession() {
+  return await getServerSession(nextAuthOptions);
+}
+
 export async function getCurrentUser() {
   try {
-    const accessToken = cookies().get("accessToken")?.value;
+    const session = await getSession();
 
-    if (!accessToken) {
+    if (!session?.user?.email) {
       return null;
     }
 
-    // Find the session
-    const session = await prisma.session.findFirst({
+    const currentUser = await prisma.user.findUnique({
       where: {
-        accessToken,
-        expiresAt: {
-          gt: new Date(), // Session hasn't expired
-        },
-      },
-      include: {
-        user: true,
+        email: session.user.email,
       },
     });
 
-    if (!session) {
+    if (!currentUser) {
       return null;
     }
 
-    // Return the user without the password
-    const { hashedPassword, salt, ...userWithoutSensitiveData } = session.user;
+    // Remove sensitive data
+    const { hashedPassword, salt, ...userWithoutSensitiveData } = currentUser;
+
     return userWithoutSensitiveData;
   } catch (error) {
     console.error("Error getting current user:", error);

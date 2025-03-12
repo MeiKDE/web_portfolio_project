@@ -5,8 +5,9 @@ import MenuBar from "@/components/menu-bar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { headers } from "next/headers";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,15 +25,16 @@ export default async function RootLayout({
 
   // Protected routes logic
   const isProtectedRoute = (pathname: string) => {
-    return pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+    return pathname.startsWith("/admin") || pathname.startsWith("/");
   };
 
   // Check if current path is protected
   const currentPath = headers().get("x-pathname") || "/";
-
-  if (isProtectedRoute(currentPath) && !session) {
-    redirect("/login?callbackUrl=" + encodeURIComponent(currentPath));
-  }
+  console.error("session", session);
+  // if (isProtectedRoute(currentPath) && !session) {
+  //   console.log("Redirecting to login");
+  //   redirect("/login?callbackUrl=" + encodeURIComponent(currentPath));
+  // }
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
@@ -58,7 +60,7 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
-        <Providers>
+        <Providers session={session}>
           <MenuBar />
           <main>{children}</main>
         </Providers>

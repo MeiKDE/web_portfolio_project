@@ -81,6 +81,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
+      console.error("Data:", data);
       setCertificationsData(data);
 
       // Format dates properly for the edit form

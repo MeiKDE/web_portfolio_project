@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { z } from "zod";
 
 // Define simplified validation schema for registration
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -61,14 +61,14 @@ export async function POST(request: NextRequest) {
     const { name, email, password } = result.data;
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
       return NextResponse.json(
         { error: "User with this email already exists" },
-        { status: 409 }
+        { status: 400 }
       );
     }
 
@@ -83,16 +83,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password using crypto
+    // Generate salt and hash password
     const { salt, hash } = hashPassword(password);
 
-    // Create user with default values for required fields
+    // Create user
     const user = await prisma.user.create({
       data: {
         name,
         email,
         hashedPassword: hash,
-        salt: salt,
+        salt,
         title: "New User", // Default value
         location: "Not specified", // Default value
         bio: "No bio provided", // Default value
@@ -100,13 +100,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove sensitive data from response
+    const { hashedPassword: _, salt: __, ...userWithoutSensitiveData } = user;
 
-    return NextResponse.json(
-      { message: "User registered successfully", user: userWithoutPassword },
-      { status: 201 }
-    );
+    return NextResponse.json({
+      message: "User registered successfully",
+      user: userWithoutSensitiveData,
+    });
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(

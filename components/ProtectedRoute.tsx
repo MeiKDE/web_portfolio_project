@@ -2,27 +2,29 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, ReactNode } from "react";
 
-export default function ProtectedRoute({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { data: session, status } = useSession();
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session) {
+    if (status === "unauthenticated") {
       router.push("/login");
     }
-  }, [session, status, router]);
+  }, [status, router]);
 
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
 
-  return session ? <>{children}</> : null;
+  if (status === "unauthenticated") {
+    return null;
+  }
+
+  return <>{children}</>;
 }

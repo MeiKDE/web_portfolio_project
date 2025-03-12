@@ -7,7 +7,7 @@ export function useAuth() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, callbackUrl = "/") => {
     const result = await signIn("credentials", {
       email,
       password,
@@ -18,7 +18,7 @@ export function useAuth() {
       throw new Error(result.error);
     }
 
-    router.push("/");
+    router.push(callbackUrl);
   };
 
   const logout = async () => {

@@ -25,3 +25,17 @@ npx prisma studio
 ### To override the remote branch, run the following command:
 
 git push --force-with-lease
+
+## PostgreSQL
+
+### start postgresql service
+
+brew services start postgresql
+
+### create a new database
+
+createdb profile_db
+
+### connect to the database
+
+psql -d profile_db
