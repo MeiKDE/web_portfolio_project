@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GraduationCap, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
+import { z } from "zod";
 
 interface Education {
   id: string;
@@ -21,9 +22,35 @@ interface EducationProps {
   userId: string;
 }
 
-// Add validation errors interface
+// Define Zod schema for education validation
+const educationSchema = z
+  .object({
+    institution: z.string().min(1, "Institution is required"),
+    degree: z.string().min(1, "Degree is required"),
+    fieldOfStudy: z.string().min(1, "Field of study is required"),
+    startYear: z.string().min(1, "Start year is required"),
+    endYear: z.string().nullable().optional(),
+    description: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      // Skip validation if end year is null or empty
+      if (!data.endYear) return true;
+
+      // Compare years - start year should be before or equal to end year
+      const startYear = parseInt(data.startYear, 10);
+      const endYear = parseInt(data.endYear, 10);
+      return !isNaN(startYear) && !isNaN(endYear) && startYear <= endYear;
+    },
+    {
+      message: "Start year cannot be after end year",
+      path: ["startYear", "endYear"], // This will mark both fields as having an error
+    }
+  );
+
+// Update ValidationErrors interface to handle Zod validation
 interface ValidationErrors {
-  [key: string]: { [field: string]: boolean };
+  [key: string]: { [field: string]: boolean } | z.ZodIssue[];
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -51,27 +78,30 @@ export default function Educations({ userId }: EducationProps) {
     }
   }, [data]);
 
-  // Add validation function
+  // Update validation function to use Zod
   const validateEducation = (education: Education, id: string) => {
-    const errors: { [field: string]: boolean } = {};
+    try {
+      // Validate with Zod schema
+      educationSchema.parse(education);
 
-    // Check required fields
-    if (!education.institution.trim()) errors.institution = true;
-    if (!education.degree.trim()) errors.degree = true;
-    if (!education.fieldOfStudy.trim()) errors.fieldOfStudy = true;
+      // If validation passes, clear any existing errors
+      setValidationErrors((prev) => ({
+        ...prev,
+        [id]: [],
+      }));
 
-    // Fix for startYear - check if it exists and is valid
-    if (!education.startYear || education.startYear.toString().trim() === "") {
-      errors.startYear = true;
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Store Zod validation issues
+        setValidationErrors((prev) => ({
+          ...prev,
+          [id]: error.issues,
+        }));
+        return false;
+      }
+      return false;
     }
-
-    // Update validation errors state
-    setValidationErrors((prev) => ({
-      ...prev,
-      [id]: errors,
-    }));
-
-    return Object.keys(errors).length === 0;
   };
 
   const handleEditToggle = () => {
@@ -98,6 +128,48 @@ export default function Educations({ userId }: EducationProps) {
     setEditable(!editable);
   };
 
+  // Add helper functions for validation errors
+  const getFieldError = (id: string, field: string): string | null => {
+    if (!validationErrors[id]) return null;
+
+    if (Array.isArray(validationErrors[id])) {
+      const issues = validationErrors[id] as z.ZodIssue[];
+      const issue = issues.find((i) => i.path.includes(field));
+      return issue ? issue.message : null;
+    } else {
+      const errors = validationErrors[id] as { [field: string]: boolean };
+      return errors[field]
+        ? `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
+        : null;
+    }
+  };
+
+  // Add a function to check if a field has a date relationship error
+  const hasYearRangeError = (id: string): boolean => {
+    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
+      return false;
+
+    const issues = validationErrors[id] as z.ZodIssue[];
+    return issues.some(
+      (issue) =>
+        issue.path.includes("startYear") && issue.path.includes("endYear")
+    );
+  };
+
+  // Add a function to get the year range error message
+  const getYearRangeError = (id: string): string | null => {
+    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
+      return null;
+
+    const issues = validationErrors[id] as z.ZodIssue[];
+    const issue = issues.find(
+      (issue) =>
+        issue.path.includes("startYear") && issue.path.includes("endYear")
+    );
+
+    return issue ? issue.message : null;
+  };
+
   const handleInputChange = (
     id: string,
     field: keyof Education,
@@ -107,15 +179,95 @@ export default function Educations({ userId }: EducationProps) {
       prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
     );
 
-    // Clear validation error for this field if it exists
-    if (validationErrors[id]?.[field]) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        [id]: {
-          ...prev[id],
-          [field]: false,
-        },
-      }));
+    // If changing years, validate the year relationship
+    if (field === "startYear" || field === "endYear") {
+      const education = editedEducation.find((edu) => edu.id === id);
+      if (education) {
+        const updatedEducation = { ...education, [field]: value };
+
+        // Only validate if we have both years
+        if (updatedEducation.startYear && updatedEducation.endYear) {
+          const startYear = parseInt(updatedEducation.startYear, 10);
+          const endYear = parseInt(updatedEducation.endYear, 10);
+          const isValid =
+            !isNaN(startYear) && !isNaN(endYear) && startYear <= endYear;
+
+          // Update validation errors based on year comparison
+          if (!isValid) {
+            setValidationErrors((prev) => ({
+              ...prev,
+              [id]: Array.isArray(prev[id])
+                ? [
+                    ...(prev[id] as z.ZodIssue[]).filter(
+                      (issue) =>
+                        !issue.path.includes("startYear") &&
+                        !issue.path.includes("endYear")
+                    ),
+                    {
+                      code: "custom",
+                      path: ["startYear", "endYear"],
+                      message: "",
+                    },
+                  ]
+                : [
+                    {
+                      code: "custom",
+                      path: ["startYear", "endYear"],
+                      message: "",
+                    },
+                  ],
+            }));
+          } else {
+            // Clear year relationship errors if valid
+            setValidationErrors((prev) => {
+              if (!Array.isArray(prev[id])) return prev;
+
+              return {
+                ...prev,
+                [id]: (prev[id] as z.ZodIssue[]).filter(
+                  (issue) =>
+                    !(
+                      issue.path.includes("startYear") &&
+                      issue.path.includes("endYear")
+                    )
+                ),
+              };
+            });
+          }
+        }
+      }
+    }
+
+    // Clear individual field validation errors
+    if (validationErrors[id]) {
+      // If using Zod issues array
+      if (Array.isArray(validationErrors[id])) {
+        const issues = validationErrors[id] as z.ZodIssue[];
+        const updatedIssues = issues.filter(
+          (issue) =>
+            !issue.path.includes(field as string) ||
+            (issue.path.length > 1 &&
+              issue.path.includes("startYear") &&
+              issue.path.includes("endYear"))
+        );
+
+        setValidationErrors((prev) => ({
+          ...prev,
+          [id]: updatedIssues,
+        }));
+      } else {
+        // For backward compatibility with the old validation format
+        const errors = validationErrors[id] as { [field: string]: boolean };
+        if (errors[field as string]) {
+          setValidationErrors((prev) => ({
+            ...prev,
+            [id]: {
+              ...(prev[id] as { [field: string]: boolean }),
+              [field]: false,
+            },
+          }));
+        }
+      }
     }
   };
 
@@ -388,19 +540,24 @@ export default function Educations({ userId }: EducationProps) {
                       )
                     }
                     className={`font-semibold w-full p-1 border rounded ${
-                      validationErrors[
-                        editedEducation[editedEducation.length - 1].id
-                      ]?.institution
+                      getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "institution"
+                      )
                         ? "border-red-500 ring-red-500"
                         : ""
                     }`}
                     placeholder="Institution*"
                   />
-                  {validationErrors[
-                    editedEducation[editedEducation.length - 1].id
-                  ]?.institution && (
+                  {getFieldError(
+                    editedEducation[editedEducation.length - 1].id,
+                    "institution"
+                  ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      Institution is required
+                      {getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "institution"
+                      )}
                     </p>
                   )}
                 </div>
@@ -417,19 +574,24 @@ export default function Educations({ userId }: EducationProps) {
                       )
                     }
                     className={`text-muted-foreground w-full p-1 border rounded ${
-                      validationErrors[
-                        editedEducation[editedEducation.length - 1].id
-                      ]?.degree
+                      getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "degree"
+                      )
                         ? "border-red-500 ring-red-500"
                         : ""
                     }`}
                     placeholder="Degree*"
                   />
-                  {validationErrors[
-                    editedEducation[editedEducation.length - 1].id
-                  ]?.degree && (
+                  {getFieldError(
+                    editedEducation[editedEducation.length - 1].id,
+                    "degree"
+                  ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      Degree is required
+                      {getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "degree"
+                      )}
                     </p>
                   )}
                 </div>
@@ -448,19 +610,24 @@ export default function Educations({ userId }: EducationProps) {
                       )
                     }
                     className={`text-muted-foreground w-full p-1 border rounded ${
-                      validationErrors[
-                        editedEducation[editedEducation.length - 1].id
-                      ]?.fieldOfStudy
+                      getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "fieldOfStudy"
+                      )
                         ? "border-red-500 ring-red-500"
                         : ""
                     }`}
                     placeholder="Field of Study*"
                   />
-                  {validationErrors[
-                    editedEducation[editedEducation.length - 1].id
-                  ]?.fieldOfStudy && (
+                  {getFieldError(
+                    editedEducation[editedEducation.length - 1].id,
+                    "fieldOfStudy"
+                  ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      Field of study is required
+                      {getFieldError(
+                        editedEducation[editedEducation.length - 1].id,
+                        "fieldOfStudy"
+                      )}
                     </p>
                   )}
                 </div>
@@ -480,19 +647,27 @@ export default function Educations({ userId }: EducationProps) {
                         )
                       }
                       className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                        validationErrors[
+                        getFieldError(
+                          editedEducation[editedEducation.length - 1].id,
+                          "startYear"
+                        ) ||
+                        hasYearRangeError(
                           editedEducation[editedEducation.length - 1].id
-                        ]?.startYear
+                        )
                           ? "border-red-500 ring-red-500"
                           : ""
                       }`}
                       placeholder="Start Year*"
                     />
-                    {validationErrors[
-                      editedEducation[editedEducation.length - 1].id
-                    ]?.startYear && (
+                    {getFieldError(
+                      editedEducation[editedEducation.length - 1].id,
+                      "startYear"
+                    ) && (
                       <p className="text-red-500 text-xs mt-1">
-                        Start year is required
+                        {getFieldError(
+                          editedEducation[editedEducation.length - 1].id,
+                          "startYear"
+                        )}
                       </p>
                     )}
                   </div>
@@ -510,11 +685,27 @@ export default function Educations({ userId }: EducationProps) {
                           e.target.value
                         )
                       }
-                      className="text-sm text-muted-foreground w-full p-1 border rounded"
+                      className={`text-sm text-muted-foreground w-full p-1 border rounded ${
+                        hasYearRangeError(
+                          editedEducation[editedEducation.length - 1].id
+                        )
+                          ? "border-red-500 ring-red-500"
+                          : ""
+                      }`}
                       placeholder="End Year"
                     />
                   </div>
                 </div>
+
+                {hasYearRangeError(
+                  editedEducation[editedEducation.length - 1].id
+                ) && (
+                  <p className="text-red-500 text-xs mt-1 mb-2">
+                    {getYearRangeError(
+                      editedEducation[editedEducation.length - 1].id
+                    )}
+                  </p>
+                )}
 
                 <textarea
                   value={
@@ -597,15 +788,15 @@ export default function Educations({ userId }: EducationProps) {
                               )
                             }
                             className={`font-semibold w-full p-1 border rounded ${
-                              validationErrors[edu.id]?.institution
+                              getFieldError(edu.id, "institution")
                                 ? "border-red-500 ring-red-500"
                                 : ""
                             }`}
                             placeholder="Institution*"
                           />
-                          {validationErrors[edu.id]?.institution && (
+                          {getFieldError(edu.id, "institution") && (
                             <p className="text-red-500 text-xs mt-1">
-                              Institution is required
+                              {getFieldError(edu.id, "institution")}
                             </p>
                           )}
                         </div>
@@ -622,15 +813,15 @@ export default function Educations({ userId }: EducationProps) {
                               )
                             }
                             className={`text-muted-foreground w-full p-1 border rounded ${
-                              validationErrors[edu.id]?.degree
+                              getFieldError(edu.id, "degree")
                                 ? "border-red-500 ring-red-500"
                                 : ""
                             }`}
                             placeholder="Degree*"
                           />
-                          {validationErrors[edu.id]?.degree && (
+                          {getFieldError(edu.id, "degree") && (
                             <p className="text-red-500 text-xs mt-1">
-                              Degree is required
+                              {getFieldError(edu.id, "degree")}
                             </p>
                           )}
                         </div>
@@ -647,15 +838,15 @@ export default function Educations({ userId }: EducationProps) {
                               )
                             }
                             className={`text-muted-foreground w-full p-1 border rounded ${
-                              validationErrors[edu.id]?.fieldOfStudy
+                              getFieldError(edu.id, "fieldOfStudy")
                                 ? "border-red-500 ring-red-500"
                                 : ""
                             }`}
                             placeholder="Field of Study*"
                           />
-                          {validationErrors[edu.id]?.fieldOfStudy && (
+                          {getFieldError(edu.id, "fieldOfStudy") && (
                             <p className="text-red-500 text-xs mt-1">
-                              Field of study is required
+                              {getFieldError(edu.id, "fieldOfStudy")}
                             </p>
                           )}
                         </div>
@@ -673,15 +864,16 @@ export default function Educations({ userId }: EducationProps) {
                                 )
                               }
                               className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                                validationErrors[edu.id]?.startYear
+                                getFieldError(edu.id, "startYear") ||
+                                hasYearRangeError(edu.id)
                                   ? "border-red-500 ring-red-500"
                                   : ""
                               }`}
                               placeholder="Start Year*"
                             />
-                            {validationErrors[edu.id]?.startYear && (
+                            {getFieldError(edu.id, "startYear") && (
                               <p className="text-red-500 text-xs mt-1">
-                                Start year is required
+                                {getFieldError(edu.id, "startYear")}
                               </p>
                             )}
                           </div>
@@ -696,11 +888,21 @@ export default function Educations({ userId }: EducationProps) {
                                   e.target.value
                                 )
                               }
-                              className="text-sm text-muted-foreground w-full p-1 border rounded"
+                              className={`text-sm text-muted-foreground w-full p-1 border rounded ${
+                                hasYearRangeError(edu.id)
+                                  ? "border-red-500 ring-red-500"
+                                  : ""
+                              }`}
                               placeholder="End Year"
                             />
                           </div>
                         </div>
+
+                        {hasYearRangeError(edu.id) && (
+                          <p className="text-red-500 text-xs mt-1 mb-2">
+                            {getYearRangeError(edu.id)}
+                          </p>
+                        )}
 
                         <textarea
                           value={edu.description || ""}

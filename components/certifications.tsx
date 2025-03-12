@@ -81,19 +81,25 @@ export default function Certifications({ userId }: CertificationsProps) {
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
-      console.error("Data:", data);
+      console.log("Data:", data);
       setCertificationsData(data);
 
-      // Format dates properly for the edit form
-      const formattedData = data.map((cert) => ({
-        ...cert,
-        issueDate: formatDateForInput(cert.issueDate),
-        expirationDate: cert.expirationDate
-          ? formatDateForInput(cert.expirationDate)
-          : "",
-      }));
+      try {
+        // Format dates properly for the edit form
+        const formattedData = data.map((cert) => ({
+          ...cert,
+          issueDate: formatDateForInput(cert.issueDate),
+          expirationDate: cert.expirationDate
+            ? formatDateForInput(cert.expirationDate)
+            : "",
+        }));
 
-      setEditedCertifications(formattedData);
+        setEditedCertifications(formattedData);
+      } catch (error) {
+        console.error("Error formatting certification dates:", error);
+        // Fallback to unformatted data if there's an error
+        setEditedCertifications(data);
+      }
     }
   }, [data]);
 
