@@ -662,51 +662,6 @@ export default function Experiences({ userId }: ExperienceProps) {
                       </>
                     )}
 
-                    {/* AI Suggestion for the first item as an example */}
-                    {!isEditing && index === 0 && (
-                      <div className="mt-3 p-3 bg-muted rounded-md border border-border">
-                        <div className="flex items-start gap-2">
-                          <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-                          <div className="flex-grow">
-                            <p className="text-sm font-medium">
-                              AI Suggestion:
-                            </p>
-                            <p className="text-sm">
-                              Replace "Led development" with a stronger action
-                              verb like "Spearheaded" or "Architected" to
-                              showcase leadership.
-                            </p>
-                            <div className="flex gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Accept
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <RefreshCw className="h-3 w-3 mr-1" />
-                                Regenerate
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs"
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                Dismiss
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {isEditing && (
                       <Button
                         variant="ghost"
