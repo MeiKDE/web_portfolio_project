@@ -27,7 +27,7 @@ export async function GET(
       orderBy: { name: "asc" },
     });
 
-    // Map proficiencyLevel to proficiency for frontend consistency
+    // Map proficiencyLevel (backend) to proficiency (frontend) for consistency
     const mappedSkills = skills.map((skill) => ({
       id: skill.id,
       name: skill.name,
@@ -73,12 +73,20 @@ export async function POST(
     // Get the skill data from the request
     const data = await request.json();
 
-    // Create the new skill
+    // Validate that name is provided
+    if (!data.name || data.name.trim() === "") {
+      return NextResponse.json(
+        { error: "Skill name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Create the new skill - convert from frontend's proficiency to backend's proficiencyLevel
     const skill = await prisma.skill.create({
       data: {
         name: data.name,
         category: data.category,
-        proficiencyLevel: data.proficiency,
+        proficiencyLevel: data.proficiency, // Convert from frontend's proficiency to backend's proficiencyLevel
         userId: userId,
       },
     });

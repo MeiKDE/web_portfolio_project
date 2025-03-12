@@ -34,6 +34,9 @@ export default function Skills({ userId }: SkillsProps) {
     proficiencyLevel: 3,
     category: "Frontend", // Default category
   });
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/skills`,
@@ -80,6 +83,11 @@ export default function Skills({ userId }: SkillsProps) {
     value: string | number
   ) => {
     setNewSkill((prev) => ({ ...prev, [field]: value }));
+
+    // Clear validation error when user types in the field
+    if (field === "name" && validationErrors.name) {
+      setValidationErrors((prev) => ({ ...prev, name: false }));
+    }
   };
 
   const handleAddNew = () => {
@@ -97,6 +105,12 @@ export default function Skills({ userId }: SkillsProps) {
 
   const handleSaveNewSkill = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate skill name
+    if (!newSkill.name || newSkill.name.trim() === "") {
+      setValidationErrors((prev) => ({ ...prev, name: true }));
+      return;
+    }
 
     try {
       setIsSubmitting(true);
@@ -278,7 +292,7 @@ export default function Skills({ userId }: SkillsProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Skill Name
+                    Skill Name*
                   </label>
                   <Input
                     value={newSkill.name}
@@ -286,8 +300,15 @@ export default function Skills({ userId }: SkillsProps) {
                       handleNewSkillChange("name", e.target.value)
                     }
                     placeholder="e.g. JavaScript"
-                    className="w-full"
+                    className={`w-full ${
+                      validationErrors.name ? "border-red-500 ring-red-500" : ""
+                    }`}
                   />
+                  {validationErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">
+                      Skill name is required
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
@@ -339,7 +360,7 @@ export default function Skills({ userId }: SkillsProps) {
                 <Button
                   size="sm"
                   onClick={handleSaveNewSkill}
-                  disabled={!newSkill.name || isSubmitting}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Save Skill"}
                 </Button>
@@ -348,7 +369,8 @@ export default function Skills({ userId }: SkillsProps) {
           </div>
         )}
 
-        {Object.entries(groupedSkills).length > 0 ? (
+        {/* Only show existing skills when not adding a new one */}
+        {!isAddingNew && Object.entries(groupedSkills).length > 0 ? (
           <div className="space-y-4">
             {Object.entries(groupedSkills).map(([category, skills]) => (
               <div key={category} className="mb-4">
@@ -432,6 +454,12 @@ export default function Skills({ userId }: SkillsProps) {
               No skills found. Click "Add" to add your skills.
             </div>
           )
+        )}
+
+        {(editable || isAddingNew) && (
+          <div className="text-sm text-muted-foreground mt-4">
+            * Required fields
+          </div>
         )}
       </CardContent>
     </Card>
