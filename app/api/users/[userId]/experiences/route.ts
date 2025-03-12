@@ -2,10 +2,9 @@
 // This file (experiences/route.ts) is focused on getting all experiences for a user from the database.
 // If successful, it sends back the list of experiences as a JSON response.
 
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
 import { z } from "zod"; // You would need to install zod for validation
 
 // Define a schema for experience data validation
@@ -21,82 +20,65 @@ const experienceSchema = z.object({
 });
 
 // GET all experiences for a user
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    // The console.log lines are commented out, which is fine for production
-    // but inconsistent with the logging approach in the catch block
+export const GET = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { userId: string } },
+    user
+  ) => {
+    try {
+      const experiences = await prisma.experience.findMany({
+        where: { userId: params.userId },
+        orderBy: { startDate: "desc" },
+      });
 
-    const experiences = await prisma.experience.findMany({
-      where: { userId: params.userId },
-      orderBy: { startDate: "desc" },
-    });
-
-    return NextResponse.json(experiences);
-  } catch (error) {
-    console.error("Error fetching experiences:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch experiences" },
-      { status: 500 }
-    );
+      return successResponse(experiences);
+    } catch (error) {
+      console.error("Error fetching experiences:", error);
+      return errorResponse("Failed to fetch experiences");
+    }
   }
-}
+);
 
 // POST Request: If you want to add a new job to a user's profile, you send a POST request with the job details, and it adds this job to the user's list of experiences.
 // When a POST request is made, it expects some data in the request body (like the job position, company, start date, etc.).
 // If successful, it sends back the newly created experience as a JSON response.
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    // Get the session to verify the user is authenticated
-    const session = await getServerSession(authOptions);
+export const POST = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { userId: string } },
+    user
+  ) => {
+    try {
+      // Verify the user is modifying their own data
+      if (user.id !== params.userId) {
+        return errorResponse("Forbidden", 403);
+      }
 
-    console.log(
-      "POST /api/users/[userId]/experiences - Session:",
-      JSON.stringify(session)
-    );
-    console.log("User ID from params:", params.userId);
+      // Parse and validate the request body
+      const body = await request.json();
+      const validationResult = experienceSchema.safeParse(body);
 
-    if (!session || !session.user) {
-      console.log("No session or user, returning 401");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (!validationResult.success) {
+        return errorResponse(
+          "Invalid experience data",
+          400,
+          validationResult.error.format()
+        );
+      }
+
+      // Create the new experience
+      const newExperience = await prisma.experience.create({
+        data: {
+          ...validationResult.data,
+          userId: params.userId,
+        },
+      });
+
+      return successResponse(newExperience, 201);
+    } catch (error) {
+      console.error("Error creating experience:", error);
+      return errorResponse("Failed to create experience");
     }
-
-    console.log("Session user:", session.user);
-
-    // Verify the user is modifying their own data
-    if ((session.user as any).id !== params.userId) {
-      console.log("Session user ID:", (session.user as any).id);
-      console.log("Params user ID:", params.userId);
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Parse the request body
-    const { position, company, startDate, endDate, description } =
-      await request.json();
-
-    // Create the new experience
-    const newExperience = await prisma.experience.create({
-      data: {
-        position,
-        company,
-        startDate,
-        endDate,
-        description,
-        userId: params.userId,
-      },
-    });
-
-    return NextResponse.json(newExperience, { status: 201 });
-  } catch (error) {
-    console.error("Error creating experience:", error);
-    return NextResponse.json(
-      { error: "Failed to create experience" },
-      { status: 500 }
-    );
   }
-}
+);

@@ -1,21 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET current user's profile
-export async function GET() {
+export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Find the user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const userProfile = await prisma.user.findUnique({
+      where: { email: user.email },
       select: {
         id: true,
         name: true,
@@ -25,43 +17,30 @@ export async function GET() {
         location: true,
         phone: true,
         bio: true,
-        // Exclude sensitive information like password
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!userProfile) {
+      return errorResponse("User not found", 404);
     }
 
-    return NextResponse.json(user);
+    return successResponse(userProfile);
   } catch (error) {
-    console.error("ln38: Error fetching user profile:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user profile" },
-      { status: 500 }
-    );
+    console.error("Error fetching user profile:", error);
+    return errorResponse("Failed to fetch user profile");
   }
-}
+});
 
 // UPDATE current user's profile
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, context, user) => {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-
-    console.log("ln52: session", session);
-
-    if (!session || !session.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Find the user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const existingUser = await prisma.user.findUnique({
+      where: { email: user.email },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!existingUser) {
+      return errorResponse("User not found", 404);
     }
 
     // Get the updated data
@@ -69,15 +48,13 @@ export async function PUT(request: NextRequest) {
 
     // Update the user profile
     const updatedUser = await prisma.user.update({
-      where: { id: user.id },
+      where: { id: existingUser.id },
       data: {
         name: data.name,
         title: data.title,
         location: data.location,
         phone: data.phone,
         bio: data.bio,
-        // Don't allow updating email through this endpoint for security
-        // Don't update password here - should have a separate endpoint with proper validation
       },
       select: {
         id: true,
@@ -91,12 +68,9 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(updatedUser);
+    return successResponse(updatedUser);
   } catch (error) {
-    console.error("ln96: Error updating user profile:", error);
-    return NextResponse.json(
-      { error: "ln97: Failed to update user profile" },
-      { status: 500 }
-    );
+    console.error("Error updating user profile:", error);
+    return errorResponse("Failed to update user profile");
   }
-}
+});
