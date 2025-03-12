@@ -18,6 +18,7 @@ export const PUT = withAuth(
       // First, check if the suggestion belongs to the authenticated user
       const suggestion = await prisma.aISuggestion.findUnique({
         where: { id: params.id },
+        include: { user: true },
       });
 
       if (!suggestion || suggestion.userId !== user.id) {
@@ -29,40 +30,9 @@ export const PUT = withAuth(
         data: { status },
       });
 
-      // If the suggestion was accepted, you might want to apply the suggestion
-      // to the target entity (experience, skill, etc.)
+      // If the suggestion was accepted, apply the suggestion based on type
       if (status === "accepted" && aiSuggestion.targetId) {
-        // This would depend on the type of suggestion and target
-        // For example, if it's a skill suggestion:
-        if (
-          aiSuggestion.targetType === "skill" &&
-          aiSuggestion.suggestion.includes("Add")
-        ) {
-          // Extract the skill name from the suggestion
-          const skillName = aiSuggestion.suggestion
-            .split("Add ")[1]
-            .split(" to")[0];
-          // console.log(`ln28: skillName: ${skillName}`);
-
-          // Check if the skill already exists
-          const existingSkill = await prisma.skill.findFirst({
-            where: {
-              userId: aiSuggestion.userId,
-              name: skillName,
-            },
-          });
-          // console.log(`ln30: existingSkill: ${existingSkill}`);
-          // If not, create it
-          if (!existingSkill) {
-            await prisma.skill.create({
-              data: {
-                name: skillName,
-                userId: aiSuggestion.userId,
-              },
-            });
-          }
-        }
-        // Similar logic for other target types
+        await handleAcceptedSuggestion(aiSuggestion, user.id);
       }
 
       return successResponse(aiSuggestion);
@@ -72,6 +42,41 @@ export const PUT = withAuth(
     }
   }
 );
+
+// Helper function to handle different types of accepted suggestions
+async function handleAcceptedSuggestion(suggestion: any, userId: string) {
+  try {
+    if (
+      suggestion.targetType === "skill" &&
+      suggestion.suggestion.includes("Add")
+    ) {
+      // Extract the skill name from the suggestion
+      const skillName = suggestion.suggestion.split("Add ")[1].split(" to")[0];
+
+      // Check if the skill already exists
+      const existingSkill = await prisma.skill.findFirst({
+        where: {
+          userId: suggestion.userId,
+          name: skillName,
+        },
+      });
+
+      // If not, create it
+      if (!existingSkill) {
+        await prisma.skill.create({
+          data: {
+            name: skillName,
+            userId: suggestion.userId,
+            proficiencyLevel: "Beginner", // Default value
+          },
+        });
+      }
+    }
+    // Add handlers for other target types as needed
+  } catch (error) {
+    console.error("Error handling accepted suggestion:", error);
+  }
+}
 
 // DELETE an AI suggestion
 export const DELETE = withAuth(

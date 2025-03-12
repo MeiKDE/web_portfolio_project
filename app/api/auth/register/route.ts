@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { z } from "zod";
 
-// Define simplified validation schema for registration
+// Define validation schema for registration
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
@@ -11,13 +11,16 @@ const registerSchema = z.object({
 });
 
 // Function to hash password using crypto
-function hashPassword(password: string): { salt: string; hash: string } {
+function hashPassword(password: string): {
+  salt: string;
+  hashedPassword: string;
+} {
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
+  const hashedPassword = crypto
     .pbkdf2Sync(password, salt, 1000, 64, "sha512")
     .toString("hex");
 
-  return { salt, hash };
+  return { salt, hashedPassword };
 }
 
 // Function to verify password
@@ -32,7 +35,7 @@ export function verifyPassword(
   return hash === suppliedHash;
 }
 
-// Add the password validation function
+// Password validation function
 const validatePassword = (password: string) => {
   const requirements = {
     length: password.length >= 8,
@@ -84,19 +87,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate salt and hash password
-    const { salt, hash } = hashPassword(password);
+    const { salt, hashedPassword } = hashPassword(password);
 
     // Create user
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        hashedPassword: hash,
+        hashedPassword,
         salt,
         title: "New User", // Default value
         location: "Not specified", // Default value
         bio: "No bio provided", // Default value
-        provider: "CREDENTIALS",
       },
     });
 

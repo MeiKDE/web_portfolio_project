@@ -1,13 +1,12 @@
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { AuthOptions, NextAuthOptions, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import * as crypto from "crypto";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import { getServerSession } from "next-auth/next";
-import { authOptions as nextAuthOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // Add type for the session
 interface ExtendedSession extends Session {
@@ -105,35 +104,31 @@ export const authOptions: NextAuthOptions = {
 export default authOptions;
 
 export async function getSession() {
-  return await getServerSession(nextAuthOptions);
+  return await getServerSession(authOptions);
 }
 
 export async function getCurrentUser() {
-  try {
-    const session = await getSession();
+  const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
-      return null;
-    }
-
-    const currentUser = await prisma.user.findUnique({
-      where: {
-        email: session.user.email,
-      },
-    });
-
-    if (!currentUser) {
-      return null;
-    }
-
-    // Remove sensitive data
-    const { hashedPassword, salt, ...userWithoutSensitiveData } = currentUser;
-
-    return userWithoutSensitiveData;
-  } catch (error) {
-    console.error("Error getting current user:", error);
+  if (!session?.user?.email) {
     return null;
   }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      title: true,
+      location: true,
+      phone: true,
+      bio: true,
+    },
+  });
+
+  return user;
 }
 
 // Verify if a token is valid
@@ -142,16 +137,30 @@ export async function verifyToken(accessToken: string) {
     // Check if the token exists in the database and is not expired
     const session = await prisma.session.findFirst({
       where: {
-        accessToken,
-        expiresAt: {
-          gt: new Date(), // Session hasn't expired
+        sessionToken: accessToken,
+        expires: {
+          gt: new Date(),
         },
       },
     });
 
-    return !!session; // Return true if session exists, false otherwise
+    return !!session;
   } catch (error) {
     console.error("Error verifying token:", error);
     return false;
   }
+}
+
+export async function withAuthApi(
+  handler: (req: NextRequest, user: any) => Promise<NextResponse>
+) {
+  return async (req: NextRequest) => {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    return handler(req, user);
+  };
 }
