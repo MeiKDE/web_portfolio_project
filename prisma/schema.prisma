@@ -22,6 +22,7 @@ model User {
   providerId        String?         // Stores the provider's user ID for OAuth users
   title             String
   location          String
+  phone             String?
   bio               String
   profileImageUrl   String?
   aiGeneratedTagline String?
