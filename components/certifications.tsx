@@ -684,6 +684,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                         )
                       }
                       className="mt-1"
+                      max={getCurrentDate()}
                     />
                   </div>
                 </div>
@@ -809,6 +810,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                           )
                         }
                         className="text-sm text-muted-foreground"
+                        max={getCurrentDate()}
                       />
                     </div>
                   </div>
