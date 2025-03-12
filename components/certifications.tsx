@@ -7,6 +7,8 @@ import { Edit, CheckCircle, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { Input } from "@/components/ui/input";
 import { AlertCircle } from "lucide-react";
+import { z } from "zod";
+import { format } from "date-fns";
 
 interface Certification {
   id: string;
@@ -21,7 +23,12 @@ interface CertificationsProps {
   userId: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) =>
+  fetch(url, { credentials: "include" }).then((res) => {
+    if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+    console.log("ln27: Response status:", res.status);
+    return res.json();
+  });
 
 // Utility function to format date to yyyy-MM-dd for input fields
 const formatDateForInput = (isoDate: string) => {
@@ -46,6 +53,60 @@ const getCurrentDate = () => {
   const day = String(today.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+// Zod schema for certification form validation
+const certificationFormSchema = z
+  .object({
+    name: z.string().min(1, "Certification name is required"),
+    issuer: z.string().min(1, "Issuing organization is required"),
+    issueDate: z.string().refine((val) => {
+      // Check if it's a valid date in YYYY-MM-DD format
+      return /^\d{4}-\d{2}-\d{2}$/.test(val) && !isNaN(new Date(val).getTime());
+    }, "Please enter a valid issue date"),
+    expirationDate: z
+      .string()
+      .optional()
+      .refine((val) => {
+        // If empty string, it's valid (no expiration)
+        if (!val || val.trim() === "") return true;
+
+        // Otherwise check if it's a valid date in YYYY-MM-DD format
+        return (
+          /^\d{4}-\d{2}-\d{2}$/.test(val) && !isNaN(new Date(val).getTime())
+        );
+      }, "Please enter a valid expiration date"),
+    credentialUrl: z
+      .string()
+      .optional()
+      .refine((val) => {
+        // If empty string, it's valid (no URL)
+        if (!val || val.trim() === "") return true;
+
+        // Otherwise check if it's a valid URL
+        try {
+          new URL(val);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "Please enter a valid URL"),
+  })
+  .refine(
+    (data) => {
+      // Skip validation if expiration date is empty
+      if (!data.expirationDate || data.expirationDate.trim() === "")
+        return true;
+
+      // Check that issue date is not after expiration date
+      const issueDate = new Date(data.issueDate);
+      const expirationDate = new Date(data.expirationDate);
+      return issueDate <= expirationDate;
+    },
+    {
+      message: "Issue date cannot be after expiration date",
+      path: ["expirationDate"],
+    }
+  );
 
 export default function Certifications({ userId }: CertificationsProps) {
   const [editable, setEditable] = useState(false);
@@ -81,14 +142,34 @@ export default function Certifications({ userId }: CertificationsProps) {
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
-      console.log("Data:", data);
-      setCertificationsData(data);
+      console.log("ln89: Raw certification data received:", data);
+
+      // Handle different response formats
+      let certifications;
+
+      if (Array.isArray(data)) {
+        certifications = data;
+      } else if (data.certifications && Array.isArray(data.certifications)) {
+        certifications = data.certifications;
+      } else if (typeof data === "object") {
+        // If it's a success response object with data property
+        certifications = data.data && Array.isArray(data.data) ? data.data : [];
+      } else {
+        certifications = [];
+        console.error("Unexpected data format:", data);
+      }
+
+      console.log("Processed certifications:", certifications);
+
+      setCertificationsData(certifications);
 
       try {
         // Format dates properly for the edit form
-        const formattedData = data.map((cert: Certification) => ({
+        const formattedData = certifications.map((cert: Certification) => ({
           ...cert,
-          issueDate: formatDateForInput(cert.issueDate),
+          issueDate: cert.issueDate
+            ? formatDateForInput(cert.issueDate)
+            : getCurrentDate(),
           expirationDate: cert.expirationDate
             ? formatDateForInput(cert.expirationDate)
             : "",
@@ -96,12 +177,12 @@ export default function Certifications({ userId }: CertificationsProps) {
 
         setEditedCertifications(formattedData);
       } catch (error: unknown) {
-        console.log(
+        console.error(
           "Error formatting certification dates:",
           error instanceof Error ? error.message : String(error)
         );
         // Fallback to unformatted data if there's an error
-        setEditedCertifications(data);
+        setEditedCertifications(certifications);
       }
     }
   }, [data]);
@@ -134,25 +215,88 @@ export default function Certifications({ userId }: CertificationsProps) {
     );
   };
 
+  const validateEditedCertifications = () => {
+    const errors: Record<string, { field: string; message: string }[]> = {};
+
+    for (const cert of editedCertifications) {
+      const certErrors: { field: string; message: string }[] = [];
+
+      // Check required fields
+      if (!cert.name.trim()) {
+        certErrors.push({ field: "name", message: "Name is required" });
+      }
+
+      if (!cert.issuer.trim()) {
+        certErrors.push({ field: "issuer", message: "Issuer is required" });
+      }
+
+      // Check date format and validity
+      if (
+        !cert.issueDate ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(cert.issueDate) ||
+        isNaN(new Date(cert.issueDate).getTime())
+      ) {
+        certErrors.push({
+          field: "issueDate",
+          message: "Valid issue date is required",
+        });
+      }
+
+      // Check expiration date if provided
+      if (cert.expirationDate && cert.expirationDate.trim() !== "") {
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(cert.expirationDate) ||
+          isNaN(new Date(cert.expirationDate).getTime())
+        ) {
+          certErrors.push({
+            field: "expirationDate",
+            message: "Invalid expiration date format",
+          });
+        } else {
+          // Check that issue date is not after expiration date
+          const issueDate = new Date(cert.issueDate);
+          const expirationDate = new Date(cert.expirationDate);
+          if (issueDate > expirationDate) {
+            certErrors.push({
+              field: "expirationDate",
+              message: "Issue date cannot be after expiration date",
+            });
+          }
+        }
+      }
+
+      // Check URL format if provided
+      if (cert.credentialUrl && cert.credentialUrl.trim() !== "") {
+        try {
+          new URL(cert.credentialUrl);
+        } catch {
+          certErrors.push({
+            field: "credentialUrl",
+            message: "Invalid URL format",
+          });
+        }
+      }
+
+      if (certErrors.length > 0) {
+        errors[cert.id] = certErrors;
+      }
+    }
+
+    return Object.keys(errors).length === 0 ? null : errors;
+  };
+
   const saveChanges = async () => {
     try {
+      const validationErrors = validateEditedCertifications();
+      if (validationErrors) {
+        console.error("Validation errors:", validationErrors);
+        alert("Please fix the validation errors before saving");
+        return;
+      }
+
       setIsSubmitting(true);
 
       for (const certification of editedCertifications) {
-        // Validate required fields
-        if (!certification.name.trim()) {
-          alert("Certification name is required");
-          return;
-        }
-        if (!certification.issuer.trim()) {
-          alert("Issuing organization is required");
-          return;
-        }
-        if (!certification.issueDate) {
-          alert("Issue date is required");
-          return;
-        }
-
         const payload = {
           name: certification.name.trim(),
           issuer: certification.issuer.trim(),
@@ -231,41 +375,42 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   const validateForm = () => {
-    const errors: {
-      name?: string;
-      issuer?: string;
-      issueDate?: string;
-      credentialUrl?: string;
-    } = {};
-    let isValid = true;
+    try {
+      // Validate the form data using Zod
+      certificationFormSchema.parse({
+        name: newCertification.name,
+        issuer: newCertification.issuer,
+        issueDate: newCertification.issueDate,
+        expirationDate: newCertification.expirationDate,
+        credentialUrl: newCertification.credentialUrl,
+      });
 
-    if (!newCertification.name.trim()) {
-      errors.name = "Certification name is required";
-      isValid = false;
+      // Clear any previous errors if validation passes
+      setFormErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Convert Zod errors to our form error format
+        const errors: {
+          name?: string;
+          issuer?: string;
+          issueDate?: string;
+          expirationDate?: string;
+          credentialUrl?: string;
+        } = {};
+
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof typeof errors] = err.message;
+          }
+        });
+
+        setFormErrors(errors);
+      } else {
+        console.error("Unexpected validation error:", error);
+      }
+      return false;
     }
-
-    if (!newCertification.issuer.trim()) {
-      errors.issuer = "Issuing organization is required";
-      isValid = false;
-    }
-
-    if (!newCertification.issueDate) {
-      errors.issueDate = "Issue date is required";
-      isValid = false;
-    }
-
-    if (
-      newCertification.credentialUrl &&
-      newCertification.credentialUrl.trim() !== "" &&
-      !newCertification.credentialUrl.match(/^https?:\/\/[^\s$.?#].[^\s]*$/)
-    ) {
-      errors.credentialUrl =
-        "Please enter a valid URL (e.g., https://example.com)";
-      isValid = false;
-    }
-
-    setFormErrors(errors);
-    return isValid;
   };
 
   const handleSaveNewCertification = async (e: React.FormEvent) => {
@@ -280,17 +425,15 @@ export default function Certifications({ userId }: CertificationsProps) {
     try {
       setIsSubmitting(true);
 
-      // Format dates properly
+      // Format dates properly for the API
       const formattedCertification = {
         name: newCertification.name.trim(),
         issuer: newCertification.issuer.trim(),
-        issueDate: newCertification.issueDate
-          ? new Date(newCertification.issueDate).toISOString()
-          : new Date().toISOString(),
+        issueDate: formatDateForDatabase(newCertification.issueDate),
         expirationDate:
           newCertification.expirationDate &&
           newCertification.expirationDate.trim() !== ""
-            ? new Date(newCertification.expirationDate).toISOString()
+            ? formatDateForDatabase(newCertification.expirationDate)
             : null,
         credentialUrl:
           newCertification.credentialUrl &&
@@ -306,11 +449,30 @@ export default function Certifications({ userId }: CertificationsProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(formattedCertification),
       });
 
+      // Log the raw response for debugging
+      console.log("Response status:", response.status);
+
+      // Check for authentication issues
+      if (response.status === 401) {
+        alert("You must be logged in to add certifications");
+        return;
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error("API error response text:", errorText);
+
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText || response.statusText };
+        }
+
         console.error("API error response:", errorData);
         throw new Error(
           `Failed to add certification: ${

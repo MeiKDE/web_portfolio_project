@@ -32,6 +32,20 @@ export async function POST(
   { params }: { params: { userId: string } }
 ) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return errorResponse("Unauthorized", 401);
+    }
+
+    // Verify the user is adding to their own profile or is an admin
+    if (params.userId !== session.user.id && !(session.user as any).isAdmin) {
+      return errorResponse(
+        "Unauthorized access to this user's certifications",
+        403
+      );
+    }
+
     const data = await request.json();
     console.log("Received certification data:", data);
 

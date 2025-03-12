@@ -35,6 +35,26 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return errorResponse("Unauthorized", 401);
+    }
+
+    const certificationCheck = await prisma.certification.findUnique({
+      where: { id: params.id },
+      select: { userId: true },
+    });
+
+    // Verify the user owns this certification or is an admin
+    if (
+      !certificationCheck ||
+      (certificationCheck.userId !== session.user.id &&
+        !(session.user as any).isAdmin)
+    ) {
+      return errorResponse("Unauthorized access to this certification", 403);
+    }
+
     const data = await request.json();
     console.log("Updating certification with data:", data);
 
@@ -51,12 +71,12 @@ export async function PUT(
     }
 
     // Update the certification in the database
-    const certification = await prisma.certification.update({
+    const updatedCertification = await prisma.certification.update({
       where: { id: params.id },
       data: validationResult.data,
     });
 
-    return successResponse(certification);
+    return successResponse(updatedCertification);
   } catch (error) {
     console.error("Error updating certification:", error);
 
@@ -74,15 +94,25 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Optional: Check authentication
-    // const session = await getServerSession(authOptions);
-    // const certification = await prisma.certification.findUnique({
-    //   where: { id: params.id },
-    //   select: { userId: true },
-    // });
-    // if (!session || (certification && session.user.id !== certification.userId && !session.user.isAdmin)) {
-    //   return errorResponse("Unauthorized", 401);
-    // }
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return errorResponse("Unauthorized", 401);
+    }
+
+    const certification = await prisma.certification.findUnique({
+      where: { id: params.id },
+      select: { userId: true },
+    });
+
+    // Verify the user owns this certification or is an admin
+    if (
+      !certification ||
+      (certification.userId !== session.user.id &&
+        !(session.user as any).isAdmin)
+    ) {
+      return errorResponse("Unauthorized access to this certification", 403);
+    }
 
     // Delete the certification from the database
     await prisma.certification.delete({
