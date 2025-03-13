@@ -1,10 +1,16 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
+import { withAuth, successResponse } from "@/lib/api-helpers";
+import { handleApiError, createApiError } from "@/lib/error-handler";
 import { z } from "zod";
+
+// Define validation schema for suggestion updates
+const suggestionUpdateSchema = z.object({
+  status: z.enum(["pending", "accepted", "rejected", "regenerated"]),
+});
 
 // UPDATE an AI suggestion (e.g., accept, reject, regenerate)
 export const PUT = withAuth(
@@ -14,7 +20,19 @@ export const PUT = withAuth(
     user: any
   ) => {
     try {
-      const { status } = await request.json();
+      const data = await request.json();
+
+      // Validate the data
+      const validationResult = suggestionUpdateSchema.safeParse(data);
+
+      if (!validationResult.success) {
+        throw createApiError.badRequest(
+          "Invalid suggestion data",
+          validationResult.error.format()
+        );
+      }
+
+      const { status } = validationResult.data;
 
       // First, check if the suggestion belongs to the authenticated user
       const suggestion = await prisma.aISuggestion.findUnique({
@@ -23,7 +41,9 @@ export const PUT = withAuth(
       });
 
       if (!suggestion || suggestion.userId !== user.id) {
-        return errorResponse("Not authorized to update this suggestion", 403);
+        throw createApiError.forbidden(
+          "Not authorized to update this suggestion"
+        );
       }
 
       const aiSuggestion = await prisma.aISuggestion.update({
@@ -38,19 +58,11 @@ export const PUT = withAuth(
 
       return successResponse(aiSuggestion);
     } catch (error) {
-      console.error("Error updating AI suggestion:", error);
-
-      if (error instanceof z.ZodError) {
-        return errorResponse("Validation error", 400, error.format());
-      }
-
-      if (error instanceof Error) {
-        return errorResponse(
-          `Failed to update AI suggestion: ${error.message}`
-        );
-      }
-
-      return errorResponse("Failed to update AI suggestion");
+      return handleApiError(
+        error,
+        "Failed to update AI suggestion",
+        "PUT /ai-suggestions/[id]"
+      );
     }
   }
 );
@@ -79,7 +91,7 @@ async function handleAcceptedSuggestion(suggestion: any, userId: string) {
           data: {
             name: skillName,
             userId: suggestion.userId,
-            proficiencyLevel: 1, // Changed from "Beginner" to a number value
+            proficiencyLevel: 1, // Using the backend field name directly
           },
         });
       }
@@ -104,7 +116,9 @@ export const DELETE = withAuth(
       });
 
       if (!suggestion || suggestion.userId !== user.id) {
-        return errorResponse("Not authorized to delete this suggestion", 403);
+        throw createApiError.forbidden(
+          "Not authorized to delete this suggestion"
+        );
       }
 
       await prisma.aISuggestion.delete({
@@ -113,15 +127,11 @@ export const DELETE = withAuth(
 
       return successResponse({ message: "AI suggestion deleted successfully" });
     } catch (error) {
-      console.error("Error deleting AI suggestion:", error);
-
-      if (error instanceof Error) {
-        return errorResponse(
-          `Failed to delete AI suggestion: ${error.message}`
-        );
-      }
-
-      return errorResponse("Failed to delete AI suggestion");
+      return handleApiError(
+        error,
+        "Failed to delete AI suggestion",
+        "DELETE /ai-suggestions/[id]"
+      );
     }
   }
 );

@@ -10,7 +10,7 @@ import { z } from "zod";
 const skillSchema = z.object({
   name: z.string().min(1, "Skill name is required"),
   category: z.string().optional(),
-  proficiency: z.number().int().min(1).max(5).optional(),
+  proficiencyLevel: z.number().int().min(1).max(5).optional(),
 });
 
 // GET skills for a specific user
@@ -29,15 +29,7 @@ export const GET = withAuth(
         orderBy: { name: "asc" },
       });
 
-      // Map proficiencyLevel (backend) to proficiency (frontend) for consistency
-      const mappedSkills = skills.map((skill) => ({
-        id: skill.id,
-        name: skill.name,
-        proficiency: skill.proficiencyLevel,
-        category: skill.category,
-      }));
-
-      return successResponse(mappedSkills);
+      return successResponse(skills);
     } catch (error) {
       console.error("Error fetching skills:", error);
 
@@ -84,7 +76,7 @@ export const POST = withAuth(
         data: {
           name: validationResult.data.name,
           category: validationResult.data.category,
-          proficiencyLevel: validationResult.data.proficiency || 1,
+          proficiencyLevel: validationResult.data.proficiencyLevel || 1,
           userId: userId,
         },
       });

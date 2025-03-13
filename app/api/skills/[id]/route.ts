@@ -10,7 +10,7 @@ import { z } from "zod";
 // Define schema for validation
 const skillUpdateSchema = z.object({
   name: z.string().min(1, "Skill name is required"),
-  proficiency: z.number().int().min(1).max(5),
+  proficiencyLevel: z.number().int().min(1).max(5),
   category: z.string().optional(),
 });
 
@@ -39,7 +39,7 @@ export const PUT = withOwnership(
         where: { id: params.id },
         data: {
           name: data.name,
-          proficiencyLevel: data.proficiency, // Map from frontend's proficiency to DB's proficiencyLevel
+          proficiencyLevel: data.proficiencyLevel,
           category: data.category,
         },
       });
