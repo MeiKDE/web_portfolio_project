@@ -3,85 +3,58 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { withOwnership, successResponse } from "@/lib/api-helpers";
+import { handleApiError, createApiError } from "@/lib/error-handler";
 
 // UPDATE an education entry
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // Get the session to verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return errorResponse("Unauthorized", 401);
+export const PUT = withOwnership(
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
+    try {
+      const data = await request.json();
+
+      const education = await prisma.education.update({
+        where: { id: params.id },
+        data,
+      });
+
+      return successResponse(education);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to update education",
+        "PUT /education/[id]"
+      );
     }
-
-    // Get the education entry to check ownership
-    const existingEducation = await prisma.education.findUnique({
-      where: { id: params.id },
-    });
-
-    if (!existingEducation) {
-      return errorResponse("Education entry not found", 404);
-    }
-
-    // Verify the user is modifying their own data
-    if (existingEducation.userId !== (session.user as any).id) {
-      return errorResponse("Forbidden", 403);
-    }
-
-    const data = await request.json();
-    console.log("Updating education with data:", data);
-
-    const education = await prisma.education.update({
-      where: { id: params.id },
-      data,
-    });
-
-    console.log("Updated education:", education);
-    return successResponse(education);
-  } catch (error) {
-    console.error("Error updating education:", error);
-    return errorResponse("Failed to update education");
-  }
-}
+  },
+  "education"
+);
 
 // DELETE an education entry
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    // Get the session to verify the user is authenticated
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return errorResponse("Unauthorized", 401);
+export const DELETE = withOwnership(
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
+    try {
+      await prisma.education.delete({
+        where: { id: params.id },
+      });
+
+      return successResponse({
+        message: "Education entry deleted successfully",
+      });
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to delete education",
+        "DELETE /education/[id]"
+      );
     }
-
-    // Get the education entry to check ownership
-    const existingEducation = await prisma.education.findUnique({
-      where: { id: params.id },
-    });
-
-    if (!existingEducation) {
-      return errorResponse("Education entry not found", 404);
-    }
-
-    // Verify the user is modifying their own data
-    if (existingEducation.userId !== (session.user as any).id) {
-      return errorResponse("Forbidden", 403);
-    }
-
-    await prisma.education.delete({
-      where: { id: params.id },
-    });
-
-    return successResponse({ message: "Education entry deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting education:", error);
-    return errorResponse("Failed to delete education");
-  }
-}
+  },
+  "education"
+);

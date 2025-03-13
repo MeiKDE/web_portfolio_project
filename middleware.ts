@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
   if (isAuthRequired && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
+    return Response.redirect(loginUrl);
   }
 
   // Redirect to dashboard if user is already authenticated and trying to access login/register
@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
     (request.nextUrl.pathname === "/login" ||
       request.nextUrl.pathname === "/register")
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return Response.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

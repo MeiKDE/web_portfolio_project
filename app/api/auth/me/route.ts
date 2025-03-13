@@ -1,14 +1,15 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse } from "@/lib/api-helpers";
+import { handleApiError, createApiError } from "@/lib/error-handler";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return errorResponse("Not authenticated", 401);
+      throw createApiError.unauthorized("Not authenticated");
     }
 
     // Get additional user data from database
@@ -27,12 +28,11 @@ export async function GET() {
     });
 
     if (!user) {
-      return errorResponse("User not found", 404);
+      throw createApiError.notFound("User not found");
     }
 
     return successResponse(user);
   } catch (error) {
-    console.error("Error in /me route:", error);
-    return errorResponse("Internal server error", 500);
+    return handleApiError(error, "Error in /me route", "GET /auth/me");
   }
 }

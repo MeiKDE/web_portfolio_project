@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { z } from "zod";
+import { successResponse } from "@/lib/api-helpers";
+import {
+  handleApiError,
+  createApiError,
+  HTTP_STATUS,
+} from "@/lib/error-handler";
 
 // Define validation schema for registration
 const registerSchema = z.object({
@@ -11,16 +17,13 @@ const registerSchema = z.object({
 });
 
 // Function to hash password using crypto
-function hashPassword(password: string): {
-  salt: string;
-  hashedPassword: string;
-} {
+function hashPassword(password: string): string {
+  // Use a secure hashing algorithm with salt
   const salt = crypto.randomBytes(16).toString("hex");
-  const hashedPassword = crypto
+  const hash = crypto
     .pbkdf2Sync(password, salt, 1000, 64, "sha512")
     .toString("hex");
-
-  return { salt, hashedPassword };
+  return `${salt}:${hash}`;
 }
 
 // Function to verify password
@@ -52,16 +55,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validate request body
-    const result = registerSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.format() },
-        { status: 400 }
+    // Validate input data
+    const validationResult = registerSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      throw createApiError.badRequest(
+        "Invalid registration data",
+        validationResult.error.format()
       );
     }
 
-    const { name, email, password } = result.data;
+    const { name, email, password } = validationResult.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -69,51 +73,36 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 400 }
-      );
+      throw createApiError.conflict("User with this email already exists");
     }
 
-    // Check password validation
-    if (!validatePassword(password)) {
-      return NextResponse.json(
-        {
-          error:
-            "Password must be at least 8 characters and include uppercase, lowercase, numbers, and special characters",
-        },
-        { status: 400 }
-      );
-    }
+    // Hash the password
+    const hashedPassword = hashPassword(password);
 
-    // Generate salt and hash password
-    const { salt, hashedPassword } = hashPassword(password);
-
-    // Create user
+    // Create the user
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        hashedPassword,
-        salt,
-        title: "New User", // Default value
-        location: "Not specified", // Default value
-        bio: "No bio provided", // Default value
+        password: hashedPassword,
       },
     });
 
-    // Remove sensitive data from response
-    const { hashedPassword: _, salt: __, ...userWithoutSensitiveData } = user;
+    // Remove sensitive data before returning
+    const userWithoutSensitiveData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
 
-    return NextResponse.json({
-      message: "User registered successfully",
-      user: userWithoutSensitiveData,
-    });
-  } catch (error) {
-    console.error("Registration error:", error);
-    return NextResponse.json(
-      { error: "Failed to register user" },
-      { status: 500 }
+    return successResponse(
+      {
+        message: "User registered successfully",
+        user: userWithoutSensitiveData,
+      },
+      HTTP_STATUS.CREATED
     );
+  } catch (error) {
+    return handleApiError(error, "Registration failed", "POST /auth/register");
   }
 }

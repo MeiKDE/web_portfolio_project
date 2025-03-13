@@ -1,14 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createApiError } from "./error-handler";
 
+// Create a response object with the given data and status
 export function successResponse(data: any, status = 200) {
-  return NextResponse.json(data, { status });
+  return Response.json(data, { status });
 }
 
+// Create an error response with the given message, status, and optional details
 export function errorResponse(message: string, status = 500, details?: any) {
-  return NextResponse.json(
+  return Response.json(
     { error: message, ...(details ? { details } : {}) },
     { status }
   );
@@ -19,29 +22,43 @@ type RouteHandler = (
   request: NextRequest,
   context: { params: any },
   user: any
-) => Promise<NextResponse>;
+) => Promise<Response>;
 
 // withAuth higher-order function
-export const withAuth = (handler: RouteHandler) => {
-  return async (request: NextRequest, context: { params: any }) => {
+export function withAuth(handler: RouteHandler) {
+  return async (request: NextRequest, context: any) => {
     try {
-      // Get the session
       const session = await getServerSession(authOptions);
-      console.log("Session in withAuth:", session);
 
-      // Check if user is authenticated
-      if (!session || !session.user) {
-        return errorResponse("Unauthorized", 401);
+      if (!session?.user) {
+        throw createApiError.unauthorized("Not authenticated");
       }
 
-      // Pass the authenticated user to the handler
-      return await handler(request, context, session.user);
+      // Get the user from the database
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email as string },
+      });
+
+      if (!user) {
+        throw createApiError.unauthorized("User not found");
+      }
+
+      return await handler(request, context, user);
     } catch (error) {
       console.error("Authentication error:", error);
+
+      if (error instanceof Error) {
+        return errorResponse(
+          error.message,
+          (error as any).statusCode || 500,
+          (error as any).details
+        );
+      }
+
       return errorResponse("Authentication failed");
     }
   };
-};
+}
 
 // Define a type for valid Prisma model names that have findUnique
 type PrismaModelWithFindUnique = Exclude<
@@ -67,14 +84,13 @@ export function withOwnership(
       });
 
       if (!resource) {
-        return errorResponse(`${resourceTypeStr} not found`, 404);
+        throw createApiError.notFound(`${resourceTypeStr} not found`);
       }
 
       // Check if the resource belongs to the user
       if (resource.userId !== user.id) {
-        return errorResponse(
-          `Not authorized to access this ${resourceTypeStr}`,
-          403
+        throw createApiError.forbidden(
+          `Not authorized to access this ${resourceTypeStr}`
         );
       }
 
@@ -84,6 +100,15 @@ export function withOwnership(
         `Ownership check error for ${String(resourceType)}:`,
         error
       );
+
+      if (error instanceof Error) {
+        return errorResponse(
+          error.message,
+          (error as any).statusCode || 500,
+          (error as any).details
+        );
+      }
+
       return errorResponse(
         `Failed to verify ownership of ${String(resourceType)}`
       );

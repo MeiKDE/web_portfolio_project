@@ -3,64 +3,105 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { withAuth, successResponse } from "@/lib/api-helpers";
+import { handleApiError, createApiError } from "@/lib/error-handler";
+import { z } from "zod";
+
+// Define validation schema for user updates
+const userUpdateSchema = z.object({
+  name: z.string().optional(),
+  title: z.string().optional(),
+  location: z.string().optional(),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+});
 
 // GET user by ID from User table
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    const userId = params.userId;
+export const GET = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { userId: string } },
+    user
+  ) => {
+    try {
+      const userId = params.userId;
 
-    // Check authentication
-    const session = await getServerSession(authOptions);
+      // Fetch the user
+      const userProfile = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          title: true,
+          location: true,
+          // Include any other non-sensitive fields you need
+        },
+      });
 
-    if (!session) {
-      return errorResponse("Unauthorized", 401);
+      if (!userProfile) {
+        throw createApiError.notFound("User not found");
+      }
+
+      return successResponse(userProfile);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to fetch user",
+        "GET /users/[userId]"
+      );
     }
-
-    // Fetch the user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        // Include any other non-sensitive fields you need
-      },
-    });
-
-    if (!user) {
-      return errorResponse("User not found", 404);
-    }
-
-    return successResponse(user);
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    return errorResponse("Failed to fetch user");
   }
-}
+);
 
 // UPDATE user
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    const data = await request.json();
+export const PUT = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { userId: string } },
+    user
+  ) => {
+    try {
+      // Only allow users to update their own profile unless they're an admin
+      if (user.id !== params.userId && !(user as any).isAdmin) {
+        throw createApiError.forbidden("You can only update your own profile");
+      }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
-      data,
-    });
+      const data = await request.json();
 
-    return successResponse(updatedUser);
-  } catch (error) {
-    console.error("Error updating user:", error);
-    return errorResponse("Failed to update user");
+      // Validate the data
+      const validationResult = userUpdateSchema.safeParse(data);
+
+      if (!validationResult.success) {
+        throw createApiError.badRequest(
+          "Invalid user data",
+          validationResult.error.format()
+        );
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: params.userId },
+        data: validationResult.data,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          title: true,
+          location: true,
+          phone: true,
+          bio: true,
+        },
+      });
+
+      return successResponse(updatedUser);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to update user",
+        "PUT /users/[userId]"
+      );
+    }
   }
-}
+);

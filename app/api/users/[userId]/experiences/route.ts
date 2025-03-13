@@ -4,8 +4,13 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
+import { withAuth, successResponse } from "@/lib/api-helpers";
 import { experienceSchema } from "@/lib/validations";
+import {
+  handleApiError,
+  createApiError,
+  HTTP_STATUS,
+} from "@/lib/error-handler";
 
 // GET all experiences for a user
 export const GET = withAuth(
@@ -22,8 +27,11 @@ export const GET = withAuth(
 
       return successResponse(experiences);
     } catch (error) {
-      console.error("Error fetching experiences:", error);
-      return errorResponse("Failed to fetch experiences");
+      return handleApiError(
+        error,
+        "Failed to fetch experiences",
+        "GET /users/[userId]/experiences"
+      );
     }
   }
 );
@@ -45,8 +53,9 @@ export const POST = withAuth(
 
       // Verify the user is modifying their own data
       if (user.id !== params.userId) {
-        console.log("User ID mismatch - Forbidden");
-        return errorResponse("Forbidden", 403);
+        throw createApiError.forbidden(
+          "You can only add experiences to your own profile"
+        );
       }
 
       // Parse and validate the request body
@@ -56,10 +65,8 @@ export const POST = withAuth(
       const validationResult = experienceSchema.safeParse(body);
 
       if (!validationResult.success) {
-        console.log("Validation errors:", validationResult.error.format());
-        return errorResponse(
+        throw createApiError.badRequest(
           "Invalid experience data",
-          400,
           validationResult.error.format()
         );
       }
@@ -73,10 +80,13 @@ export const POST = withAuth(
         },
       });
 
-      return successResponse(newExperience, 201);
+      return successResponse(newExperience, HTTP_STATUS.CREATED);
     } catch (error) {
-      console.error("Error creating experience:", error);
-      return errorResponse("Failed to create experience");
+      return handleApiError(
+        error,
+        "Failed to create experience",
+        "POST /users/[userId]/experiences"
+      );
     }
   }
 );

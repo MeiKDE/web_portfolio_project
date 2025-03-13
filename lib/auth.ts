@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { AuthOptions, NextAuthOptions, Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import * as crypto from "crypto";
@@ -9,6 +9,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { getServerSession } from "next-auth/next";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcrypt";
+import { successResponse, errorResponse } from "./api-helpers";
 
 // Add type for the session
 interface ExtendedSession extends Session {
@@ -76,22 +77,20 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: any }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
+    async session({ session, token }: { session: any; token: JWT }) {
+      if (token && session.user) {
         session.user.id = token.id as string;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      // Allows callback URLs on the same origin
+      if (!url.startsWith("/") && !url.startsWith(baseUrl)) return baseUrl;
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
@@ -155,13 +154,13 @@ export async function verifyToken(accessToken: string) {
 }
 
 export async function withAuthApi(
-  handler: (req: NextRequest, user: any) => Promise<NextResponse>
+  handler: (req: NextRequest, user: any) => Promise<Response>
 ) {
   return async (req: NextRequest) => {
     const user = await getCurrentUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     return handler(req, user);
