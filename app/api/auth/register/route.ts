@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-import { successResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 import {
   handleApiError,
   createApiError,
@@ -41,64 +41,70 @@ const validatePassword = (password: string) => {
   return Object.values(requirements).every(Boolean);
 };
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
+    const data = await req.json();
+    const { email, password, name } = data;
 
-    // Validate input data
-    const validationResult = registerSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      throw createApiError.badRequest(
-        "Invalid registration data",
-        validationResult.error.format()
-      );
+    // Basic validation
+    if (!email || !password || !name) {
+      return errorResponse("Missing required fields", 400);
     }
 
-    const { name, email, password, title, location, bio } =
-      validationResult.data;
-
-    // Check if user already exists
+    // Find existing user
     const existingUser = await prisma.user.findUnique({
       where: { email },
+      include: { accounts: true },
     });
 
     if (existingUser) {
-      throw createApiError.conflict("User with this email already exists");
+      // If user exists but doesn't have credentials
+      const hasCredentials = existingUser.hashedPassword && existingUser.salt;
+
+      if (hasCredentials) {
+        return errorResponse("Credentials already exist for this email", 400);
+      }
+
+      // Hash the password
+      const { hash: hashedPassword, salt } = hashPassword(password);
+
+      // Update existing user with credentials
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          hashedPassword,
+          salt,
+          // Don't change the provider if it's GOOGLE
+          // This allows the user to use both methods
+        },
+      });
+
+      return successResponse({
+        message: "Credentials added successfully",
+      });
     }
 
-    // Hash the password using crypto
-    const { hash, salt } = hashPassword(password);
+    // If no user exists, create new user with credentials
+    const { hash: hashedPassword, salt } = hashPassword(password);
 
-    // Create the user with required fields
-    const user = await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
-        name,
         email,
-        hashedPassword: hash,
-        salt: salt,
-        title: title || "Professional",
-        location: location || "Not specified",
-        bio: bio || "No bio provided",
+        name,
+        hashedPassword,
+        salt,
         provider: "CREDENTIALS",
+        title: "New User",
+        location: "Not specified",
+        bio: "",
       },
     });
 
-    // Remove sensitive data before returning
-    const userWithoutSensitiveData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    };
-
-    return successResponse(
-      {
-        message: "User registered successfully",
-        user: userWithoutSensitiveData,
-      },
-      HTTP_STATUS.CREATED
-    );
+    return successResponse({
+      message: "User registered successfully",
+    });
   } catch (error) {
-    return handleApiError(error, "Registration failed", "POST /auth/register");
+    console.error("Registration error:", error);
+    return errorResponse("Error creating user", 500);
   }
 }

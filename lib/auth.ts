@@ -141,15 +141,16 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
+        // Handle Google sign-in
         if (account?.provider === "google") {
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email },
-            include: { accounts: true }, // Include accounts to check existing connections
+            include: { accounts: true },
           });
 
           if (!existingUser) {
-            // Create new user and account
-            const newUser = await prisma.user.create({
+            // Create new user with Google account
+            await prisma.user.create({
               data: {
                 name: user.name || "",
                 email: user.email,
@@ -175,45 +176,35 @@ export const authOptions: NextAuthOptions = {
                 },
               },
             });
-            return true;
-          }
+          } else {
+            // If user exists but doesn't have a Google account linked
+            const hasGoogleAccount = existingUser.accounts.some(
+              (acc) => acc.provider === "google"
+            );
 
-          // If user exists but doesn't have a Google account linked
-          const hasGoogleAccount = existingUser.accounts.some(
-            (acc) => acc.provider === "google"
-          );
-
-          if (!hasGoogleAccount) {
-            // Link the Google account to the existing user
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-                session_state: account.session_state,
-              },
-            });
-
-            // Update user's Google-specific fields
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: {
-                providerId: account.providerAccountId,
-                image: user.image || existingUser.image,
-              },
-            });
+            if (!hasGoogleAccount) {
+              // Link the Google account
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state,
+                },
+              });
+            }
           }
         }
 
         return true;
       } catch (error) {
-        console.error("OAuth sign-in error:", error);
+        console.error("Sign-in error:", error);
         return false;
       }
     },
