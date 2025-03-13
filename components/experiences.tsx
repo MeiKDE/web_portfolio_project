@@ -68,7 +68,14 @@ const fetcher = (url: string) =>
     credentials: "include",
   }).then((res) => res.json());
 
-// Utility function to format date to yyyy-MM-dd for input fields
+// Update the date formatting utility to show only month and year
+const formatDateForDisplay = (isoDate: string) => {
+  const date = new Date(isoDate);
+  // Format as "Month Year" (e.g., "Feb 2023")
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
+
+// Keep the existing formatDateForInput function for the date input fields
 const formatDateForInput = (isoDate: string) => {
   const date = new Date(isoDate);
   const year = date.getFullYear();
@@ -119,6 +126,45 @@ const checkSession = async (userId: string) => {
     console.error("Error checking session:", error);
     return null;
   }
+};
+
+// Add this function to calculate duration between two dates
+const calculateDuration = (
+  startDate: string,
+  endDate: string | null
+): string => {
+  if (!endDate) return "";
+
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+
+  // Calculate years and months
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+
+  // Adjust if months is negative
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+
+  // Format the duration string
+  let durationStr = "";
+  if (years > 0) {
+    durationStr += `${years} ${years === 1 ? "yr" : "yrs"}`;
+  }
+
+  if (months > 0) {
+    if (durationStr) durationStr += " ";
+    durationStr += `${months} ${months === 1 ? "mo" : "mos"}`;
+  }
+
+  // If less than a month, show "< 1 mo"
+  if (years === 0 && months === 0) {
+    durationStr = "< 1 mo";
+  }
+
+  return durationStr;
 };
 
 //The Experience component is defined as a functional component that takes userId as a prop.
@@ -745,7 +791,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                 <div className="flex gap-2 mb-2">
                   <div className="w-1/2">
                     <label className="text-xs text-muted-foreground">
-                      Start Date*
+                      Start Date* (Month/Year)
                     </label>
                     <Input
                       type="date"
@@ -914,6 +960,9 @@ export default function Experiences({ userId }: ExperienceProps) {
                         />
                         <div className="flex gap-2 mb-2">
                           <div className="w-1/2">
+                            <label className="text-xs text-muted-foreground">
+                              Start Date* (Month/Year)
+                            </label>
                             <Input
                               type="date"
                               value={experience.startDate}
@@ -939,6 +988,9 @@ export default function Experiences({ userId }: ExperienceProps) {
                             )}
                           </div>
                           <div className="w-1/2">
+                            <label className="text-xs text-muted-foreground">
+                              End Date (Month/Year or leave empty for Present)
+                            </label>
                             <Input
                               type="date"
                               value={
@@ -1007,10 +1059,22 @@ export default function Experiences({ userId }: ExperienceProps) {
                           {experience.company}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {formatDateForInput(experience.startDate)} -{" "}
+                          {formatDateForDisplay(experience.startDate)} -{" "}
                           {experience.endDate
-                            ? formatDateForInput(experience.endDate)
+                            ? formatDateForDisplay(experience.endDate)
                             : "Present"}
+                          {experience.startDate &&
+                            (experience.endDate ||
+                              experience.isCurrentPosition) && (
+                              <>
+                                {" "}
+                                ·{" "}
+                                {calculateDuration(
+                                  experience.startDate,
+                                  experience.endDate || new Date().toISOString()
+                                )}
+                              </>
+                            )}
                         </p>
                         <p className="mt-2">{experience.description}</p>
                       </>
