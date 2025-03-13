@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Lightbulb, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
+import { z } from "zod";
+import { skillSchema } from "@/lib/validations";
 
 interface Skill {
   id: string;
@@ -59,7 +61,7 @@ export default function Skills({ userId }: SkillsProps) {
     category: "Frontend", // Default category
   });
   const [validationErrors, setValidationErrors] = useState<{
-    [key: string]: boolean;
+    [key: string]: z.ZodIssue[] | null;
   }>({});
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -104,8 +106,50 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [data]);
 
+  const validateSkill = (skill: Omit<Skill, "id"> | Skill, id?: string) => {
+    try {
+      // Validate with Zod schema
+      skillSchema.parse(skill);
+
+      // If validation passes and we have an ID, clear any existing errors
+      if (id) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          [id]: null,
+        }));
+      }
+
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Store Zod validation issues
+        const key = id || "new";
+        setValidationErrors((prev) => ({
+          ...prev,
+          [key]: error.issues,
+        }));
+        return false;
+      }
+      return false;
+    }
+  };
+
   const handleEditToggle = () => {
     if (editable) {
+      // Validate all skills before saving
+      let hasErrors = false;
+
+      editedSkills.forEach((skill) => {
+        if (!validateSkill(skill, skill.id)) {
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        alert("Please fix validation errors before saving.");
+        return;
+      }
+
       saveChanges();
     }
     setEditable(!editable);
@@ -116,23 +160,28 @@ export default function Skills({ userId }: SkillsProps) {
     field: keyof Skill,
     value: string | number
   ) => {
-    setEditedSkills((prev) =>
-      prev.map((skill) =>
-        skill.id === id ? { ...skill, [field]: value } : skill
-      )
+    const updatedSkills = editedSkills.map((skill) =>
+      skill.id === id ? { ...skill, [field]: value } : skill
     );
+
+    setEditedSkills(updatedSkills);
+
+    // Validate the updated skill
+    const updatedSkill = updatedSkills.find((skill) => skill.id === id);
+    if (updatedSkill) {
+      validateSkill(updatedSkill, id);
+    }
   };
 
   const handleNewSkillChange = (
     field: keyof Omit<Skill, "id">,
     value: string | number
   ) => {
-    setNewSkill((prev) => ({ ...prev, [field]: value }));
+    const updatedSkill = { ...newSkill, [field]: value };
+    setNewSkill(updatedSkill);
 
-    // Clear validation error when user types in the field
-    if (field === "name" && validationErrors.name) {
-      setValidationErrors((prev) => ({ ...prev, name: false }));
-    }
+    // Validate the new skill as user types
+    validateSkill(updatedSkill, "new");
   };
 
   const handleAddNew = () => {
@@ -151,9 +200,8 @@ export default function Skills({ userId }: SkillsProps) {
   const handleSaveNewSkill = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate skill name
-    if (!newSkill.name || newSkill.name.trim() === "") {
-      setValidationErrors((prev) => ({ ...prev, name: true }));
+    // Validate using Zod schema
+    if (!validateSkill(newSkill, "new")) {
       return;
     }
 
@@ -182,6 +230,12 @@ export default function Skills({ userId }: SkillsProps) {
         proficiencyLevel: 3,
         category: "Frontend",
       });
+
+      // Clear validation errors
+      setValidationErrors((prev) => ({
+        ...prev,
+        new: null,
+      }));
 
       // Refresh the data
       mutate();
@@ -273,6 +327,17 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
+  // Helper function to get field error message
+  const getFieldError = (id: string, field: string): string | null => {
+    if (!validationErrors[id]) return null;
+
+    const issues = validationErrors[id];
+    if (!issues) return null;
+
+    const issue = issues.find((i) => i.path.includes(field));
+    return issue ? issue.message : null;
+  };
+
   if (isLoading) return <div>Loading skills...</div>;
   if (error) return <div>Error loading skills information</div>;
 
@@ -346,12 +411,14 @@ export default function Skills({ userId }: SkillsProps) {
                     }
                     placeholder="e.g. JavaScript"
                     className={`w-full ${
-                      validationErrors.name ? "border-red-500 ring-red-500" : ""
+                      getFieldError("new", "name")
+                        ? "border-red-500 ring-red-500"
+                        : ""
                     }`}
                   />
-                  {validationErrors.name && (
+                  {getFieldError("new", "name") && (
                     <p className="text-red-500 text-xs mt-1">
-                      Skill name is required
+                      {getFieldError("new", "name")}
                     </p>
                   )}
                 </div>

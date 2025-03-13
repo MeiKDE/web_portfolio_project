@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { userSchema } from "@/lib/validations"; // Import the user validation schema
+import { z } from "zod";
+import { userProfileSchema } from "@/lib/validations"; // We'll create this schema
 
 interface UserProps {
   userId: string;
@@ -30,6 +33,9 @@ export default function User({ userId }: UserProps) {
   const [editedUser, setEditedUser] = useState<UserData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<z.ZodIssue[] | null>(
+    null
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -76,10 +82,14 @@ export default function User({ userId }: UserProps) {
 
   const saveChanges = async () => {
     if (!editedUser) return;
-    console.log("ln79: editedUser", editedUser);
+
     try {
+      // Validate the edited user data using Zod
+      userProfileSchema.parse(editedUser);
+
       setIsSubmitting(true);
       setError(null);
+      setValidationErrors(null);
 
       const response = await fetch("/api/users/me", {
         method: "PUT",
@@ -107,6 +117,10 @@ export default function User({ userId }: UserProps) {
       setUser(updatedUser);
       setIsEditing(false);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        setValidationErrors(error.issues);
+        return;
+      }
       console.error("Error saving changes:", error);
       setError("Failed to save changes. Please try again.");
     } finally {

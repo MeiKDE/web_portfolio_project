@@ -68,3 +68,12 @@ export const userSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
+
+// User profile validation schema (for profile updates)
+export const userProfileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  title: z.string().optional(),
+  location: z.string().optional(),
+  phone: z.string().optional(),
+  bio: z.string().optional(),
+});
