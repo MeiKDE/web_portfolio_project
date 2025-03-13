@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import crypto from "crypto";
 import { z } from "zod";
 import { successResponse } from "@/lib/api-helpers";
 import {
@@ -8,35 +7,26 @@ import {
   createApiError,
   HTTP_STATUS,
 } from "@/lib/error-handler";
+import { hashPassword } from "@/lib/auth";
 
 // Define validation schema for registration
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(
+      /[!@#$%^&*]/,
+      "Password must contain at least one special character"
+    ),
+  title: z.string().optional(),
+  location: z.string().optional(),
+  bio: z.string().optional(),
 });
-
-// Function to hash password using crypto
-function hashPassword(password: string): string {
-  // Use a secure hashing algorithm with salt
-  const salt = crypto.randomBytes(16).toString("hex");
-  const hash = crypto
-    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
-    .toString("hex");
-  return `${salt}:${hash}`;
-}
-
-// Function to verify password
-export function verifyPassword(
-  storedPassword: string,
-  suppliedPassword: string
-): boolean {
-  const [salt, hash] = storedPassword.split(":");
-  const suppliedHash = crypto
-    .pbkdf2Sync(suppliedPassword, salt, 10000, 64, "sha512")
-    .toString("hex");
-  return hash === suppliedHash;
-}
 
 // Password validation function
 const validatePassword = (password: string) => {
@@ -65,7 +55,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, password } = validationResult.data;
+    const { name, email, password, title, location, bio } =
+      validationResult.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -76,15 +67,20 @@ export async function POST(request: NextRequest) {
       throw createApiError.conflict("User with this email already exists");
     }
 
-    // Hash the password
-    const hashedPassword = hashPassword(password);
+    // Hash the password using crypto
+    const { hash, salt } = hashPassword(password);
 
-    // Create the user
+    // Create the user with required fields
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashedPassword,
+        hashedPassword: hash,
+        salt: salt,
+        title: title || "Professional",
+        location: location || "Not specified",
+        bio: bio || "No bio provided",
+        provider: "CREDENTIALS",
       },
     });
 

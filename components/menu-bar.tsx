@@ -4,8 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { User, FileText, Briefcase, Mail, Menu, X, LogOut } from "lucide-react";
+import {
+  User,
+  FileText,
+  Briefcase,
+  Mail,
+  Menu,
+  X,
+  LogOut,
+  LogIn,
+} from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
 
 const menuItems = [
   { name: "Profile", href: "/", icon: User },
@@ -17,17 +27,14 @@ const menuItems = [
 export default function MenuBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const isAuthenticated = status === "authenticated";
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
     router.push("/login");
   };
-
-  if (!session) {
-    return null; // Don't show menu bar if not authenticated
-  }
 
   return (
     <nav className="bg-background border-b">
@@ -42,29 +49,62 @@ export default function MenuBar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-4">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant={pathname === item.href ? "default" : "ghost"}
-                    className="flex items-center"
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.name}
+            {isAuthenticated ? (
+              <>
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      <Button
+                        variant={pathname === item.href ? "default" : "ghost"}
+                        className="flex items-center"
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.name}
+                      </Button>
+                    </Link>
+                  );
+                })}
+                {/* User Profile */}
+                {session?.user?.image && (
+                  <div className="flex items-center ml-4">
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "User"}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
+                  </div>
+                )}
+                {/* Logout Button */}
+                <Button
+                  variant="ghost"
+                  className="flex items-center"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Login Button */}
+                <Link href="/login">
+                  <Button variant="ghost" className="flex items-center">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
                   </Button>
                 </Link>
-              );
-            })}
-            {/* Logout Button */}
-            <Button
-              variant="ghost"
-              className="flex items-center"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+                {/* Register Button */}
+                <Link href="/register">
+                  <Button variant="default" className="flex items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Register
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -88,33 +128,62 @@ export default function MenuBar() {
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} href={item.href}>
+            {isAuthenticated ? (
+              <>
+                {menuItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      <Button
+                        variant={pathname === item.href ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.name}
+                      </Button>
+                    </Link>
+                  );
+                })}
+                {/* Mobile Logout Button */}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Mobile Login Button */}
+                <Link href="/login">
                   <Button
-                    variant={pathname === item.href ? "default" : "ghost"}
+                    variant="ghost"
                     className="w-full justify-start"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.name}
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
                   </Button>
                 </Link>
-              );
-            })}
-            {/* Mobile Logout Button */}
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                handleLogout();
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+                {/* Mobile Register Button */}
+                <Link href="/register">
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Register
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { FcGoogle } from "react-icons/fc";
+import { signIn } from "next-auth/react";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -10,6 +12,9 @@ export default function RegisterForm() {
     name: "",
     email: "",
     password: "",
+    title: "",
+    location: "",
+    bio: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +35,9 @@ export default function RegisterForm() {
     };
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
@@ -75,6 +82,11 @@ export default function RegisterForm() {
     }
   };
 
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    signIn("google", { callbackUrl: "/" });
+  };
+
   // Check password strength as user types
   const passwordCheck = validatePassword(formData.password);
 
@@ -90,6 +102,27 @@ export default function RegisterForm() {
           {error}
         </div>
       )}
+
+      {/* Google Sign In Button */}
+      <button
+        onClick={handleGoogleSignIn}
+        disabled={loading}
+        className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      >
+        <FcGoogle className="h-5 w-5" />
+        Sign up with Google
+      </button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-white px-2 text-gray-500">
+            Or register with email
+          </span>
+        </div>
+      </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         <div>
@@ -125,6 +158,60 @@ export default function RegisterForm() {
             required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             value={formData.email}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Professional Title
+          </label>
+          <input
+            id="title"
+            name="title"
+            type="text"
+            placeholder="e.g. Software Engineer"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={formData.title}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="location"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Location
+          </label>
+          <input
+            id="location"
+            name="location"
+            type="text"
+            placeholder="e.g. San Francisco, CA"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={formData.location}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="bio"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Short Bio
+          </label>
+          <textarea
+            id="bio"
+            name="bio"
+            rows={3}
+            placeholder="Tell us a bit about yourself"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            value={formData.bio}
             onChange={handleChange}
           />
         </div>

@@ -8,7 +8,6 @@ import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import { getServerSession } from "next-auth/next";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcrypt";
 import { successResponse, errorResponse } from "./api-helpers";
 
 // Add type for the session
@@ -21,9 +20,23 @@ interface ExtendedSession extends Session {
   };
 }
 
-function verifyPassword(password: string, hash: string, salt: string): boolean {
+// Function to hash password using crypto
+export function hashPassword(password: string): { hash: string; salt: string } {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
+    .toString("hex");
+  return { hash, salt };
+}
+
+// Function to verify password
+export function verifyPassword(
+  password: string,
+  hash: string,
+  salt: string
+): boolean {
   const verifyHash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
     .toString("hex");
   return hash === verifyHash;
 }
@@ -64,6 +77,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          image: user.image,
         };
       },
     }),
@@ -77,17 +91,27 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: any }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
       }
+      // Include the provider in the token
+      if (account) {
+        token.provider = account.provider;
+      }
       return token;
     },
-    async session({ session, token }: { session: any; token: JWT }) {
+    async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        // You can add the provider to the session if needed
+        (session as any).provider = token.provider;
       }
       return session;
+    },
+    async signIn({ user, account, profile }) {
+      // Allow all sign-ins
+      return true;
     },
     async redirect({ url, baseUrl }) {
       if (!url.startsWith("/") && !url.startsWith(baseUrl)) return baseUrl;
@@ -97,6 +121,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Error page
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",

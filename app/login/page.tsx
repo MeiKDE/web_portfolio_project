@@ -2,38 +2,42 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
-import { Divider } from "@/components/ui/divider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const error = searchParams.get("error");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [loginError, setLoginError] = useState(error || "");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setLoginError("");
 
     try {
       const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        setLoginError("Invalid email or password");
       } else {
-        router.push("/"); // Redirect to homepage after successful login
+        router.push(callbackUrl); // Redirect to callback URL after successful login
         router.refresh(); // Refresh to update auth state
       }
     } catch (error) {
-      setError("An error occurred during login");
+      setLoginError("An error occurred during login");
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);
@@ -42,7 +46,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsLoading(true);
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl });
   };
 
   return (
@@ -53,9 +57,9 @@ export default function LoginPage() {
           <p className="mt-2 text-gray-600">Sign in to your account</p>
         </div>
 
-        {error && (
+        {loginError && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-            {error}
+            {loginError}
           </div>
         )}
 

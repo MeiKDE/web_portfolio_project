@@ -400,6 +400,18 @@ export default function Experiences({ userId }: ExperienceProps) {
       setIsSubmitting(true);
 
       for (const experience of editedExperiences) {
+        console.log("Sending experience data:", {
+          position: experience.position,
+          company: experience.company,
+          startDate: formatDateForDatabase(experience.startDate),
+          endDate: experience.endDate
+            ? formatDateForDatabase(experience.endDate)
+            : null,
+          description: experience.description,
+          location: experience.location,
+          isCurrentPosition: experience.isCurrentPosition,
+        });
+
         const response = await fetch(`/api/experiences/${experience.id}`, {
           method: "PUT",
           headers: {
@@ -421,11 +433,31 @@ export default function Experiences({ userId }: ExperienceProps) {
 
         if (!response.ok) {
           const errorData = await response.json();
+          console.error("API Error Response:", {
+            status: response.status,
+            statusText: response.statusText,
+            errorData,
+          });
+
           if (response.status === 401) {
             // Handle unauthorized - redirect to login
             window.location.href = "/login";
             return;
           }
+
+          if (response.status === 400) {
+            // Handle validation errors
+            setLocalError(
+              `Validation error: ${errorData.error || "Invalid data"}`
+            );
+            if (errorData.details) {
+              console.error("Validation details:", errorData.details);
+            }
+            throw new Error(
+              `Validation error: ${errorData.error || "Invalid data"}`
+            );
+          }
+
           throw new Error(
             `Failed to update experience: ${
               errorData.error || response.statusText
@@ -438,7 +470,11 @@ export default function Experiences({ userId }: ExperienceProps) {
       mutate();
     } catch (error) {
       console.error("Error saving changes:", error);
-      alert("Failed to save changes. Please try again.");
+      alert(
+        `Failed to save changes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }. Please try again.`
+      );
     } finally {
       setIsSubmitting(false);
     }

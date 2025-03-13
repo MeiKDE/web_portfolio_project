@@ -32,14 +32,38 @@ export const PUT = withOwnership(
     try {
       // Parse and validate the request body
       const body = await request.json();
+      console.log("PUT /api/experiences/[id] - Request body:", body);
+      console.log("User from session:", user.id);
+      console.log("Experience ID:", params.id);
+
       const validationResult = experienceSchema.safeParse(body);
 
       if (!validationResult.success) {
+        console.error("Validation error:", validationResult.error.format());
         return errorResponse(
           "Invalid experience data",
           400,
           validationResult.error.format()
         );
+      }
+
+      // Check if the experience exists
+      const existingExperience = await prisma.experience.findUnique({
+        where: { id: params.id },
+      });
+
+      if (!existingExperience) {
+        console.error("Experience not found:", params.id);
+        return errorResponse("Experience not found", 404);
+      }
+
+      // Verify ownership again explicitly
+      if (existingExperience.userId !== user.id) {
+        console.error("Ownership mismatch:", {
+          experienceUserId: existingExperience.userId,
+          requestUserId: user.id,
+        });
+        return errorResponse("Not authorized to update this experience", 403);
       }
 
       // Update the experience
