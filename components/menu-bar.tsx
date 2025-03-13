@@ -89,20 +89,24 @@ export default function MenuBar() {
               </>
             ) : (
               <>
-                {/* Login Button */}
-                <Link href="/login">
-                  <Button variant="ghost" className="flex items-center">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login
-                  </Button>
-                </Link>
-                {/* Register Button */}
-                <Link href="/register">
-                  <Button variant="default" className="flex items-center">
-                    <User className="h-4 w-4 mr-2" />
-                    Register
-                  </Button>
-                </Link>
+                {/* Login Button - Hide when on login page */}
+                {pathname !== "/login" && (
+                  <Link href="/login">
+                    <Button variant="ghost" className="flex items-center">
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Login
+                    </Button>
+                  </Link>
+                )}
+                {/* Register Button - Hide when on register page */}
+                {pathname !== "/register" && (
+                  <Link href="/register">
+                    <Button variant="default" className="flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Register
+                    </Button>
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -160,28 +164,32 @@ export default function MenuBar() {
               </>
             ) : (
               <>
-                {/* Mobile Login Button */}
-                <Link href="/login">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login
-                  </Button>
-                </Link>
-                {/* Mobile Register Button */}
-                <Link href="/register">
-                  <Button
-                    variant="default"
-                    className="w-full justify-start"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Register
-                  </Button>
-                </Link>
+                {/* Mobile Login Button - Hide when on login page */}
+                {pathname !== "/login" && (
+                  <Link href="/login">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Login
+                    </Button>
+                  </Link>
+                )}
+                {/* Mobile Register Button - Hide when on register page */}
+                {pathname !== "/register" && (
+                  <Link href="/register">
+                    <Button
+                      variant="default"
+                      className="w-full justify-start"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Register
+                    </Button>
+                  </Link>
+                )}
               </>
             )}
           </div>
