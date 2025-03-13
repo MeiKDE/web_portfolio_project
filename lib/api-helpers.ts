@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export function successResponse(data: any, status = 200) {
   return NextResponse.json(data, { status });
@@ -42,37 +43,50 @@ export const withAuth = (handler: RouteHandler) => {
   };
 };
 
+// Define a type for valid Prisma model names that have findUnique
+type PrismaModelWithFindUnique = Exclude<
+  keyof typeof prisma,
+  "$on" | "$connect" | "$disconnect" | "$use" | "$transaction" | "$extends"
+>;
+
 // withOwnership higher-order function for resource ownership checks
 export function withOwnership(
   handler: RouteHandler,
-  resourceType: string,
+  resourceType: PrismaModelWithFindUnique,
   idParam: string = "id"
 ) {
   return withAuth(async (request: NextRequest, context, user) => {
     try {
       const resourceId = context.params[idParam];
+      const resourceTypeStr = String(resourceType);
 
-      // Dynamically determine the Prisma model based on resourceType
-      const resource = await prisma[resourceType].findUnique({
+      // Cast to any to bypass TypeScript's limitation with dynamic model access
+      const model = prisma[resourceType] as any;
+      const resource = await model.findUnique({
         where: { id: resourceId },
       });
 
       if (!resource) {
-        return errorResponse(`${resourceType} not found`, 404);
+        return errorResponse(`${resourceTypeStr} not found`, 404);
       }
 
       // Check if the resource belongs to the user
       if (resource.userId !== user.id) {
         return errorResponse(
-          `Not authorized to access this ${resourceType}`,
+          `Not authorized to access this ${resourceTypeStr}`,
           403
         );
       }
 
       return await handler(request, context, user);
     } catch (error) {
-      console.error(`Ownership check error for ${resourceType}:`, error);
-      return errorResponse(`Failed to verify ownership of ${resourceType}`);
+      console.error(
+        `Ownership check error for ${String(resourceType)}:`,
+        error
+      );
+      return errorResponse(
+        `Failed to verify ownership of ${String(resourceType)}`
+      );
     }
   });
 }

@@ -5,7 +5,7 @@ import MenuBar from "@/components/menu-bar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { headers } from "next/headers";
 import Link from "next/link";
 
