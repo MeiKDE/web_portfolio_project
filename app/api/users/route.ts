@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Fetch all users (you might want to add pagination or filtering)
@@ -23,12 +23,9 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(users);
+    return successResponse(users);
   } catch (error) {
     console.error("Error fetching users:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch users" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch users");
   }
 }

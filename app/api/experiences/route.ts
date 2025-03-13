@@ -1,17 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET all experiences
 export async function GET(request: NextRequest) {
   try {
     const experiences = await prisma.experience.findMany();
-    // console.log("ln8: experiences from route.ts", experiences);
-    return NextResponse.json(experiences);
+    return successResponse(experiences);
   } catch (error) {
-    console.error('Error fetching experiences:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch experiences' },
-      { status: 500 }
-    );
+    console.error("Error fetching experiences:", error);
+    return errorResponse("Failed to fetch experiences");
   }
-} 
+}

@@ -1,9 +1,10 @@
 //Summary
-// The file is responsible for managing AI suggestions providing API endpoints to update and delete AI suggestions in a Next.js application. 
+// The file is responsible for managing AI suggestions providing API endpoints to update and delete AI suggestions in a Next.js application.
 // It includes logic to handle the implications of accepting suggestions, such as creating new skills based on the suggestions.
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // Generate a new AI suggestion
 export async function POST(
@@ -12,44 +13,43 @@ export async function POST(
 ) {
   try {
     const { targetType, targetId } = await request.json();
-    
+
     // In a real application, you would call an AI service here
     // For now, we'll just create a mock suggestion
-    let suggestion = '';
-    
+    let suggestion = "";
+
     switch (targetType) {
-      case 'experience':
-        suggestion = 'Consider adding more quantifiable achievements to this experience.';
+      case "experience":
+        suggestion =
+          "Consider adding more quantifiable achievements to this experience.";
         break;
-      case 'skill':
-        suggestion = 'Add Next.js to your skills based on your experience.';
+      case "skill":
+        suggestion = "Add Next.js to your skills based on your experience.";
         break;
-      case 'project':
-        suggestion = 'Add a GraphQL project to showcase your expertise.';
+      case "project":
+        suggestion = "Add a GraphQL project to showcase your expertise.";
         break;
-      case 'tagline':
-        suggestion = 'Innovative problem-solver transforming complex challenges into elegant solutions.';
+      case "tagline":
+        suggestion =
+          "Innovative problem-solver transforming complex challenges into elegant solutions.";
         break;
       default:
-        suggestion = 'Consider updating your profile with more details.';
+        suggestion = "Consider updating your profile with more details.";
     }
-    
+
     const aiSuggestion = await prisma.aiSuggestion.create({
       data: {
         targetType,
         targetId,
         suggestion,
-        status: 'pending',
+        status: "pending",
         userId: params.userId,
       },
     });
 
-    return NextResponse.json(aiSuggestion, { status: 201 });
+    return successResponse(aiSuggestion, 201);
   } catch (error) {
-    console.error('Error generating AI suggestion:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate AI suggestion' },
-      { status: 500 }
-    );
+    console.error("Error generating AI suggestion:", error);
+    return errorResponse("Failed to generate AI suggestion");
   }
-} 
+}

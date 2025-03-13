@@ -1,10 +1,11 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing education entries (updating and deleting).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // UPDATE an education entry
 export async function PUT(
@@ -15,7 +16,7 @@ export async function PUT(
     // Get the session to verify the user is authenticated
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Get the education entry to check ownership
@@ -24,15 +25,12 @@ export async function PUT(
     });
 
     if (!existingEducation) {
-      return NextResponse.json(
-        { error: "Education entry not found" },
-        { status: 404 }
-      );
+      return errorResponse("Education entry not found", 404);
     }
 
     // Verify the user is modifying their own data
     if (existingEducation.userId !== (session.user as any).id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return errorResponse("Forbidden", 403);
     }
 
     const data = await request.json();
@@ -44,13 +42,10 @@ export async function PUT(
     });
 
     console.log("Updated education:", education);
-    return NextResponse.json(education);
+    return successResponse(education);
   } catch (error) {
     console.error("Error updating education:", error);
-    return NextResponse.json(
-      { error: "Failed to update education" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to update education");
   }
 }
 
@@ -63,7 +58,7 @@ export async function DELETE(
     // Get the session to verify the user is authenticated
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Get the education entry to check ownership
@@ -72,29 +67,21 @@ export async function DELETE(
     });
 
     if (!existingEducation) {
-      return NextResponse.json(
-        { error: "Education entry not found" },
-        { status: 404 }
-      );
+      return errorResponse("Education entry not found", 404);
     }
 
     // Verify the user is modifying their own data
     if (existingEducation.userId !== (session.user as any).id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return errorResponse("Forbidden", 403);
     }
 
     await prisma.education.delete({
       where: { id: params.id },
     });
 
-    return NextResponse.json({
-      message: "Education entry deleted successfully",
-    });
+    return successResponse({ message: "Education entry deleted successfully" });
   } catch (error) {
     console.error("Error deleting education:", error);
-    return NextResponse.json(
-      { error: "Failed to delete education" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to delete education");
   }
 }

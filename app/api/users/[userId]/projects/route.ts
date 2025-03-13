@@ -1,8 +1,9 @@
 //Summary
-// This file (projects/route.ts) is focused on getting all projects for a user. 
+// This file (projects/route.ts) is focused on getting all projects for a user.
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET all projects for a user
 export async function GET(
@@ -12,16 +13,13 @@ export async function GET(
   try {
     const projects = await prisma.project.findMany({
       where: { userId: params.userId },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
     });
 
-    return NextResponse.json(projects);
+    return successResponse(projects);
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch projects' },
-      { status: 500 }
-    );
+    console.error("Error fetching projects:", error);
+    return errorResponse("Failed to fetch projects");
   }
 }
 
@@ -32,7 +30,7 @@ export async function POST(
 ) {
   try {
     const data = await request.json();
-    
+
     const project = await prisma.project.create({
       data: {
         ...data,
@@ -40,12 +38,9 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(project, { status: 201 });
+    return successResponse(project, 201);
   } catch (error) {
-    console.error('Error creating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    );
+    console.error("Error creating project:", error);
+    return errorResponse("Failed to create project");
   }
-} 
+}

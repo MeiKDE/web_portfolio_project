@@ -1,8 +1,9 @@
 //Summary
-// This file (education/route.ts) is focused on getting all education entries for a user. 
+// This file (education/route.ts) is focused on getting all education entries for a user.
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET all education entries for a user
 export async function GET(
@@ -10,19 +11,15 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    // console.log(`ln13: params from education/route.ts`, params);
     const education = await prisma.education.findMany({
       where: { userId: params.userId },
-      orderBy: { endYear: 'desc' },
+      orderBy: { endYear: "desc" },
     });
-    // console.log(`ln16: education from education/route.ts`, education);
-    return NextResponse.json(education);
+
+    return successResponse(education);
   } catch (error) {
-    console.error('Error fetching education:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch education' },
-      { status: 500 }
-    );
+    console.error("Error fetching education:", error);
+    return errorResponse("Failed to fetch education");
   }
 }
 
@@ -33,7 +30,7 @@ export async function POST(
 ) {
   try {
     const data = await request.json();
-    
+
     const education = await prisma.education.create({
       data: {
         ...data,
@@ -41,12 +38,9 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(education, { status: 201 });
+    return successResponse(education, 201);
   } catch (error) {
-    console.error('Error creating education:', error);
-    return NextResponse.json(
-      { error: 'Failed to create education' },
-      { status: 500 }
-    );
+    console.error("Error creating education:", error);
+    return errorResponse("Failed to create education");
   }
-} 
+}

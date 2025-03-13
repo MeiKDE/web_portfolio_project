@@ -1,8 +1,9 @@
 //Summary
-// This file (generate/route.ts) is focused on creating new suggestions based on user input. 
+// This file (generate/route.ts) is focused on creating new suggestions based on user input.
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET all AI suggestions for a user
 export async function GET(
@@ -10,21 +11,18 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const aiSuggestions = await prisma.aiSuggestion.findMany({//findMany: retrieves multiple records from the database
-      where: { 
+    const aiSuggestions = await prisma.aiSuggestion.findMany({
+      where: {
         userId: params.userId,
-        status: { not: 'rejected' } // Optionally filter out rejected suggestions
+        status: { not: "rejected" }, // Optionally filter out rejected suggestions
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(aiSuggestions);
+    return successResponse(aiSuggestions);
   } catch (error) {
-    console.error('Error fetching AI suggestions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch AI suggestions' },
-      { status: 500 }
-    );
+    console.error("Error fetching AI suggestions:", error);
+    return errorResponse("Failed to fetch AI suggestions");
   }
 }
 
@@ -35,21 +33,18 @@ export async function POST(
 ) {
   try {
     const data = await request.json();
-    
+
     const aiSuggestion = await prisma.aiSuggestion.create({
       data: {
-        ...data, //spread operator: spreads the properties of the data object into the new object
+        ...data,
         userId: params.userId,
-        status: 'pending',
+        status: "pending",
       },
     });
 
-    return NextResponse.json(aiSuggestion, { status: 201 });
+    return successResponse(aiSuggestion, 201);
   } catch (error) {
-    console.error('Error creating AI suggestion:', error);
-    return NextResponse.json(
-      { error: 'Failed to create AI suggestion' },
-      { status: 500 }
-    );
+    console.error("Error creating AI suggestion:", error);
+    return errorResponse("Failed to create AI suggestion");
   }
-} 
+}

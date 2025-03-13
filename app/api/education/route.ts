@@ -1,11 +1,12 @@
 //Summary
 // This file (route.ts) is focused on creating new education entries.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // Define the schema for education entries
 const educationSchema = z.object({
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Get the session to verify the user is authenticated
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Parse the request body
@@ -71,10 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       console.error(`Could not find or create user with ID ${sessionUserId}`);
-      return NextResponse.json(
-        { error: "User not found and could not be created" },
-        { status: 500 }
-      );
+      return errorResponse("User not found and could not be created", 500);
     }
 
     console.log("Using user:", user.id);
@@ -100,34 +98,26 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("Created education:", education);
-    return NextResponse.json(education, { status: 201 });
+    return successResponse(education, 201);
   } catch (error) {
     console.error("Error creating education entry:", error);
 
     // More detailed error handling
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation error", details: error.errors },
-        { status: 400 }
-      );
+      return errorResponse("Validation error", 400, error.errors);
     }
 
     // Check for Prisma errors
     if (error.code) {
-      return NextResponse.json(
-        {
-          error: "Database error",
-          code: error.code,
-          message: error.message,
-          meta: error.meta,
-        },
-        { status: 500 }
-      );
+      return errorResponse("Database error", 500, {
+        code: error.code,
+        message: error.message,
+        meta: error.meta,
+      });
     }
 
-    return NextResponse.json(
-      { error: "Failed to create education entry", message: error.message },
-      { status: 500 }
-    );
+    return errorResponse("Failed to create education entry", 500, {
+      message: error.message,
+    });
   }
 }

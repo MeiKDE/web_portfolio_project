@@ -1,13 +1,13 @@
 import { getServerSession } from "next-auth/next";
-import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
+    return errorResponse("Not authenticated", 401, { authenticated: false });
   }
 
-  return NextResponse.json({ authenticated: true });
+  return successResponse({ authenticated: true });
 }

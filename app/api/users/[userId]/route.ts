@@ -1,10 +1,11 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (getting and updating).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // GET user by ID from User table
 export async function GET(
@@ -18,7 +19,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Fetch the user
@@ -34,16 +35,13 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return errorResponse("User not found", 404);
     }
 
-    return NextResponse.json(user);
+    return successResponse(user);
   } catch (error) {
     console.error("Error fetching user:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch user");
   }
 }
 
@@ -60,12 +58,9 @@ export async function PUT(
       data,
     });
 
-    return NextResponse.json(updatedUser);
+    return successResponse(updatedUser);
   } catch (error) {
     console.error("Error updating user:", error);
-    return NextResponse.json(
-      { error: "Failed to update user" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to update user");
   }
 }

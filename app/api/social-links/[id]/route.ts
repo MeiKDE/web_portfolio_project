@@ -1,8 +1,9 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest } from "next/server";
+import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // UPDATE a social link
 export async function PUT(
@@ -11,19 +12,16 @@ export async function PUT(
 ) {
   try {
     const data = await request.json();
-    
+
     const socialLink = await prisma.socialLink.update({
       where: { id: params.id },
       data,
     });
 
-    return NextResponse.json(socialLink);
+    return successResponse(socialLink);
   } catch (error) {
-    console.error('Error updating social link:', error);
-    return NextResponse.json(
-      { error: 'Failed to update social link' },
-      { status: 500 }
-    );
+    console.error("Error updating social link:", error);
+    return errorResponse("Failed to update social link");
   }
 }
 
@@ -37,12 +35,9 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    return NextResponse.json({ message: 'Social link deleted successfully' });
+    return successResponse({ message: "Social link deleted successfully" });
   } catch (error) {
-    console.error('Error deleting social link:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete social link' },
-      { status: 500 }
-    );
+    console.error("Error deleting social link:", error);
+    return errorResponse("Failed to delete social link");
   }
-} 
+}

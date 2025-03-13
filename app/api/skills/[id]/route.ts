@@ -1,8 +1,9 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 // UPDATE a skill
 export async function PUT(
@@ -23,7 +24,7 @@ export async function PUT(
     });
 
     // Map back to frontend format
-    return NextResponse.json({
+    return successResponse({
       id: skill.id,
       name: skill.name,
       proficiency: skill.proficiencyLevel,
@@ -31,10 +32,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error updating skill:", error);
-    return NextResponse.json(
-      { error: "Failed to update skill" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to update skill");
   }
 }
 
@@ -48,12 +46,9 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    return NextResponse.json({ message: "Skill deleted successfully" });
+    return successResponse({ message: "Skill deleted successfully" });
   } catch (error) {
     console.error("Error deleting skill:", error);
-    return NextResponse.json(
-      { error: "Failed to delete skill" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to delete skill");
   }
 }
