@@ -62,10 +62,7 @@ export default function SocialLinks({
           </a>
         </div>
       </div>
-      <Button className="w-full mt-4" onClick={handleLogout}>
-        <LogOut className="h-4 w-4 mr-2" />
-        Logout
-      </Button>
+      <Button className="w-full">Send Message</Button>
     </>
   );
 }

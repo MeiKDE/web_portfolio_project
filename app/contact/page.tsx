@@ -1,37 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Github, Linkedin, Twitter, Globe, Mail, Phone, Calendar, MessageSquare } from "lucide-react"
-import { motion } from "framer-motion"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Github,
+  Linkedin,
+  Twitter,
+  Globe,
+  Mail,
+  Phone,
+  Calendar,
+  MessageSquare,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function ContactPage() {
-  const [contactType, setContactType] = useState("")
-  const [message, setMessage] = useState("")
+  const [contactType, setContactType] = useState("");
+  const [message, setMessage] = useState("");
 
   const handleContactTypeChange = (value: string) => {
-    setContactType(value)
+    setContactType(value);
     // AI-suggested message templates
     switch (value) {
       case "recruiter":
-        setMessage("I'm interested in discussing a potential job opportunity with you...")
-        break
+        setMessage(
+          "I'm interested in discussing a potential job opportunity with you..."
+        );
+        break;
       case "client":
-        setMessage("I have a project I'd like to discuss with you...")
-        break
+        setMessage("I have a project I'd like to discuss with you...");
+        break;
       case "collaborator":
-        setMessage("I'm working on a project that I think would benefit from your expertise...")
-        break
+        setMessage(
+          "I'm working on a project that I think would benefit from your expertise..."
+        );
+        break;
       default:
-        setMessage("")
+        setMessage("");
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -104,19 +123,31 @@ export default function ContactPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Connect with Me</h2>
               <div className="grid grid-cols-2 gap-4">
-                <a href="#" className="flex items-center text-primary hover:underline">
+                <a
+                  href="#"
+                  className="flex items-center text-primary hover:underline"
+                >
                   <Github className="h-5 w-5 mr-2" />
                   GitHub
                 </a>
-                <a href="#" className="flex items-center text-primary hover:underline">
+                <a
+                  href="#"
+                  className="flex items-center text-primary hover:underline"
+                >
                   <Linkedin className="h-5 w-5 mr-2" />
                   LinkedIn
                 </a>
-                <a href="#" className="flex items-center text-primary hover:underline">
+                <a
+                  href="#"
+                  className="flex items-center text-primary hover:underline"
+                >
                   <Twitter className="h-5 w-5 mr-2" />
                   Twitter
                 </a>
-                <a href="#" className="flex items-center text-primary hover:underline">
+                <a
+                  href="#"
+                  className="flex items-center text-primary hover:underline"
+                >
                   <Globe className="h-5 w-5 mr-2" />
                   Website
                 </a>
@@ -161,6 +192,5 @@ export default function ContactPage() {
         </Button>
       </motion.div>
     </div>
-  )
+  );
 }
-
