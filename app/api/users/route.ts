@@ -26,6 +26,16 @@ export async function GET() {
     return successResponse(users);
   } catch (error) {
     console.error("Error fetching users:", error);
+
+    if (error instanceof Error) {
+      // Sanitize error message to avoid leaking sensitive information
+      const safeErrorMessage = error.message.replace(
+        /\b(password|token|secret|key)\b/gi,
+        "***"
+      );
+      return errorResponse(`Failed to fetch users: ${safeErrorMessage}`);
+    }
+
     return errorResponse("Failed to fetch users");
   }
 }

@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
+import { z } from "zod";
 
 // UPDATE an AI suggestion (e.g., accept, reject, regenerate)
 export const PUT = withAuth(
@@ -38,6 +39,17 @@ export const PUT = withAuth(
       return successResponse(aiSuggestion);
     } catch (error) {
       console.error("Error updating AI suggestion:", error);
+
+      if (error instanceof z.ZodError) {
+        return errorResponse("Validation error", 400, error.format());
+      }
+
+      if (error instanceof Error) {
+        return errorResponse(
+          `Failed to update AI suggestion: ${error.message}`
+        );
+      }
+
       return errorResponse("Failed to update AI suggestion");
     }
   }
@@ -102,6 +114,13 @@ export const DELETE = withAuth(
       return successResponse({ message: "AI suggestion deleted successfully" });
     } catch (error) {
       console.error("Error deleting AI suggestion:", error);
+
+      if (error instanceof Error) {
+        return errorResponse(
+          `Failed to delete AI suggestion: ${error.message}`
+        );
+      }
+
       return errorResponse("Failed to delete AI suggestion");
     }
   }
