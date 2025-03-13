@@ -1,7 +1,7 @@
 //Summary
 // This file (certifications/route.ts) is focused on getting all certifications for a user.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { certificationSchema } from "@/lib/validations";
 import { successResponse, errorResponse } from "@/lib/api-helpers";

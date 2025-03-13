@@ -21,7 +21,7 @@ function hashPassword(password: string): string {
   // Use a secure hashing algorithm with salt
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
     .toString("hex");
   return `${salt}:${hash}`;
 }
@@ -33,7 +33,7 @@ export function verifyPassword(
 ): boolean {
   const [salt, hash] = storedPassword.split(":");
   const suppliedHash = crypto
-    .pbkdf2Sync(suppliedPassword, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(suppliedPassword, salt, 10000, 64, "sha512")
     .toString("hex");
   return hash === suppliedHash;
 }
