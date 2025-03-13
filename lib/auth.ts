@@ -35,10 +35,16 @@ export function verifyPassword(
   hash: string,
   salt: string
 ): boolean {
-  const verifyHash = crypto
-    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
-    .toString("hex");
-  return hash === verifyHash;
+  try {
+    const verifyHash = crypto
+      .pbkdf2Sync(password, salt, 10000, 64, "sha512")
+      .toString("hex");
+    return hash === verifyHash;
+  } catch (error) {
+    console.error("Password verification error:", error);
+    console.log("ln45 Password:", password);
+    return false;
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -52,33 +58,53 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log("Missing credentials");
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        try {
+          // Find user by email
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
 
-        if (!user || !user.hashedPassword || !user.salt) {
+          console.log(
+            "User lookup result:",
+            user ? "User found" : "User not found"
+          );
+
+          if (!user || !user.hashedPassword || !user.salt) {
+            console.log("User not found or missing password data");
+            return null;
+          }
+
+          // Verify password
+          const isValid = verifyPassword(
+            credentials.password,
+            user.hashedPassword,
+            user.salt
+          );
+
+          console.log(
+            "Password verification result:",
+            isValid ? "Valid" : "Invalid"
+          );
+
+          if (!isValid) {
+            return null;
+          }
+
+          console.log("Authentication successful");
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          };
+        } catch (error) {
+          console.error("Authentication error:", error);
           return null;
         }
-
-        const isValid = verifyPassword(
-          credentials.password,
-          user.hashedPassword,
-          user.salt
-        );
-
-        if (!isValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
       },
     }),
     GoogleProvider({
@@ -114,8 +140,15 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
-      if (!url.startsWith("/") && !url.startsWith(baseUrl)) return baseUrl;
-      else if (new URL(url).origin === baseUrl) return url;
+      // Fix the URL validation logic
+      if (url.startsWith("/")) {
+        // For relative URLs, prepend the base URL
+        return `${baseUrl}${url}`;
+      } else if (url.startsWith(baseUrl)) {
+        // If it already has the base URL, return as is
+        return url;
+      }
+      // Default to the base URL for all other cases
       return baseUrl;
     },
   },
