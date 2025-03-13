@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "users" ALTER COLUMN "location" DROP NOT NULL,
+ALTER COLUMN "bio" DROP NOT NULL;

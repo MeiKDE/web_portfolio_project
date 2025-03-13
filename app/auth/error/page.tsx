@@ -7,6 +7,8 @@ import Link from "next/link";
 const errorMessages: Record<string, string> = {
   OAuthCreateAccount:
     "There was a problem creating your account. This could be because an account with your email already exists with a different sign-in method.",
+  OAuthAccountNotLinked:
+    "This email is already associated with an account. Please sign in using your original method or contact support to link your accounts.",
   // Add other error types as needed
   Default: "An authentication error occurred. Please try again later.",
 };

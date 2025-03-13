@@ -136,14 +136,81 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // Make sure we have the required user data
       if (!user.email) {
         return false;
       }
 
       try {
-        // If using adapter, you might not need additional logic here
-        // as the adapter should handle account creation
+        if (account?.provider === "google") {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: { accounts: true }, // Include accounts to check existing connections
+          });
+
+          if (!existingUser) {
+            // Create new user and account
+            const newUser = await prisma.user.create({
+              data: {
+                name: user.name || "",
+                email: user.email,
+                image: user.image,
+                title: "New User",
+                location: "Not specified",
+                bio: "",
+                provider: "GOOGLE",
+                providerId: account.providerAccountId,
+                emailVerified: new Date(),
+                accounts: {
+                  create: {
+                    type: account.type,
+                    provider: account.provider,
+                    providerAccountId: account.providerAccountId,
+                    access_token: account.access_token,
+                    expires_at: account.expires_at,
+                    token_type: account.token_type,
+                    scope: account.scope,
+                    id_token: account.id_token,
+                    session_state: account.session_state,
+                  },
+                },
+              },
+            });
+            return true;
+          }
+
+          // If user exists but doesn't have a Google account linked
+          const hasGoogleAccount = existingUser.accounts.some(
+            (acc) => acc.provider === "google"
+          );
+
+          if (!hasGoogleAccount) {
+            // Link the Google account to the existing user
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state,
+              },
+            });
+
+            // Update user's Google-specific fields
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                providerId: account.providerAccountId,
+                image: user.image || existingUser.image,
+              },
+            });
+          }
+        }
+
         return true;
       } catch (error) {
         console.error("OAuth sign-in error:", error);
@@ -169,6 +236,7 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
+  allowDangerousEmailAccountLinking: true,
 };
 
 // Make sure to export the config as default as well

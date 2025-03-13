@@ -20,10 +20,10 @@ model User {
   password          String?         // Optional for OAuth users
   provider          AuthProvider    @default(CREDENTIALS)  // Enum for OAuth providers
   providerId        String?         // Stores the provider's user ID for OAuth users
-  title             String
-  location          String
+  title             String?
+  location          String?
   phone             String?
-  bio               String
+  bio               String?
   profileImageUrl   String?
   aiGeneratedTagline String?
   createdAt         DateTime        @default(now())
