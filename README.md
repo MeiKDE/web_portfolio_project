@@ -18,6 +18,8 @@ npx tsc prisma/seed.ts
 mv prisma/seed.js prisma/seed.cjs
 node prisma/seed.cjs
 
+note: avoid importing modules from seed.ts to avoid errors
+
 ### To run the prisma studio, run the following command:
 
 npx prisma studio

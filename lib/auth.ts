@@ -136,8 +136,19 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // Allow all sign-ins
-      return true;
+      // Make sure we have the required user data
+      if (!user.email) {
+        return false;
+      }
+
+      try {
+        // If using adapter, you might not need additional logic here
+        // as the adapter should handle account creation
+        return true;
+      } catch (error) {
+        console.error("OAuth sign-in error:", error);
+        return false;
+      }
     },
     async redirect({ url, baseUrl }) {
       // Fix the URL validation logic
@@ -154,7 +165,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
-    error: "/login", // Error page
+    error: "/auth/error", // Create a custom error page
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",

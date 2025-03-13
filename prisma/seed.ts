@@ -1,8 +1,17 @@
 // prisma/seed.ts test data
 import { PrismaClient } from "@prisma/client";
-import { hashPassword } from "../lib/auth";
+import * as crypto from "crypto";
+// import { hashPassword } from "../lib/auth";
 
 const prisma = new PrismaClient();
+
+function hashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 10000, 64, "sha512")
+    .toString("hex");
+  return { hash, salt };
+}
 
 async function main() {
   // First, delete existing data to avoid duplicates
