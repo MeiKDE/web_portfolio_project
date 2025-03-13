@@ -51,7 +51,7 @@ model Experience {
   location         String?
   startDate        DateTime
   endDate          DateTime?
-  description      String
+  description      String?
   isCurrentPosition Boolean  @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

@@ -18,10 +18,34 @@ interface SkillsProps {
   userId: string;
 }
 
-const fetcher = (url: string) =>
-  fetch(url, {
+// Improved fetcher function with error handling
+const fetcher = async (url: string) => {
+  const response = await fetch(url, {
     credentials: "include",
-  }).then((res) => res.json());
+  });
+
+  // Check if the request was successful
+  if (!response.ok) {
+    // Create an error object with details from the response
+    const error = new Error(
+      `An error occurred while fetching the data: ${response.statusText}`
+    );
+    // Add status and info from response to the error
+    (error as any).status = response.status;
+
+    // Try to parse error details if available
+    try {
+      (error as any).info = await response.json();
+    } catch (e) {
+      // If parsing fails, just use the status text
+      (error as any).info = response.statusText;
+    }
+
+    throw error;
+  }
+
+  return response.json();
+};
 
 export default function Skills({ userId }: SkillsProps) {
   const [editable, setEditable] = useState(false);
@@ -40,7 +64,18 @@ export default function Skills({ userId }: SkillsProps) {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/skills`,
-    fetcher
+    fetcher,
+    {
+      onError: (err) => {
+        console.error("Error fetching skills:", err);
+
+        // If unauthorized, you might want to redirect to login
+        if (err.status === 401) {
+          // Redirect to login or show auth error
+          // window.location.href = "/login";
+        }
+      },
+    }
   );
 
   // Update local state when data is fetched

@@ -5,19 +5,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
-import { z } from "zod"; // You would need to install zod for validation
-
-// Define a schema for experience data validation
-const experienceSchema = z.object({
-  position: z.string().min(1, "Position is required"),
-  company: z.string().min(1, "Company is required"),
-  location: z.string().optional(),
-  startDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()).optional(),
-  description: z.string().min(1, "Description is required"),
-  isCurrentPosition: z.boolean().optional().default(false),
-  // Add other fields as needed
-});
+import { experienceSchema } from "@/lib/validations";
 
 // GET all experiences for a user
 export const GET = withAuth(
@@ -50,16 +38,25 @@ export const POST = withAuth(
     user
   ) => {
     try {
+      // Add detailed logging
+      console.log("POST request to experiences");
+      console.log("User from session:", user);
+      console.log("User ID from params:", params.userId);
+
       // Verify the user is modifying their own data
       if (user.id !== params.userId) {
+        console.log("User ID mismatch - Forbidden");
         return errorResponse("Forbidden", 403);
       }
 
       // Parse and validate the request body
       const body = await request.json();
+      console.log("Received body:", body);
+
       const validationResult = experienceSchema.safeParse(body);
 
       if (!validationResult.success) {
+        console.log("Validation errors:", validationResult.error.format());
         return errorResponse(
           "Invalid experience data",
           400,
@@ -71,6 +68,7 @@ export const POST = withAuth(
       const newExperience = await prisma.experience.create({
         data: {
           ...validationResult.data,
+          description: validationResult.data.description || "",
           userId: params.userId,
         },
       });

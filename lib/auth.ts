@@ -7,6 +7,8 @@ import * as crypto from "crypto";
 import { JWT } from "next-auth/jwt";
 import GoogleProvider from "next-auth/providers/google";
 import { getServerSession } from "next-auth/next";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { compare } from "bcrypt";
 
 // Add type for the session
 interface ExtendedSession extends Session {
@@ -26,6 +28,7 @@ function verifyPassword(password: string, hash: string, salt: string): boolean {
 }
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "Credentials",

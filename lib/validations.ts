@@ -6,8 +6,8 @@ export const experienceSchema = z.object({
   company: z.string().min(1, "Company is required"),
   location: z.string().optional(),
   startDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()).optional(),
-  description: z.string().min(1, "Description is required"),
+  endDate: z.string().or(z.date()).nullable().optional(),
+  description: z.string().optional(),
   isCurrentPosition: z.boolean().optional().default(false),
 });
 

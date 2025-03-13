@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import Educations from "@/components/educations";
 import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
@@ -17,7 +16,7 @@ import { useEffect } from "react";
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  console.log("session", session, status);
+
   // Ensure this page is protected
   useEffect(() => {
     // If user is not authenticated and auth is finished loading, redirect to login
@@ -31,30 +30,30 @@ export default function HomePage() {
     return <div className="container mx-auto px-4 py-8">Loading...</div>;
   }
 
-  if (!session) {
+  if (!session || !session.user) {
     return null; // Don't render anything if not authenticated (will be redirected)
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* Profile Header */}
-      <User userId={session?.user?.id || ""} />
+      <User userId={session.user.id} />
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          <Experiences userId={session?.user?.id || ""} />
+          <Experiences userId={session.user.id} />
 
           {/* Education Section */}
-          <Educations userId={session?.user?.id || ""} />
+          <Educations userId={session.user.id} />
 
           {/* Skills Section */}
-          <Skills userId={session?.user?.id || ""} />
+          <Skills userId={session.user.id} />
 
           {/* Certifications Section */}
-          <Certifications userId={session?.user?.id || ""} />
+          <Certifications userId={session.user.id} />
         </div>
 
         {/* Right Column - Portfolio, Cover Letter, Contact */}

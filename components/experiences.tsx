@@ -105,6 +105,22 @@ const validateDateRange = (
   return start <= end;
 };
 
+// Add this debug code to check the session
+const checkSession = async (userId: string) => {
+  try {
+    const response = await fetch("/api/auth/me", {
+      credentials: "include",
+    });
+    const data = await response.json();
+    console.log("Current session user:", data);
+    console.log("URL userId:", userId);
+    return data;
+  } catch (error) {
+    console.error("Error checking session:", error);
+    return null;
+  }
+};
+
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
   // A state variable error is initialized to null.
@@ -123,6 +139,8 @@ export default function Experiences({ userId }: ExperienceProps) {
     location: "",
     isCurrentPosition: false,
   });
+
+  console.log("ln152: userId:", userId);
 
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,6 +163,11 @@ export default function Experiences({ userId }: ExperienceProps) {
       setEditedExperiences(JSON.parse(JSON.stringify(data))); // Deep copy for editing
     }
   }, [data]);
+
+  // Call this in useEffect
+  useEffect(() => {
+    checkSession(userId);
+  }, [userId]);
 
   const validateExperience = (
     experience: Experience | Omit<Experience, "id">,
@@ -485,24 +508,33 @@ export default function Experiences({ userId }: ExperienceProps) {
         ...newExperience,
         startDate: newExperience.startDate
           ? new Date(newExperience.startDate).toISOString()
-          : new Date().toISOString(), // Provide a default if missing
+          : new Date().toISOString(),
         endDate:
           newExperience.endDate && !newExperience.isCurrentPosition
             ? new Date(newExperience.endDate).toISOString()
             : null,
         isCurrentPosition: newExperience.isCurrentPosition || false,
+        // Ensure description is a string or empty string, not undefined
+        description: newExperience.description || "",
       };
+
+      // Log the formatted experience data
+      console.log("Sending experience data:", formattedExperience);
 
       const response = await fetch(`/api/users/${userId}/experiences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(formattedExperience),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log("Error details:", errorData);
         throw new Error(
           `Failed to add experience: ${errorData.error || response.statusText}`
         );
@@ -541,6 +573,7 @@ export default function Experiences({ userId }: ExperienceProps) {
 
       const response = await fetch(`/api/experiences/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (!response.ok) {

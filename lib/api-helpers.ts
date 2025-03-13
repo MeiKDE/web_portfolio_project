@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export function successResponse(data: any, status = 200) {
   return NextResponse.json(data, { status });
@@ -21,11 +21,12 @@ type RouteHandler = (
 ) => Promise<NextResponse>;
 
 // withAuth higher-order function
-export function withAuth(handler: RouteHandler) {
+export const withAuth = (handler: RouteHandler) => {
   return async (request: NextRequest, context: { params: any }) => {
     try {
       // Get the session
       const session = await getServerSession(authOptions);
+      console.log("Session in withAuth:", session);
 
       // Check if user is authenticated
       if (!session || !session.user) {
@@ -39,7 +40,7 @@ export function withAuth(handler: RouteHandler) {
       return errorResponse("Authentication failed");
     }
   };
-}
+};
 
 // withOwnership higher-order function for resource ownership checks
 export function withOwnership(

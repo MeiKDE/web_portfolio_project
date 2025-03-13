@@ -53,7 +53,34 @@ interface ValidationErrors {
   [key: string]: { [field: string]: boolean } | z.ZodIssue[];
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+// Improved fetcher function with error handling
+const fetcher = async (url: string) => {
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  // Check if the request was successful
+  if (!response.ok) {
+    // Create an error object with details from the response
+    const error = new Error(
+      `An error occurred while fetching the data: ${response.statusText}`
+    );
+    // Add status and info from response to the error
+    (error as any).status = response.status;
+
+    // Try to parse error details if available
+    try {
+      (error as any).info = await response.json();
+    } catch (e) {
+      // If parsing fails, just use the status text
+      (error as any).info = response.statusText;
+    }
+
+    throw error;
+  }
+
+  return response.json();
+};
 
 export default function Educations({ userId }: EducationProps) {
   const [editable, setEditable] = useState(false);
@@ -67,7 +94,21 @@ export default function Educations({ userId }: EducationProps) {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/education`,
-    fetcher
+    fetcher,
+    {
+      onError: (err) => {
+        console.error("Error fetching education:", err);
+        // You can set a more user-friendly error message here if needed
+
+        // If unauthorized, you might want to redirect to login
+        if (err.status === 401) {
+          // Redirect to login or show auth error
+          // window.location.href = "/login";
+        }
+      },
+      // Add retry configuration if needed
+      // retry: 3,
+    }
   );
 
   // Update local state when data is fetched
@@ -328,6 +369,7 @@ export default function Educations({ userId }: EducationProps) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -395,6 +437,7 @@ export default function Educations({ userId }: EducationProps) {
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include",
             body: JSON.stringify(payload),
           });
 
@@ -415,6 +458,7 @@ export default function Educations({ userId }: EducationProps) {
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include",
             body: JSON.stringify(payload),
           });
 
@@ -454,6 +498,7 @@ export default function Educations({ userId }: EducationProps) {
 
       const response = await fetch(`/api/education/${id}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (!response.ok) {

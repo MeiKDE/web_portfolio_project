@@ -23,12 +23,37 @@ interface CertificationsProps {
   userId: string;
 }
 
-const fetcher = (url: string) =>
-  fetch(url, { credentials: "include" }).then((res) => {
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-    console.log("ln27: Response status:", res.status);
-    return res.json();
+// Improved fetcher function with error handling
+const fetcher = async (url: string) => {
+  const response = await fetch(url, {
+    credentials: "include",
   });
+
+  // Check if the request was successful
+  if (!response.ok) {
+    // Create an error object with details from the response
+    const error = new Error(
+      `An error occurred while fetching the data: ${response.statusText}`
+    );
+    // Add status and info from response to the error
+    (error as any).status = response.status;
+
+    // Try to parse error details if available
+    try {
+      (error as any).info = await response.json();
+    } catch (e) {
+      // If parsing fails, just use the status text
+      (error as any).info = response.statusText;
+    }
+
+    throw error;
+  }
+
+  // For debugging
+  console.log("Response status:", response.status);
+
+  return response.json();
+};
 
 // Utility function to format date to yyyy-MM-dd for input fields
 const formatDateForInput = (isoDate: string) => {
@@ -136,7 +161,18 @@ export default function Certifications({ userId }: CertificationsProps) {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/certifications`,
-    fetcher
+    fetcher,
+    {
+      onError: (err) => {
+        console.error("Error fetching certifications:", err);
+
+        // If unauthorized, you might want to redirect to login
+        if (err.status === 401) {
+          // Redirect to login or show auth error
+          // window.location.href = "/login";
+        }
+      },
+    }
   );
 
   // Update local state when data is fetched
