@@ -67,7 +67,7 @@ async function handleAcceptedSuggestion(suggestion: any, userId: string) {
           data: {
             name: skillName,
             userId: suggestion.userId,
-            proficiencyLevel: "Beginner", // Default value
+            proficiencyLevel: 1, // Changed from "Beginner" to a number value
           },
         });
       }
