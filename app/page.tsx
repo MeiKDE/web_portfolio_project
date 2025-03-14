@@ -5,11 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Educations from "@/components/educations";
-import Experiences from "@/components/experiences";
-import Skills from "@/components/skills";
-import Certifications from "@/components/certifications";
-import User from "@/components/user";
+import Educations from "@/components/Educations";
+import Experiences from "@/components/Experiences";
+import Skills from "@/components/Skills";
+import Certifications from "@/components/Certifications";
+import User from "@/components/User";
 import SocialLinks from "@/components/SocialLinks";
 import { useEffect } from "react";
 
