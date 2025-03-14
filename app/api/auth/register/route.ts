@@ -8,6 +8,8 @@ import {
   HTTP_STATUS,
 } from "@/lib/error-handler";
 import { hashPassword } from "@/lib/auth";
+import { generateVerificationToken } from "@/lib/verification";
+import { sendVerificationEmail } from "@/lib/email";
 
 // Define validation schema for registration
 const registerSchema = z.object({
@@ -100,10 +102,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return successResponse({
-      message: "User registered successfully",
+    // After user creation
+    const verificationToken = await generateVerificationToken(email);
+    console.log("Generated verification token:", {
+      email,
+      token: verificationToken.token,
+      expires: verificationToken.expires,
     });
+
+    await sendVerificationEmail(email, verificationToken.token);
+
+    // Check the database directly after creation
+    const savedToken = await prisma.verificationToken.findUnique({
+      where: { token: verificationToken.token },
+    });
+    console.log("Saved token in database:", savedToken);
+
+    return successResponse(
+      "Registration successful. Please check your email for verification."
+    );
   } catch (error) {
+    // Add logging here to catch any email sending errors
     console.error("Registration error:", error);
     return errorResponse("Error creating user", 500);
   }

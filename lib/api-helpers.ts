@@ -5,15 +5,34 @@ import prisma from "@/lib/prisma";
 import { createApiError } from "./error-handler";
 
 // Create a response object with the given data and status
-export function successResponse(data: any, status = 200) {
-  return Response.json(data, { status });
+export function successResponse(data: any) {
+  return new Response(
+    JSON.stringify({
+      error: false,
+      data,
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 }
 
 // Create an error response with the given message, status, and optional details
-export function errorResponse(message: string, status = 500, details?: any) {
-  return Response.json(
-    { error: message, ...(details ? { details } : {}) },
-    { status }
+export function errorResponse(message: string, status = 400) {
+  return new Response(
+    JSON.stringify({
+      error: true,
+      message,
+    }),
+    {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
 }
 
@@ -48,11 +67,7 @@ export function withAuth(handler: RouteHandler) {
       console.error("Authentication error:", error);
 
       if (error instanceof Error) {
-        return errorResponse(
-          error.message,
-          (error as any).statusCode || 500,
-          (error as any).details
-        );
+        return errorResponse(error.message, (error as any).statusCode || 500);
       }
 
       return errorResponse("Authentication failed");
@@ -102,11 +117,7 @@ export function withOwnership(
       );
 
       if (error instanceof Error) {
-        return errorResponse(
-          error.message,
-          (error as any).statusCode || 500,
-          (error as any).details
-        );
+        return errorResponse(error.message, (error as any).statusCode || 500);
       }
 
       return errorResponse(

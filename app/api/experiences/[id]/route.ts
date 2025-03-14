@@ -30,46 +30,50 @@ export const PUT = withOwnership(
     user
   ) => {
     try {
-      // Parse and validate the request body
       const body = await request.json();
-      console.log("PUT /api/experiences/[id] - Request body:", body);
-      console.log("User from session:", user.id);
-      console.log("Experience ID:", params.id);
+
+      // Convert date strings to Date objects
+      if (body.startDate) {
+        body.startDate = new Date(body.startDate);
+      }
+      if (body.endDate) {
+        body.endDate = new Date(body.endDate);
+      }
 
       const validationResult = experienceSchema.safeParse(body);
 
       if (!validationResult.success) {
-        console.error("Validation error:", validationResult.error.format());
         return errorResponse(
           "Invalid experience data",
-          400,
           validationResult.error.format()
         );
       }
 
-      // Check if the experience exists
-      const existingExperience = await prisma.experience.findUnique({
-        where: { id: params.id },
+      // Check if the experience exists and belongs to the user
+      const existingExperience = await prisma.experience.findFirst({
+        where: {
+          id: params.id,
+          userId: user.id,
+        },
       });
 
       if (!existingExperience) {
-        console.error("Experience not found:", params.id);
         return errorResponse("Experience not found", 404);
-      }
-
-      // Verify ownership again explicitly
-      if (existingExperience.userId !== user.id) {
-        console.error("Ownership mismatch:", {
-          experienceUserId: existingExperience.userId,
-          requestUserId: user.id,
-        });
-        return errorResponse("Not authorized to update this experience", 403);
       }
 
       // Update the experience
       const updatedExperience = await prisma.experience.update({
         where: { id: params.id },
-        data: validationResult.data,
+        data: {
+          position: body.position,
+          company: body.company,
+          location: body.location,
+          startDate: body.startDate,
+          endDate: body.endDate,
+          description: body.description,
+          isCurrentPosition: body.isCurrentPosition,
+          userId: user.id, // Ensure the user ID is included
+        },
       });
 
       return successResponse(updatedExperience);

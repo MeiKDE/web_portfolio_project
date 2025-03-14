@@ -29,6 +29,7 @@ model User {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   image             String?
+  verificationToken String? @map("verification_token")
   
   // Relations
   experiences       Experience[]
@@ -40,6 +41,7 @@ model User {
   aiSuggestions     AISuggestion[]
   accounts          Account[]
   sessions          Session[]
+  verificationTokens VerificationToken[]
   
   @@map("users")
 }
@@ -191,6 +193,7 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+  user       User     @relation(fields: [identifier], references: [email], onDelete: Cascade)
 
   @@unique([identifier, token])
 }

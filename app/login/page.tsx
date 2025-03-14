@@ -11,13 +11,14 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
+  const verified = searchParams.get("verified");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(error || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setLoginError("");
@@ -27,30 +28,33 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
-        callbackUrl,
       });
 
       if (result?.error) {
-        setLoginError("Invalid email or password");
+        setLoginError(result.error);
+        setIsLoading(false);
       } else {
-        router.push(callbackUrl); // Redirect to callback URL after successful login
-        router.refresh(); // Refresh to update auth state
+        router.push(callbackUrl);
+        router.refresh();
       }
     } catch (error) {
       setLoginError("An error occurred during login");
-      console.error("Login error:", error);
-    } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = () => {
     setIsLoading(true);
-    signIn("google", { callbackUrl });
+    signIn("google", { callbackUrl: "/" });
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      {verified && (
+        <div className="absolute top-4 w-full max-w-md rounded-md bg-green-100 p-4 text-green-700">
+          Your email has been verified successfully! Please log in.
+        </div>
+      )}
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 shadow-md">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Login</h1>
@@ -147,6 +151,6 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

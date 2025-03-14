@@ -25,8 +25,12 @@ export const GET = withAuth(
 
       // Fetch the skills for the specified user
       const skills = await prisma.skill.findMany({
-        where: { userId: userId },
-        orderBy: { name: "asc" },
+        where: {
+          userId: userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
       });
 
       return successResponse(skills);
@@ -65,9 +69,9 @@ export const POST = withAuth(
 
       if (!validationResult.success) {
         return errorResponse(
-          "Invalid skill data",
-          400,
-          validationResult.error.format()
+          "Invalid skill data: " +
+            JSON.stringify(validationResult.error.format()),
+          400
         );
       }
 
@@ -81,12 +85,15 @@ export const POST = withAuth(
         },
       });
 
-      return successResponse(skill, 201);
+      return successResponse(skill);
     } catch (error) {
       console.error("Error creating skill:", error);
 
       if (error instanceof z.ZodError) {
-        return errorResponse("Validation error", 400, error.format());
+        return errorResponse(
+          "Validation error: " + JSON.stringify(error.format()),
+          400
+        );
       }
 
       if (error instanceof Error) {

@@ -83,25 +83,22 @@ export default function Skills({ userId }: SkillsProps) {
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
-      console.log("Skill Data:", data);
-
       try {
-        // Map the API response to match our component's expected format
-        const mappedData = data.map((skill: Skill) => ({
-          id: skill.id,
-          name: skill.name,
-          proficiencyLevel: skill.proficiencyLevel,
-          category: skill.category,
-        }));
-
-        setSkillsData(mappedData);
-        // Create a deep copy using spread operator for each object
-        setEditedSkills(mappedData.map((skill: Skill) => ({ ...skill })));
+        // Check if data is an array before mapping
+        if (Array.isArray(data)) {
+          setSkillsData(data);
+          setEditedSkills(data.map((skill: Skill) => ({ ...skill })));
+        } else {
+          console.error("Skills data is not an array:", data);
+          // Initialize with empty arrays as fallback
+          setSkillsData([]);
+          setEditedSkills([]);
+        }
       } catch (error) {
         console.error("Error processing skills data:", error);
-        // Fallback to original data if mapping fails
-        setSkillsData(data);
-        setEditedSkills(data.map((skill: Skill) => ({ ...skill })));
+        // Initialize with empty arrays as fallback
+        setSkillsData([]);
+        setEditedSkills([]);
       }
     }
   }, [data]);

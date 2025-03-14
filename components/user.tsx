@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import type { JSX } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
@@ -26,6 +27,25 @@ interface UserData {
   bio?: string;
 }
 
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      div: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLDivElement>,
+        HTMLDivElement
+      >;
+      p: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLParagraphElement>,
+        HTMLParagraphElement
+      >;
+      h1: React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLHeadingElement>,
+        HTMLHeadingElement
+      >;
+    }
+  }
+}
+
 export default function User({ userId }: UserProps) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,12 +63,11 @@ export default function User({ userId }: UserProps) {
     async function fetchUser() {
       try {
         setError(null);
-        const response = await fetch("/api/users/me");
-        console.log("ln41: response", response);
+        const response = await fetch("/api/auth/user");
         if (!response.ok) throw new Error("Failed to fetch user");
         const userData = await response.json();
-        setUser(userData);
-        setEditedUser(JSON.parse(JSON.stringify(userData))); // Deep copy for editing
+        setUser(userData.data);
+        setEditedUser(JSON.parse(JSON.stringify(userData.data)));
       } catch (error) {
         console.error("Error fetching user:", error);
         setError("Failed to load user profile. Please try again.");
@@ -62,13 +81,10 @@ export default function User({ userId }: UserProps) {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      console.log("ln59: isEditing", isEditing);
       saveChanges();
     } else {
-      console.log("ln62: isEditing", isEditing);
-      setEditedUser(JSON.parse(JSON.stringify(user))); // Reset to current user data
+      setIsEditing(true);
     }
-    setIsEditing(!isEditing);
   };
 
   const handleInputChange = (field: keyof UserData, value: string) => {
@@ -91,30 +107,28 @@ export default function User({ userId }: UserProps) {
       setError(null);
       setValidationErrors(null);
 
-      const response = await fetch("/api/users/me", {
+      const response = await fetch("/api/auth/user", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: editedUser.name,
-          title: editedUser.title,
-          location: editedUser.location,
-          phone: editedUser.phone,
-          bio: editedUser.bio,
+          title: editedUser.title || "",
+          location: editedUser.location || "",
+          phone: editedUser.phone || "",
+          bio: editedUser.bio || "",
         }),
       });
-
-      console.log("ln98: response", response);
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to update profile");
       }
 
-      const updatedUser = await response.json();
-      console.log("ln106: updatedUser", updatedUser);
+      const { data: updatedUser } = await response.json();
       setUser(updatedUser);
+      setEditedUser(updatedUser);
       setIsEditing(false);
     } catch (error) {
       if (error instanceof z.ZodError) {
