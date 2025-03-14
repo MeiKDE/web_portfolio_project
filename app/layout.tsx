@@ -1,7 +1,7 @@
-import Providers from "@/components/AuthProvider";
+import AuthProvider from "@/components/AuthProvider";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import MenuBar from "@/components/menu-bar";
+import MenuBar from "@/components/MenuBar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
@@ -60,10 +60,10 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
-        <Providers session={session}>
+        <AuthProvider session={session}>
           <MenuBar />
           <main>{children}</main>
-        </Providers>
+        </AuthProvider>
       </body>
     </html>
   );

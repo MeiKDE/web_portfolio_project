@@ -10,7 +10,7 @@ import Experiences from "@/components/experiences";
 import Skills from "@/components/skills";
 import Certifications from "@/components/certifications";
 import User from "@/components/user";
-import SocialLinks from "@/components/social-links";
+import SocialLinks from "@/components/SocialLinks";
 import { useEffect } from "react";
 
 export default function HomePage() {
