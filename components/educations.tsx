@@ -432,7 +432,7 @@ export default function Educations({ userId }: EducationProps) {
         if (isNewEntry) {
           // Create a new education entry
           console.log("Creating new education entry:", payload);
-          const response = await fetch(`/api/education`, {
+          const response = await fetch(`/api/users/${userId}/education`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -453,14 +453,17 @@ export default function Educations({ userId }: EducationProps) {
         } else {
           // Update existing education entry
           console.log("Updating education:", payload);
-          const response = await fetch(`/api/education/${education.id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
+          const response = await fetch(
+            `/api/users/${userId}/education/${education.id}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify(payload),
+            }
+          );
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -496,7 +499,7 @@ export default function Educations({ userId }: EducationProps) {
         return;
       }
 
-      const response = await fetch(`/api/education/${id}`, {
+      const response = await fetch(`/api/users/${userId}/education/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

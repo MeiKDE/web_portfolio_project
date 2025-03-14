@@ -84,12 +84,16 @@ export default function Skills({ userId }: SkillsProps) {
   useEffect(() => {
     if (data) {
       try {
-        // Check if data is an array before mapping
+        // Check if data is an array or has a data property that is an array
         if (Array.isArray(data)) {
           setSkillsData(data);
           setEditedSkills(data.map((skill: Skill) => ({ ...skill })));
+        } else if (data.data && Array.isArray(data.data)) {
+          // Handle the case where data is wrapped in a data property
+          setSkillsData(data.data);
+          setEditedSkills(data.data.map((skill: Skill) => ({ ...skill })));
         } else {
-          console.error("Skills data is not an array:", data);
+          console.error("Skills data is not in expected format:", data);
           // Initialize with empty arrays as fallback
           setSkillsData([]);
           setEditedSkills([]);

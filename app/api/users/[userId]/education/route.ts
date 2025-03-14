@@ -38,7 +38,7 @@ export async function POST(
       },
     });
 
-    return successResponse(education, 201);
+    return successResponse(education);
   } catch (error) {
     console.error("Error creating education:", error);
     return errorResponse("Failed to create education");
