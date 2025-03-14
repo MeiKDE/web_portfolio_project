@@ -196,19 +196,33 @@ export default function Experiences({ userId }: ExperienceProps) {
     [key: string]: z.ZodIssue[] | { [field: string]: boolean };
   }>({});
 
-  //The useSWR hook is used to fetch the experiences data from the API.
-  const { data, error, isLoading, mutate } = useSWR(
-    `/api/users/${userId}/experiences`,
-    fetcher
-  );
+  // Update the useSWR hook and data handling
+  const {
+    data: apiResponse,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR(`/api/users/${userId}/experiences`, fetcher);
 
   // Update local state when data is fetched
   useEffect(() => {
-    if (data) {
-      setExperienceData(data);
-      setEditedExperiences(JSON.parse(JSON.stringify(data))); // Deep copy for editing
+    if (apiResponse && !apiResponse.error) {
+      // Extract the data array from the API response
+      const experiences = apiResponse.data || [];
+      setExperienceData(experiences);
+
+      // Format dates for editing
+      const formattedExperiences = experiences.map((exp: Experience) => ({
+        ...exp,
+        startDate: exp.startDate
+          ? formatDateForInput(exp.startDate)
+          : getCurrentDate(),
+        endDate: exp.endDate ? formatDateForInput(exp.endDate) : null,
+      }));
+
+      setEditedExperiences(formattedExperiences);
     }
-  }, [data]);
+  }, [apiResponse]);
 
   // Call this in useEffect
   useEffect(() => {

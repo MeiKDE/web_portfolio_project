@@ -4,89 +4,98 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, successResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { experienceSchema } from "@/lib/validations";
-import {
-  handleApiError,
-  createApiError,
-  HTTP_STATUS,
-} from "@/lib/error-handler";
 
-// GET all experiences for a user
-export const GET = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { userId: string } },
-    user
-  ) => {
-    try {
-      const experiences = await prisma.experience.findMany({
-        where: { userId: params.userId },
-        orderBy: { startDate: "desc" },
-      });
+// GET all experiences for a specific user
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
 
-      return successResponse(experiences);
-    } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to fetch experiences",
-        "GET /users/[userId]/experiences"
-      );
+    if (!session?.user) {
+      return errorResponse("Not authenticated", 401);
     }
+
+    // For security, only allow users to see their own experiences
+    // or implement admin check here if needed
+    if (session.user.id !== params.userId) {
+      return errorResponse("Not authorized to view these experiences", 403);
+    }
+
+    const experiences = await prisma.experience.findMany({
+      where: {
+        userId: params.userId,
+      },
+      orderBy: {
+        startDate: "desc",
+      },
+    });
+
+    return successResponse(experiences);
+  } catch (error) {
+    console.error("Error fetching experiences:", error);
+    return errorResponse("Failed to fetch experiences");
   }
-);
+}
 
 // POST Request: If you want to add a new job to a user's profile, you send a POST request with the job details, and it adds this job to the user's list of experiences.
 // When a POST request is made, it expects some data in the request body (like the job position, company, start date, etc.).
 // If successful, it sends back the newly created experience as a JSON response.
-export const POST = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { userId: string } },
-    user
-  ) => {
-    try {
-      // Add detailed logging
-      console.log("POST request to experiences");
-      console.log("User from session:", user);
-      console.log("User ID from params:", params.userId);
 
-      // Verify the user is modifying their own data
-      if (user.id !== params.userId) {
-        throw createApiError.forbidden(
-          "You can only add experiences to your own profile"
-        );
-      }
+// POST new experience for a specific user
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
 
-      // Parse and validate the request body
-      const body = await request.json();
-      console.log("Received body:", body);
+    if (!session?.user) {
+      return errorResponse("Not authenticated", 401);
+    }
 
-      const validationResult = experienceSchema.safeParse(body);
-
-      if (!validationResult.success) {
-        throw createApiError.badRequest(
-          "Invalid experience data",
-          validationResult.error.format()
-        );
-      }
-
-      // Create the new experience
-      const newExperience = await prisma.experience.create({
-        data: {
-          ...validationResult.data,
-          description: validationResult.data.description || "",
-          userId: params.userId,
-        },
-      });
-
-      return successResponse(newExperience, HTTP_STATUS.CREATED);
-    } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to create experience",
-        "POST /users/[userId]/experiences"
+    // For security, only allow users to add experiences to their own profile
+    if (session.user.id !== params.userId) {
+      return errorResponse(
+        "Not authorized to add experiences for this user",
+        403
       );
     }
+
+    const body = await request.json();
+
+    // Convert date strings to Date objects
+    if (body.startDate) {
+      body.startDate = new Date(body.startDate);
+    }
+    if (body.endDate) {
+      body.endDate = new Date(body.endDate);
+    }
+
+    const validationResult = experienceSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return errorResponse(
+        "Invalid experience data",
+        validationResult.error.format()
+      );
+    }
+
+    const newExperience = await prisma.experience.create({
+      data: {
+        ...validationResult.data,
+        userId: params.userId,
+      },
+    });
+
+    return successResponse(newExperience);
+  } catch (error) {
+    console.error("Error creating experience:", error);
+    return errorResponse("Failed to create experience");
   }
-);
+}
