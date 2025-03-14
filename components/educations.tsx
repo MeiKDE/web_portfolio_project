@@ -13,9 +13,10 @@ interface Education {
   institution: string;
   degree: string;
   fieldOfStudy: string;
-  startYear: string;
-  endYear?: string;
+  startYear: number;
+  endYear?: number;
   description?: string;
+  userId?: string;
 }
 
 interface EducationProps {
@@ -28,23 +29,29 @@ const educationSchema = z
     institution: z.string().min(1, "Institution is required"),
     degree: z.string().min(1, "Degree is required"),
     fieldOfStudy: z.string().min(1, "Field of study is required"),
-    startYear: z.string().min(1, "Start year is required"),
-    endYear: z.string().nullable().optional(),
+    startYear: z
+      .number()
+      .int()
+      .positive("Start year must be a positive integer"),
+    endYear: z
+      .number()
+      .int()
+      .positive("End year must be a positive integer")
+      .nullable()
+      .optional(),
     description: z.string().optional(),
   })
   .refine(
     (data) => {
       // Skip validation if end year is null or empty
-      if (!data.endYear) return true;
+      if (data.endYear == null) return true;
 
       // Compare years - start year should be before or equal to end year
-      const startYear = parseInt(data.startYear, 10);
-      const endYear = parseInt(data.endYear, 10);
-      return !isNaN(startYear) && !isNaN(endYear) && startYear <= endYear;
+      return data.startYear <= data.endYear;
     },
     {
       message: "Start year cannot be after end year",
-      path: ["startYear", "endYear"], // This will mark both fields as having an error
+      path: ["startYear", "endYear"],
     }
   );
 
@@ -55,31 +62,43 @@ interface ValidationErrors {
 
 // Improved fetcher function with error handling
 const fetcher = async (url: string) => {
-  const response = await fetch(url, {
-    credentials: "include",
-  });
+  console.log("Fetching from URL:", url);
+  try {
+    const response = await fetch(url, {
+      credentials: "include",
+    });
 
-  // Check if the request was successful
-  if (!response.ok) {
-    // Create an error object with details from the response
-    const error = new Error(
-      `An error occurred while fetching the data: ${response.statusText}`
-    );
-    // Add status and info from response to the error
-    (error as any).status = response.status;
+    console.log("Response status:", response.status);
 
-    // Try to parse error details if available
-    try {
-      (error as any).info = await response.json();
-    } catch (e) {
-      // If parsing fails, just use the status text
-      (error as any).info = response.statusText;
+    // Check if the request was successful
+    if (!response.ok) {
+      // Create an error object with details from the response
+      const error = new Error(
+        `An error occurred while fetching the data: ${response.statusText}`
+      );
+      // Add status and info from response to the error
+      (error as any).status = response.status;
+
+      // Try to parse error details if available
+      try {
+        const errorData = await response.json();
+        console.error("API error details:", errorData);
+        (error as any).info = errorData;
+      } catch (e) {
+        // If parsing fails, just use the status text
+        (error as any).info = response.statusText;
+      }
+
+      throw error;
     }
 
+    const responseData = await response.json();
+    console.log("API response data:", responseData);
+    return responseData;
+  } catch (error) {
+    console.error("Fetch error:", error);
     throw error;
   }
-
-  return response.json();
 };
 
 export default function Educations({ userId }: EducationProps) {
@@ -113,10 +132,26 @@ export default function Educations({ userId }: EducationProps) {
 
   // Update local state when data is fetched
   useEffect(() => {
-    if (data) {
+    console.log("Education data from API:", data);
+
+    // Check if data exists and has the expected structure
+    if (data && !data.error && Array.isArray(data.data)) {
+      // Use data.data instead of data directly
+      setEducationData(data.data);
+      setEditedEducation(JSON.parse(JSON.stringify(data.data))); // Deep copy for editing
+    } else if (data && Array.isArray(data)) {
+      // Handle case where data might be directly an array (for backward compatibility)
       setEducationData(data);
-      setEditedEducation(JSON.parse(JSON.stringify(data))); // Deep copy for editing
+      setEditedEducation(JSON.parse(JSON.stringify(data)));
+    } else {
+      // Initialize with empty arrays if data is not available or in unexpected format
+      console.log("Initializing with empty arrays - data format unexpected");
+      setEducationData([]);
+      setEditedEducation([]);
     }
+
+    console.log("Current educationData state:", educationData);
+    console.log("Current editedEducation state:", editedEducation);
   }, [data]);
 
   // Update validation function to use Zod
@@ -216,22 +251,41 @@ export default function Educations({ userId }: EducationProps) {
     field: keyof Education,
     value: string
   ) => {
-    setEditedEducation((prev) =>
-      prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
-    );
+    if (field === "startYear" || field === "endYear") {
+      // Convert string input to number for year fields
+      const numValue = value === "" ? null : parseInt(value, 10);
+
+      setEditedEducation((prev) =>
+        prev.map((edu) => (edu.id === id ? { ...edu, [field]: numValue } : edu))
+      );
+    } else {
+      // Handle other fields normally
+      setEditedEducation((prev) =>
+        prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
+      );
+    }
 
     // If changing years, validate the year relationship
     if (field === "startYear" || field === "endYear") {
       const education = editedEducation.find((edu) => edu.id === id);
       if (education) {
-        const updatedEducation = { ...education, [field]: value };
+        const updatedEducation = {
+          ...education,
+          [field]:
+            field === "startYear" || field === "endYear"
+              ? value === ""
+                ? null
+                : parseInt(value, 10)
+              : value,
+        };
 
         // Only validate if we have both years
-        if (updatedEducation.startYear && updatedEducation.endYear) {
-          const startYear = parseInt(updatedEducation.startYear, 10);
-          const endYear = parseInt(updatedEducation.endYear, 10);
+        if (
+          updatedEducation.startYear != null &&
+          updatedEducation.endYear != null
+        ) {
           const isValid =
-            !isNaN(startYear) && !isNaN(endYear) && startYear <= endYear;
+            updatedEducation.startYear <= updatedEducation.endYear;
 
           // Update validation errors based on year comparison
           if (!isValid) {
@@ -247,14 +301,14 @@ export default function Educations({ userId }: EducationProps) {
                     {
                       code: "custom",
                       path: ["startYear", "endYear"],
-                      message: "",
+                      message: "Start year cannot be after end year",
                     },
                   ]
                 : [
                     {
                       code: "custom",
                       path: ["startYear", "endYear"],
-                      message: "",
+                      message: "Start year cannot be after end year",
                     },
                   ],
             }));
@@ -322,13 +376,15 @@ export default function Educations({ userId }: EducationProps) {
       institution: "",
       degree: "",
       fieldOfStudy: "",
-      startYear: new Date().getFullYear().toString(),
-      endYear: (new Date().getFullYear() + 4).toString(),
+      startYear: new Date().getFullYear(),
+      endYear: new Date().getFullYear() + 4,
       description: "",
     };
 
     // Add the new education to the edited list
-    setEditedEducation([...editedEducation, newEducation]);
+    setEditedEducation((prev) =>
+      Array.isArray(prev) ? [...prev, newEducation] : [newEducation]
+    );
 
     // Enable editing mode if not already enabled
     if (!editable) {
@@ -354,7 +410,7 @@ export default function Educations({ userId }: EducationProps) {
     try {
       setIsSubmitting(true);
 
-      // Format the payload
+      // Format the payload - convert string years to integers
       const payload = {
         institution: newEntry.institution,
         degree: newEntry.degree,
@@ -363,6 +419,8 @@ export default function Educations({ userId }: EducationProps) {
         endYear: newEntry.endYear ? parseInt(newEntry.endYear, 10) : null,
         description: newEntry.description || "",
       };
+
+      console.log("Sending new education payload:", payload);
 
       const response = await fetch(`/api/users/${userId}/education`, {
         method: "POST",
@@ -411,17 +469,13 @@ export default function Educations({ userId }: EducationProps) {
         console.log("Processing education:", education);
 
         // Create a modified payload with startYear and endYear converted to integer
-        const startYear = parseInt(education.startYear, 10);
         const payload = {
           institution: education.institution,
           degree: education.degree,
           fieldOfStudy: education.fieldOfStudy,
-          startYear: startYear,
-          // Always include endYear, with a default if not provided
-          endYear: education.endYear
-            ? parseInt(education.endYear, 10)
-            : startYear + 4,
-          description: education.description,
+          startYear: parseInt(education.startYear, 10),
+          endYear: education.endYear ? parseInt(education.endYear, 10) : null,
+          description: education.description || "",
         };
 
         console.log("Sending payload:", payload);
@@ -516,6 +570,12 @@ export default function Educations({ userId }: EducationProps) {
       alert("Failed to delete education. Please try again.");
     }
   };
+
+  useEffect(() => {
+    console.log("Education data from API:", data);
+    console.log("Current educationData state:", educationData);
+    console.log("Current editedEducation state:", editedEducation);
+  }, [data, educationData, editedEducation]);
 
   if (isLoading) return <div>Loading education...</div>;
   if (error) return <div>Error loading education information</div>;
@@ -683,9 +743,10 @@ export default function Educations({ userId }: EducationProps) {
                 <div className="flex gap-2 mb-2">
                   <div className="w-1/2">
                     <input
-                      type="text"
+                      type="number"
                       value={
-                        editedEducation[editedEducation.length - 1].startYear
+                        editedEducation[editedEducation.length - 1].startYear ||
+                        ""
                       }
                       onChange={(e) =>
                         handleInputChange(
@@ -707,21 +768,10 @@ export default function Educations({ userId }: EducationProps) {
                       }`}
                       placeholder="Start Year*"
                     />
-                    {getFieldError(
-                      editedEducation[editedEducation.length - 1].id,
-                      "startYear"
-                    ) && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {getFieldError(
-                          editedEducation[editedEducation.length - 1].id,
-                          "startYear"
-                        )}
-                      </p>
-                    )}
                   </div>
                   <div className="w-1/2">
                     <input
-                      type="text"
+                      type="number"
                       value={
                         editedEducation[editedEducation.length - 1].endYear ||
                         ""
@@ -902,8 +952,8 @@ export default function Educations({ userId }: EducationProps) {
                         <div className="flex gap-2 mb-2">
                           <div className="w-1/2">
                             <input
-                              type="text"
-                              value={edu.startYear}
+                              type="number"
+                              value={edu.startYear || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   edu.id,
@@ -927,7 +977,7 @@ export default function Educations({ userId }: EducationProps) {
                           </div>
                           <div className="w-1/2">
                             <input
-                              type="text"
+                              type="number"
                               value={edu.endYear || ""}
                               onChange={(e) =>
                                 handleInputChange(

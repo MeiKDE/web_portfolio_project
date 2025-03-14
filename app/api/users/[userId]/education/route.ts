@@ -3,44 +3,51 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { withAuth, successResponse } from "@/lib/api-helpers";
+import { handleApiError } from "@/lib/error-handler";
 
-// GET all education entries for a user
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    const education = await prisma.education.findMany({
-      where: { userId: params.userId },
-      orderBy: { endYear: "desc" },
-    });
+// GET all education entries for a specific user
+export const GET = withAuth(
+  async (request: NextRequest, { params }: { params: { userId: string } }) => {
+    try {
+      const educations = await prisma.education.findMany({
+        where: { userId: params.userId },
+        orderBy: { startYear: "desc" },
+      });
 
-    return successResponse(education);
-  } catch (error) {
-    console.error("Error fetching education:", error);
-    return errorResponse("Failed to fetch education");
+      // No need to transform data anymore
+      return successResponse(educations);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to retrieve education entries",
+        "GET /users/[userId]/education"
+      );
+    }
   }
-}
+);
 
-// CREATE a new education entry
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    const data = await request.json();
+// CREATE a new education entry for a specific user
+export const POST = withAuth(
+  async (request: NextRequest, { params }: { params: { userId: string } }) => {
+    try {
+      const data = await request.json();
 
-    const education = await prisma.education.create({
-      data: {
-        ...data,
-        userId: params.userId,
-      },
-    });
+      // No need to transform data anymore
+      const education = await prisma.education.create({
+        data: {
+          ...data,
+          userId: params.userId,
+        },
+      });
 
-    return successResponse(education);
-  } catch (error) {
-    console.error("Error creating education:", error);
-    return errorResponse("Failed to create education");
+      return successResponse(education);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to create education entry",
+        "POST /users/[userId]/education"
+      );
+    }
   }
-}
+);

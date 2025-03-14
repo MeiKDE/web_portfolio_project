@@ -25,37 +25,37 @@ const educationSchema = z.object({
   description: z.string().optional(),
 });
 
-// CREATE a new education entry
-export const POST = withAuth(async (request: NextRequest, context, user) => {
+// GET all education entries for the authenticated user
+export const GET = withAuth(async (request: NextRequest, user) => {
   try {
-    // Parse the request body
-    const body = await request.json();
-
-    // Validate the request data
-    const validationResult = educationSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      throw createApiError.badRequest(
-        "Invalid education data",
-        validationResult.error.format()
-      );
-    }
-
-    // Ensure endYear is provided (required by Prisma schema)
-    const dataWithEndYear = {
-      ...validationResult.data,
-      // If endYear is not provided, use a default value (e.g., startYear + 4)
-      endYear:
-        validationResult.data.endYear || validationResult.data.startYear + 4,
-      userId: user.id,
-    };
-
-    // Create the new education entry
-    const education = await prisma.education.create({
-      data: dataWithEndYear,
+    const educations = await prisma.education.findMany({
+      where: { userId: user.id },
+      orderBy: { startYear: "desc" },
     });
 
-    return successResponse(education, HTTP_STATUS.CREATED);
+    return successResponse(educations);
+  } catch (error) {
+    return handleApiError(
+      error,
+      "Failed to retrieve education entries",
+      "GET /education"
+    );
+  }
+});
+
+// CREATE a new education entry
+export const POST = withAuth(async (request: NextRequest, user) => {
+  try {
+    const data = await request.json();
+
+    const education = await prisma.education.create({
+      data: {
+        ...data,
+        userId: user.id,
+      },
+    });
+
+    return successResponse(education);
   } catch (error) {
     return handleApiError(
       error,

@@ -6,6 +6,34 @@ import prisma from "@/lib/prisma";
 import { withOwnership, successResponse } from "@/lib/api-helpers";
 import { handleApiError, createApiError } from "@/lib/error-handler";
 
+// GET a specific education entry
+export const GET = withOwnership(
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
+    try {
+      const education = await prisma.education.findUnique({
+        where: { id: params.id },
+      });
+
+      if (!education) {
+        return createApiError.notFound("Education entry not found");
+      }
+
+      return successResponse(education);
+    } catch (error) {
+      return handleApiError(
+        error,
+        "Failed to retrieve education",
+        "GET /education/[id]"
+      );
+    }
+  },
+  "education"
+);
+
 // UPDATE an education entry
 export const PUT = withOwnership(
   async (
