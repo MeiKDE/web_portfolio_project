@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Educations from "@/components/Educations";
 import Experiences from "@/components/Experiences";
 import Skills from "@/components/Skills";
@@ -12,27 +11,19 @@ import Certifications from "@/components/Certifications";
 import User from "@/components/User";
 import SocialLinks from "@/components/SocialLinks";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useEffect } from "react";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
-  // Ensure this page is protected
-  useEffect(() => {
-    // If user is not authenticated and auth is finished loading, redirect to login
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
 
   // Show loading or protected content based on auth status
   if (status === "loading") {
     return <LoadingSpinner fullPage text="Loading your profile..." />;
   }
 
+  // We can remove the redirect logic since middleware handles it
+  // Just handle the case where session data is still loading
   if (!session || !session.user) {
-    return null; // Don't render anything if not authenticated (will be redirected)
+    return null; // Don't render anything if not authenticated (middleware will redirect)
   }
 
   return (
