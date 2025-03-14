@@ -8,6 +8,7 @@ import { GraduationCap, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useFormValidation } from "@/lib/form-validation";
 
 interface Education {
   id: string;
@@ -111,6 +112,16 @@ export default function Educations({ userId }: EducationProps) {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
     {}
   );
+
+  // Use the form validation hook
+  const {
+    validateData,
+    getFieldError,
+    touchField,
+    hasErrorType,
+    getErrorTypeMessage,
+    getInputClassName,
+  } = useFormValidation(educationSchema);
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/education`,
@@ -250,120 +261,34 @@ export default function Educations({ userId }: EducationProps) {
   const handleInputChange = (
     id: string,
     field: keyof Education,
-    value: string
+    value: any
   ) => {
-    if (field === "startYear" || field === "endYear") {
-      // Convert string input to number for year fields
-      const numValue = value === "" ? null : parseInt(value, 10);
+    // Update your state
+    setEditedEducation((prev) =>
+      prev.map((edu) =>
+        edu.id === id
+          ? {
+              ...edu,
+              [field]: field.includes("Year") ? parseInt(value) : value,
+            }
+          : edu
+      )
+    );
 
-      setEditedEducation((prev) =>
-        prev.map((edu) => (edu.id === id ? { ...edu, [field]: numValue } : edu))
-      );
-    } else {
-      // Handle other fields normally
-      setEditedEducation((prev) =>
-        prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
-      );
-    }
+    // Mark field as touched
+    touchField(id, field as string);
 
-    // If changing years, validate the year relationship
-    if (field === "startYear" || field === "endYear") {
-      const education = editedEducation.find((edu) => edu.id === id);
-      if (education) {
-        const updatedEducation = {
-          ...education,
-          [field]:
-            field === "startYear" || field === "endYear"
-              ? value === ""
-                ? null
-                : parseInt(value, 10)
-              : value,
-        };
+    // Get the updated education object
+    const updatedEducation = editedEducation.find((edu) => edu.id === id);
+    if (updatedEducation) {
+      // Create a copy with the new value
+      const educationToValidate = {
+        ...updatedEducation,
+        [field]: field.includes("Year") ? parseInt(value) : value,
+      };
 
-        // Only validate if we have both years
-        if (
-          updatedEducation.startYear != null &&
-          updatedEducation.endYear != null
-        ) {
-          const isValid =
-            updatedEducation.startYear <= updatedEducation.endYear;
-
-          // Update validation errors based on year comparison
-          if (!isValid) {
-            setValidationErrors((prev) => ({
-              ...prev,
-              [id]: Array.isArray(prev[id])
-                ? [
-                    ...(prev[id] as z.ZodIssue[]).filter(
-                      (issue) =>
-                        !issue.path.includes("startYear") &&
-                        !issue.path.includes("endYear")
-                    ),
-                    {
-                      code: "custom",
-                      path: ["startYear", "endYear"],
-                      message: "Start year cannot be after end year",
-                    },
-                  ]
-                : [
-                    {
-                      code: "custom",
-                      path: ["startYear", "endYear"],
-                      message: "Start year cannot be after end year",
-                    },
-                  ],
-            }));
-          } else {
-            // Clear year relationship errors if valid
-            setValidationErrors((prev) => {
-              if (!Array.isArray(prev[id])) return prev;
-
-              return {
-                ...prev,
-                [id]: (prev[id] as z.ZodIssue[]).filter(
-                  (issue) =>
-                    !(
-                      issue.path.includes("startYear") &&
-                      issue.path.includes("endYear")
-                    )
-                ),
-              };
-            });
-          }
-        }
-      }
-    }
-
-    // Clear individual field validation errors
-    if (validationErrors[id]) {
-      // If using Zod issues array
-      if (Array.isArray(validationErrors[id])) {
-        const issues = validationErrors[id] as z.ZodIssue[];
-        const updatedIssues = issues.filter(
-          (issue) =>
-            !issue.path.includes(field as string) ||
-            (issue.path.length > 1 &&
-              issue.path.includes("startYear") &&
-              issue.path.includes("endYear"))
-        );
-
-        setValidationErrors((prev) => ({
-          ...prev,
-          [id]: updatedIssues,
-        }));
-      } else {
-        // For backward compatibility with the old validation format
-        const errors = validationErrors[id] as { [field: string]: boolean };
-        if (errors[field as string]) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            [id]: {
-              ...(prev[id] as { [field: string]: boolean }),
-              [field]: false,
-            },
-          }));
-        }
-      }
+      // Validate the updated data
+      validateData(educationToValidate, id);
     }
   };
 
@@ -650,14 +575,11 @@ export default function Educations({ userId }: EducationProps) {
                         e.target.value
                       )
                     }
-                    className={`font-semibold w-full p-1 border rounded ${
-                      getFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "institution"
-                      )
-                        ? "border-red-500 ring-red-500"
-                        : ""
-                    }`}
+                    className={getInputClassName(
+                      editedEducation[editedEducation.length - 1].id,
+                      "institution",
+                      "font-semibold w-full p-1 border rounded"
+                    )}
                     placeholder="Institution*"
                   />
                   {getFieldError(
@@ -684,14 +606,11 @@ export default function Educations({ userId }: EducationProps) {
                         e.target.value
                       )
                     }
-                    className={`text-muted-foreground w-full p-1 border rounded ${
-                      getFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "degree"
-                      )
-                        ? "border-red-500 ring-red-500"
-                        : ""
-                    }`}
+                    className={getInputClassName(
+                      editedEducation[editedEducation.length - 1].id,
+                      "degree",
+                      "text-muted-foreground w-full p-1 border rounded"
+                    )}
                     placeholder="Degree*"
                   />
                   {getFieldError(
@@ -720,14 +639,11 @@ export default function Educations({ userId }: EducationProps) {
                         e.target.value
                       )
                     }
-                    className={`text-muted-foreground w-full p-1 border rounded ${
-                      getFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "fieldOfStudy"
-                      )
-                        ? "border-red-500 ring-red-500"
-                        : ""
-                    }`}
+                    className={getInputClassName(
+                      editedEducation[editedEducation.length - 1].id,
+                      "fieldOfStudy",
+                      "text-muted-foreground w-full p-1 border rounded"
+                    )}
                     placeholder="Field of Study*"
                   />
                   {getFieldError(
@@ -758,17 +674,11 @@ export default function Educations({ userId }: EducationProps) {
                           e.target.value
                         )
                       }
-                      className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                        getFieldError(
-                          editedEducation[editedEducation.length - 1].id,
-                          "startYear"
-                        ) ||
-                        hasYearRangeError(
-                          editedEducation[editedEducation.length - 1].id
-                        )
-                          ? "border-red-500 ring-red-500"
-                          : ""
-                      }`}
+                      className={getInputClassName(
+                        editedEducation[editedEducation.length - 1].id,
+                        "startYear",
+                        "text-sm text-muted-foreground w-full p-1 border rounded"
+                      )}
                       placeholder="Start Year*"
                     />
                   </div>
@@ -786,24 +696,24 @@ export default function Educations({ userId }: EducationProps) {
                           e.target.value
                         )
                       }
-                      className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                        hasYearRangeError(
-                          editedEducation[editedEducation.length - 1].id
-                        )
-                          ? "border-red-500 ring-red-500"
-                          : ""
-                      }`}
+                      className={getInputClassName(
+                        editedEducation[editedEducation.length - 1].id,
+                        "endYear",
+                        "text-sm text-muted-foreground w-full p-1 border rounded"
+                      )}
                       placeholder="End Year"
                     />
                   </div>
                 </div>
 
-                {hasYearRangeError(
-                  editedEducation[editedEducation.length - 1].id
-                ) && (
+                {hasErrorType(editedEducation[editedEducation.length - 1].id, [
+                  "startYear",
+                  "endYear",
+                ]) && (
                   <p className="text-red-500 text-xs mt-1 mb-2">
-                    {getYearRangeError(
-                      editedEducation[editedEducation.length - 1].id
+                    {getErrorTypeMessage(
+                      editedEducation[editedEducation.length - 1].id,
+                      ["startYear", "endYear"]
                     )}
                   </p>
                 )}
@@ -888,11 +798,11 @@ export default function Educations({ userId }: EducationProps) {
                                 e.target.value
                               )
                             }
-                            className={`font-semibold w-full p-1 border rounded ${
-                              getFieldError(edu.id, "institution")
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
+                            className={getInputClassName(
+                              edu.id,
+                              "institution",
+                              "font-semibold w-full p-1 border rounded"
+                            )}
                             placeholder="Institution*"
                           />
                           {getFieldError(edu.id, "institution") && (
@@ -913,11 +823,11 @@ export default function Educations({ userId }: EducationProps) {
                                 e.target.value
                               )
                             }
-                            className={`text-muted-foreground w-full p-1 border rounded ${
-                              getFieldError(edu.id, "degree")
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
+                            className={getInputClassName(
+                              edu.id,
+                              "degree",
+                              "text-muted-foreground w-full p-1 border rounded"
+                            )}
                             placeholder="Degree*"
                           />
                           {getFieldError(edu.id, "degree") && (
@@ -938,11 +848,11 @@ export default function Educations({ userId }: EducationProps) {
                                 e.target.value
                               )
                             }
-                            className={`text-muted-foreground w-full p-1 border rounded ${
-                              getFieldError(edu.id, "fieldOfStudy")
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
+                            className={getInputClassName(
+                              edu.id,
+                              "fieldOfStudy",
+                              "text-muted-foreground w-full p-1 border rounded"
+                            )}
                             placeholder="Field of Study*"
                           />
                           {getFieldError(edu.id, "fieldOfStudy") && (
@@ -964,12 +874,11 @@ export default function Educations({ userId }: EducationProps) {
                                   e.target.value
                                 )
                               }
-                              className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                                getFieldError(edu.id, "startYear") ||
-                                hasYearRangeError(edu.id)
-                                  ? "border-red-500 ring-red-500"
-                                  : ""
-                              }`}
+                              className={getInputClassName(
+                                edu.id,
+                                "startYear",
+                                "text-sm text-muted-foreground w-full p-1 border rounded"
+                              )}
                               placeholder="Start Year*"
                             />
                             {getFieldError(edu.id, "startYear") && (
@@ -989,19 +898,22 @@ export default function Educations({ userId }: EducationProps) {
                                   e.target.value
                                 )
                               }
-                              className={`text-sm text-muted-foreground w-full p-1 border rounded ${
-                                hasYearRangeError(edu.id)
-                                  ? "border-red-500 ring-red-500"
-                                  : ""
-                              }`}
+                              className={getInputClassName(
+                                edu.id,
+                                "endYear",
+                                "text-sm text-muted-foreground w-full p-1 border rounded"
+                              )}
                               placeholder="End Year"
                             />
                           </div>
                         </div>
 
-                        {hasYearRangeError(edu.id) && (
+                        {hasErrorType(edu.id, ["startYear", "endYear"]) && (
                           <p className="text-red-500 text-xs mt-1 mb-2">
-                            {getYearRangeError(edu.id)}
+                            {getErrorTypeMessage(edu.id, [
+                              "startYear",
+                              "endYear",
+                            ])}
                           </p>
                         )}
 

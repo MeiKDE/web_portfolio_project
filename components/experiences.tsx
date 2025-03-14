@@ -19,6 +19,7 @@ import {
 import useSWR from "swr";
 import { z } from "zod"; // Import zod for validation
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useFormValidation } from "@/lib/form-validation";
 
 // Define Zod schema for experience validation
 const experienceSchema = z
@@ -43,7 +44,7 @@ const experienceSchema = z
     },
     {
       message: "Start date cannot be after end date",
-      path: ["startDate", "endDate"], // This will mark both fields as having an error
+      path: ["startDate", "endDate"],
     }
   );
 
@@ -170,6 +171,16 @@ const calculateDuration = (
 
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
+  // Use the form validation hook
+  const {
+    validateData,
+    getFieldError,
+    touchField,
+    hasErrorType,
+    getErrorTypeMessage,
+    getInputClassName,
+  } = useFormValidation(experienceSchema);
+
   // A state variable error is initialized to null.
   const [localError, setLocalError] = useState<string | null>(null);
   const [experienceData, setExperienceData] = useState<Experience[]>([]);
@@ -191,11 +202,6 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update validation errors state to include zod validation results
-  const [validationErrors, setValidationErrors] = useState<{
-    [key: string]: z.ZodIssue[] | { [field: string]: boolean };
-  }>({});
 
   // Update the useSWR hook and data handling
   const {
@@ -230,45 +236,13 @@ export default function Experiences({ userId }: ExperienceProps) {
     checkSession(userId);
   }, [userId]);
 
-  const validateExperience = (
-    experience: Experience | Omit<Experience, "id">,
-    id?: string
-  ) => {
-    try {
-      // Validate with Zod schema
-      experienceSchema.parse(experience);
-
-      // If validation passes and we have an ID, clear any existing errors
-      if (id) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          [id]: [],
-        }));
-      }
-
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        // Store Zod validation issues
-        if (id) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            [id]: error.issues,
-          }));
-        }
-        return false;
-      }
-      return false;
-    }
-  };
-
   const handleEditToggle = () => {
     if (isEditing) {
       // Validate all experiences before saving
       let hasErrors = false;
 
       editedExperiences.forEach((exp) => {
-        if (!validateExperience(exp, exp.id)) {
+        if (!validateData(exp, exp.id)) {
           hasErrors = true;
         }
       });
@@ -292,7 +266,7 @@ export default function Experiences({ userId }: ExperienceProps) {
         }))
       );
       // Reset validation errors when entering edit mode
-      setValidationErrors({});
+      touchField("", "");
     }
     setIsEditing(!isEditing);
   };
@@ -300,113 +274,27 @@ export default function Experiences({ userId }: ExperienceProps) {
   const handleInputChange = (
     id: string,
     field: keyof Experience,
-    value: string | boolean | null
+    value: any
   ) => {
-    // First update the experience in state
-    const updatedExperiences = editedExperiences.map((exp) => {
-      if (exp.id === id) {
-        const updatedExp = { ...exp, [field]: value };
+    // Update your state
+    setEditedExperiences((prev) =>
+      prev.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
+    );
 
-        // If changing dates or current position status, validate the date relationship
-        if (
-          field === "startDate" ||
-          field === "endDate" ||
-          field === "isCurrentPosition"
-        ) {
-          // Only validate if we have both dates and it's not marked as current position
-          if (
-            updatedExp.startDate &&
-            updatedExp.endDate &&
-            !updatedExp.isCurrentPosition
-          ) {
-            const isValid = validateDateRange(
-              updatedExp.startDate,
-              updatedExp.endDate,
-              updatedExp.isCurrentPosition
-            );
+    // Mark field as touched
+    touchField(id, field as string);
 
-            // If invalid, update validation errors
-            if (!isValid) {
-              setValidationErrors((prev) => ({
-                ...prev,
-                [id]: Array.isArray(prev[id])
-                  ? [
-                      ...(prev[id] as z.ZodIssue[]).filter(
-                        (issue) =>
-                          !issue.path.includes("startDate") &&
-                          !issue.path.includes("endDate")
-                      ),
-                      {
-                        code: "custom",
-                        path: ["startDate", "endDate"],
-                        message: "Start date cannot be after end date",
-                      },
-                    ]
-                  : [
-                      {
-                        code: "custom",
-                        path: ["startDate", "endDate"],
-                        message: "Start date cannot be after end date",
-                      },
-                    ],
-              }));
-            } else {
-              // Clear date relationship errors if valid
-              setValidationErrors((prev) => {
-                if (!Array.isArray(prev[id])) return prev;
+    // Get the updated experience object
+    const updatedExperience = editedExperiences.find((exp) => exp.id === id);
+    if (updatedExperience) {
+      // Create a copy with the new value
+      const experienceToValidate = {
+        ...updatedExperience,
+        [field]: value,
+      };
 
-                return {
-                  ...prev,
-                  [id]: (prev[id] as z.ZodIssue[]).filter(
-                    (issue) =>
-                      !(
-                        issue.path.includes("startDate") &&
-                        issue.path.includes("endDate")
-                      )
-                  ),
-                };
-              });
-            }
-          }
-        }
-
-        return updatedExp;
-      }
-      return exp;
-    });
-
-    setEditedExperiences(updatedExperiences);
-
-    // Clear individual field validation errors as before
-    if (validationErrors[id]) {
-      // If using Zod issues array
-      if (Array.isArray(validationErrors[id])) {
-        const issues = validationErrors[id] as z.ZodIssue[];
-        const updatedIssues = issues.filter(
-          (issue) =>
-            !issue.path.includes(field as string) ||
-            (issue.path.length > 1 &&
-              issue.path.includes("startDate") &&
-              issue.path.includes("endDate"))
-        );
-
-        setValidationErrors((prev) => ({
-          ...prev,
-          [id]: updatedIssues,
-        }));
-      } else {
-        // For backward compatibility with the old validation format
-        const errors = validationErrors[id] as { [field: string]: boolean };
-        if (errors[field as string]) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            [id]: {
-              ...(prev[id] as { [field: string]: boolean }),
-              [field]: false,
-            },
-          }));
-        }
-      }
+      // Validate the updated data
+      validateData(experienceToValidate, id);
     }
   };
 
@@ -539,45 +427,24 @@ export default function Experiences({ userId }: ExperienceProps) {
 
         // If invalid, update validation errors
         if (!isValid) {
-          setValidationErrors((prev) => ({
-            ...prev,
-            new: Array.isArray(prev.new)
-              ? [
-                  ...(prev.new as z.ZodIssue[]).filter(
-                    (issue) =>
-                      !issue.path.includes("startDate") &&
-                      !issue.path.includes("endDate")
-                  ),
-                  {
-                    code: "custom",
-                    path: ["startDate", "endDate"],
-                    message: "Start date cannot be after end date",
-                  },
-                ]
-              : [
-                  {
-                    code: "custom",
-                    path: ["startDate", "endDate"],
-                    message: "Start date cannot be after end date",
-                  },
-                ],
-          }));
+          touchField("new", field);
+          validateData(
+            {
+              ...updatedExperience,
+              [field]: value,
+            },
+            "new"
+          );
         } else {
           // Clear date relationship errors if valid
-          setValidationErrors((prev) => {
-            if (!Array.isArray(prev.new)) return prev;
-
-            return {
-              ...prev,
-              new: (prev.new as z.ZodIssue[]).filter(
-                (issue) =>
-                  !(
-                    issue.path.includes("startDate") &&
-                    issue.path.includes("endDate")
-                  )
-              ),
-            };
-          });
+          touchField("new", field);
+          validateData(
+            {
+              ...updatedExperience,
+              [field]: value,
+            },
+            "new"
+          );
         }
       }
     }
@@ -588,13 +455,16 @@ export default function Experiences({ userId }: ExperienceProps) {
 
     // Validate the new experience with Zod
     try {
-      experienceSchema.parse(newExperience);
+      validateData(newExperience, "new");
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          new: error.issues,
-        }));
+        touchField("new", "position");
+        touchField("new", "company");
+        touchField("new", "startDate");
+        touchField("new", "endDate");
+        touchField("new", "description");
+        touchField("new", "location");
+        touchField("new", "isCurrentPosition");
         return;
       }
     }
@@ -686,50 +556,6 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
-  // Helper function to get field error message
-  const getFieldError = (id: string, field: string): string | null => {
-    if (!validationErrors[id]) return null;
-
-    if (Array.isArray(validationErrors[id])) {
-      const issues = validationErrors[id] as z.ZodIssue[];
-      const issue = issues.find((i) => i.path.includes(field));
-      return issue ? issue.message : null;
-    } else {
-      const errors = validationErrors[id] as { [field: string]: boolean };
-      return errors[field]
-        ? `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
-        : null;
-    }
-  };
-
-  // Add a function to check if a field has a date relationship error
-  const hasDateRangeError = (id: string): boolean => {
-    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
-      return false;
-
-    const issues = validationErrors[id] as z.ZodIssue[];
-    return issues.some(
-      (issue) =>
-        issue.path.includes("startDate") &&
-        issue.path.includes("endDate") &&
-        issue.message === ""
-    );
-  };
-
-  // Add a function to get the date range error message
-  const getDateRangeError = (id: string): string | null => {
-    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
-      return null;
-
-    const issues = validationErrors[id] as z.ZodIssue[];
-    const issue = issues.find(
-      (issue) =>
-        issue.path.includes("startDate") && issue.path.includes("endDate")
-    );
-
-    return issue ? issue.message : null;
-  };
-
   if (isLoading)
     return <LoadingSpinner size="sm" text="Loading experiences..." />;
   if (error) return <div>Error loading experiences: {error.message}</div>;
@@ -798,11 +624,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                     onChange={(e) =>
                       handleNewExperienceChange("position", e.target.value)
                     }
-                    className={`text-muted-foreground ${
-                      getFieldError("new", "position")
-                        ? "border-red-500 ring-red-500"
-                        : ""
-                    }`}
+                    className={getInputClassName(
+                      "new",
+                      "position",
+                      "text-muted-foreground"
+                    )}
                     placeholder="Position*"
                   />
                   {getFieldError("new", "position") && (
@@ -818,11 +644,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                     onChange={(e) =>
                       handleNewExperienceChange("company", e.target.value)
                     }
-                    className={`text-muted-foreground ${
-                      getFieldError("new", "company")
-                        ? "border-red-500 ring-red-500"
-                        : ""
-                    }`}
+                    className={getInputClassName(
+                      "new",
+                      "company",
+                      "text-muted-foreground"
+                    )}
                     placeholder="Company*"
                   />
                   {getFieldError("new", "company") && (
@@ -851,12 +677,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                       onChange={(e) =>
                         handleNewExperienceChange("startDate", e.target.value)
                       }
-                      className={`text-sm text-muted-foreground ${
-                        getFieldError("new", "startDate") ||
-                        hasDateRangeError("new")
-                          ? "border-red-500 ring-red-500"
-                          : ""
-                      }`}
+                      className={getInputClassName(
+                        "new",
+                        "startDate",
+                        "text-sm text-muted-foreground"
+                      )}
                       max={getCurrentDate()}
                     />
                     {getFieldError("new", "startDate") && (
@@ -878,19 +703,19 @@ export default function Experiences({ userId }: ExperienceProps) {
                           e.target.value || null
                         )
                       }
-                      className={`text-sm text-muted-foreground ${
-                        hasDateRangeError("new")
-                          ? "border-red-500 ring-red-500"
-                          : ""
-                      }`}
+                      className={getInputClassName(
+                        "new",
+                        "endDate",
+                        "text-sm text-muted-foreground"
+                      )}
                       placeholder="Present"
                       max={getCurrentDate()}
                     />
                   </div>
                 </div>
-                {hasDateRangeError("new") && (
+                {hasErrorType("new", ["startDate", "endDate"]) && (
                   <p className="text-red-500 text-xs mt-1 mb-2">
-                    {getDateRangeError("new")}
+                    {getErrorTypeMessage("new", ["startDate", "endDate"])}
                   </p>
                 )}
                 <div className="flex items-center mb-2">
@@ -960,11 +785,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                                 e.target.value
                               )
                             }
-                            className={`font-semibold w-full p-1 border rounded ${
-                              getFieldError(experience.id, "position")
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
+                            className={getInputClassName(
+                              experience.id,
+                              "position",
+                              "font-semibold w-full p-1 border rounded"
+                            )}
                             placeholder="Position*"
                           />
                           {getFieldError(experience.id, "position") && (
@@ -984,11 +809,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                                 e.target.value
                               )
                             }
-                            className={`text-muted-foreground w-full p-1 border rounded ${
-                              getFieldError(experience.id, "company")
-                                ? "border-red-500 ring-red-500"
-                                : ""
-                            }`}
+                            className={getInputClassName(
+                              experience.id,
+                              "company",
+                              "text-muted-foreground w-full p-1 border rounded"
+                            )}
                             placeholder="Company*"
                           />
                           {getFieldError(experience.id, "company") && (
@@ -1007,7 +832,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                               e.target.value
                             )
                           }
-                          className="text-muted-foreground mb-2 w-full p-1 border rounded"
+                          className={getInputClassName(
+                            experience.id,
+                            "location",
+                            "text-muted-foreground mb-2 w-full p-1 border rounded"
+                          )}
                           placeholder="Location"
                         />
                         <div className="flex gap-2 mb-2">
@@ -1025,12 +854,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                                   e.target.value
                                 )
                               }
-                              className={`text-sm text-muted-foreground p-1 border rounded ${
-                                getFieldError(experience.id, "startDate") ||
-                                hasDateRangeError(experience.id)
-                                  ? "border-red-500 ring-red-500"
-                                  : ""
-                              }`}
+                              className={getInputClassName(
+                                experience.id,
+                                "startDate",
+                                "text-sm text-muted-foreground p-1 border rounded"
+                              )}
                               max={getCurrentDate()}
                             />
                             {getFieldError(experience.id, "startDate") && (
@@ -1055,18 +883,24 @@ export default function Experiences({ userId }: ExperienceProps) {
                                   e.target.value || null
                                 )
                               }
-                              className={`text-sm text-muted-foreground p-1 border rounded ${
-                                hasDateRangeError(experience.id)
-                                  ? "border-red-500 ring-red-500"
-                                  : ""
-                              }`}
+                              className={getInputClassName(
+                                experience.id,
+                                "endDate",
+                                "text-sm text-muted-foreground p-1 border rounded"
+                              )}
                               max={getCurrentDate()}
                             />
                           </div>
                         </div>
-                        {hasDateRangeError(experience.id) && (
+                        {hasErrorType(experience.id, [
+                          "startDate",
+                          "endDate",
+                        ]) && (
                           <p className="text-red-500 text-xs mt-1 mb-2">
-                            {getDateRangeError(experience.id)}
+                            {getErrorTypeMessage(experience.id, [
+                              "startDate",
+                              "endDate",
+                            ])}
                           </p>
                         )}
                         <div className="flex items-center mb-2">
@@ -1099,7 +933,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                               e.target.value
                             )
                           }
-                          className="mt-2 w-full p-1 border rounded"
+                          className={getInputClassName(
+                            experience.id,
+                            "description",
+                            "mt-2 w-full p-1 border rounded"
+                          )}
                           rows={4}
                           placeholder="Description (optional)"
                         />

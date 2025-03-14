@@ -9,6 +9,7 @@ import useSWR from "swr";
 import { z } from "zod";
 import { skillSchema } from "@/lib/validations";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useFormValidation } from "@/lib/form-validation";
 
 interface Skill {
   id: string;
@@ -50,6 +51,13 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
+// Define Zod schema for skill validation
+const skillSchema = z.object({
+  name: z.string().min(1, "Skill name is required"),
+  proficiencyLevel: z.number().int().min(1).max(5),
+  category: z.string().optional(),
+});
+
 export default function Skills({ userId }: SkillsProps) {
   const [editable, setEditable] = useState(false);
   const [skillsData, setSkillsData] = useState<Skill[]>([]);
@@ -64,6 +72,10 @@ export default function Skills({ userId }: SkillsProps) {
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: z.ZodIssue[] | null;
   }>({});
+
+  // Use the form validation hook
+  const { validateData, getFieldError, touchField, getInputClassName } =
+    useFormValidation(skillSchema);
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/skills`,
@@ -157,21 +169,33 @@ export default function Skills({ userId }: SkillsProps) {
     setEditable(!editable);
   };
 
-  const handleInputChange = (
-    id: string,
-    field: keyof Skill,
-    value: string | number
-  ) => {
-    const updatedSkills = editedSkills.map((skill) =>
-      skill.id === id ? { ...skill, [field]: value } : skill
+  const handleInputChange = (id: string, field: keyof Skill, value: any) => {
+    // Update your state
+    setEditedSkills((prev) =>
+      prev.map((skill) =>
+        skill.id === id
+          ? {
+              ...skill,
+              [field]: field === "proficiencyLevel" ? parseInt(value) : value,
+            }
+          : skill
+      )
     );
 
-    setEditedSkills(updatedSkills);
+    // Mark field as touched
+    touchField(id, field as string);
 
-    // Validate the updated skill
-    const updatedSkill = updatedSkills.find((skill) => skill.id === id);
+    // Get the updated skill object
+    const updatedSkill = editedSkills.find((skill) => skill.id === id);
     if (updatedSkill) {
-      validateSkill(updatedSkill, id);
+      // Create a copy with the new value
+      const skillToValidate = {
+        ...updatedSkill,
+        [field]: field === "proficiencyLevel" ? parseInt(value) : value,
+      };
+
+      // Validate the updated data
+      validateData(skillToValidate, id);
     }
   };
 
@@ -327,17 +351,6 @@ export default function Skills({ userId }: SkillsProps) {
       default:
         return "Intermediate";
     }
-  };
-
-  // Helper function to get field error message
-  const getFieldError = (id: string, field: string): string | null => {
-    if (!validationErrors[id]) return null;
-
-    const issues = validationErrors[id];
-    if (!issues) return null;
-
-    const issue = issues.find((i) => i.path.includes(field));
-    return issue ? issue.message : null;
   };
 
   if (isLoading) {
@@ -506,8 +519,17 @@ export default function Skills({ userId }: SkillsProps) {
                                 e.target.value
                               )
                             }
-                            className="w-32"
+                            className={getInputClassName(
+                              skill.id,
+                              "name",
+                              "w-32"
+                            )}
                           />
+                          {getFieldError(skill.id, "name") && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {getFieldError(skill.id, "name")}
+                            </p>
+                          )}
                           <select
                             value={skill.proficiencyLevel}
                             onChange={(e) =>

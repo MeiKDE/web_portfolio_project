@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 import { userProfileSchema } from "@/lib/validations"; // We'll create this schema
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useFormValidation } from "@/lib/form-validation";
 
 interface UserProps {
   userId: string;
@@ -46,6 +47,17 @@ declare global {
   }
 }
 
+// Define Zod schema for user profile validation
+const userProfileSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  title: z.string().optional(),
+  location: z.string().optional(),
+  phone: z.string().optional(),
+  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  isAvailable: z.boolean().optional(),
+});
+
 export default function User({ userId }: UserProps) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +71,15 @@ export default function User({ userId }: UserProps) {
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
     {}
   );
+
+  // Use the form validation hook
+  const {
+    validateData,
+    getFieldError,
+    touchField,
+    isFieldTouched,
+    getInputClassName,
+  } = useFormValidation(userProfileSchema);
 
   useEffect(() => {
     if (!userId) return;
@@ -97,19 +118,23 @@ export default function User({ userId }: UserProps) {
     }
   };
 
-  const handleInputChange = (field: keyof UserData, value: string) => {
-    if (!editedUser) return;
-    console.log("ln70: field", field);
-    setEditedUser({
-      ...editedUser,
-      [field]: value,
-    });
+  const handleInputChange = (field: keyof UserData, value: any) => {
+    // Update your state
+    setEditedUser((prev) => (prev ? { ...prev, [field]: value } : null));
 
-    // Mark field as touched when user interacts with it
-    setTouchedFields({
-      ...touchedFields,
-      [field]: true,
-    });
+    // Mark field as touched
+    touchField("user", field as string);
+
+    // Validate if we have an edited user
+    if (editedUser) {
+      validateData(
+        {
+          ...editedUser,
+          [field]: value,
+        },
+        "user"
+      );
+    }
   };
 
   const handleAvailabilityToggle = (isAvailable: boolean) => {
@@ -192,28 +217,6 @@ export default function User({ userId }: UserProps) {
     setTouchedFields({});
   };
 
-  // Helper function to get validation error for a specific field
-  const getFieldError = (fieldName: string): string | null => {
-    if (!validationErrors) return null;
-    const fieldError = validationErrors.find((error) =>
-      error.path.includes(fieldName)
-    );
-    return fieldError ? fieldError.message : null;
-  };
-
-  // Helper function to determine input border color based on validation
-  const getInputClassName = (
-    fieldName: keyof UserData,
-    baseClassName: string = ""
-  ) => {
-    if (!touchedFields[fieldName]) return baseClassName;
-
-    const error = getFieldError(fieldName);
-    if (error)
-      return `${baseClassName} border-red-500 focus-visible:ring-red-500`;
-    return `${baseClassName} border-green-500 focus-visible:ring-green-500`;
-  };
-
   if (loading) {
     return <LoadingSpinner size="sm" text="Loading user profile..." />;
   }
@@ -259,16 +262,19 @@ export default function User({ userId }: UserProps) {
                       onChange={(e) =>
                         handleInputChange("name", e.target.value)
                       }
-                      className={`text-2xl font-bold mb-1 ${getInputClassName(
-                        "name"
-                      )}`}
-                      placeholder="Your Name"
+                      className={getInputClassName(
+                        "user",
+                        "name",
+                        "font-semibold"
+                      )}
+                      placeholder="Your Name*"
                     />
-                    {touchedFields.name && getFieldError("name") && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {getFieldError("name")}
-                      </p>
-                    )}
+                    {isFieldTouched("user", "name") &&
+                      getFieldError("user", "name") && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {getFieldError("user", "name")}
+                        </p>
+                      )}
                   </div>
                 ) : (
                   <h1 className="text-2xl font-bold">{user.name}</h1>
@@ -281,16 +287,19 @@ export default function User({ userId }: UserProps) {
                       onChange={(e) =>
                         handleInputChange("title", e.target.value)
                       }
-                      className={`text-lg text-muted-foreground ${getInputClassName(
-                        "title"
-                      )}`}
+                      className={getInputClassName(
+                        "user",
+                        "title",
+                        "text-lg text-muted-foreground"
+                      )}
                       placeholder="Your Title (e.g. Software Developer)"
                     />
-                    {touchedFields.title && getFieldError("title") && (
-                      <p className="text-xs text-red-500 mt-1">
-                        {getFieldError("title")}
-                      </p>
-                    )}
+                    {isFieldTouched("user", "title") &&
+                      getFieldError("user", "title") && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {getFieldError("user", "title")}
+                        </p>
+                      )}
                   </div>
                 ) : (
                   <p className="text-lg text-muted-foreground">
@@ -339,18 +348,21 @@ export default function User({ userId }: UserProps) {
                       onChange={(e) =>
                         handleInputChange("location", e.target.value)
                       }
-                      className={`text-sm ${getInputClassName("location")}`}
+                      className={getInputClassName(
+                        "user",
+                        "location",
+                        "text-sm"
+                      )}
                       placeholder="Your Location"
                     />
                   ) : (
                     user.location || "San Francisco, CA"
                   )}
                 </div>
-                {isEditing &&
-                  touchedFields.location &&
-                  getFieldError("location") && (
-                    <p className="text-xs text-red-500 mt-1 ml-6">
-                      {getFieldError("location")}
+                {isFieldTouched("user", "location") &&
+                  getFieldError("user", "location") && (
+                    <p className="text-red-500 text-xs mt-1 ml-6">
+                      {getFieldError("user", "location")}
                     </p>
                   )}
               </div>
@@ -369,18 +381,19 @@ export default function User({ userId }: UserProps) {
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className={`text-sm ${getInputClassName("phone")}`}
+                      className={getInputClassName("user", "phone", "text-sm")}
                       placeholder="Your Phone Number"
                     />
                   ) : (
                     user.phone || "+1 (555) 123-4567"
                   )}
                 </div>
-                {isEditing && touchedFields.phone && getFieldError("phone") && (
-                  <p className="text-xs text-red-500 mt-1 ml-6">
-                    {getFieldError("phone")}
-                  </p>
-                )}
+                {isFieldTouched("user", "phone") &&
+                  getFieldError("user", "phone") && (
+                    <p className="text-red-500 text-xs mt-1 ml-6">
+                      {getFieldError("user", "phone")}
+                    </p>
+                  )}
               </div>
 
               <div className="flex flex-col">
@@ -437,15 +450,16 @@ export default function User({ userId }: UserProps) {
                   <Textarea
                     value={editedUser?.bio || ""}
                     onChange={(e) => handleInputChange("bio", e.target.value)}
-                    className={`text-sm ${getInputClassName("bio")}`}
+                    className={getInputClassName("user", "bio", "text-sm")}
                     placeholder="Write a short bio about yourself"
                     rows={4}
                   />
-                  {touchedFields.bio && getFieldError("bio") && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {getFieldError("bio")}
-                    </p>
-                  )}
+                  {isFieldTouched("user", "bio") &&
+                    getFieldError("user", "bio") && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {getFieldError("user", "bio")}
+                      </p>
+                    )}
                 </div>
               ) : (
                 <p className="text-sm">

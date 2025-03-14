@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { format } from "date-fns";
+import { useFormValidation } from "@/lib/form-validation";
 
 interface Certification {
   id: string;
@@ -158,6 +159,17 @@ export default function Certifications({ userId }: CertificationsProps) {
     issueDate?: string;
     credentialUrl?: string;
   }>({});
+
+  // Use the form validation hook
+  const {
+    validateData,
+    getFieldError,
+    touchField,
+    isFieldTouched,
+    getInputClassName,
+    clearValidationErrors,
+    clearTouchedFields,
+  } = useFormValidation(certificationFormSchema);
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/certifications`,
@@ -408,45 +420,20 @@ export default function Certifications({ userId }: CertificationsProps) {
     value: string
   ) => {
     setNewCertification((prev) => ({ ...prev, [field]: value }));
+
+    // Mark field as touched and validate
+    touchField("new", field);
+    validateData(
+      {
+        ...newCertification,
+        [field]: value,
+      },
+      "new"
+    );
   };
 
   const validateForm = () => {
-    try {
-      // Validate the form data using Zod
-      certificationFormSchema.parse({
-        name: newCertification.name,
-        issuer: newCertification.issuer,
-        issueDate: newCertification.issueDate,
-        expirationDate: newCertification.expirationDate,
-        credentialUrl: newCertification.credentialUrl,
-      });
-
-      // Clear any previous errors if validation passes
-      setFormErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        // Convert Zod errors to our form error format
-        const errors: {
-          name?: string;
-          issuer?: string;
-          issueDate?: string;
-          expirationDate?: string;
-          credentialUrl?: string;
-        } = {};
-
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            errors[err.path[0] as keyof typeof errors] = err.message;
-          }
-        });
-
-        setFormErrors(errors);
-      } else {
-        console.error("Unexpected validation error:", error);
-      }
-      return false;
-    }
+    return validateData(newCertification, "new");
   };
 
   const handleSaveNewCertification = async (e: React.FormEvent) => {
@@ -627,23 +614,19 @@ export default function Certifications({ userId }: CertificationsProps) {
                   </label>
                   <Input
                     value={newCertification.name}
-                    onChange={(e) => {
-                      handleNewCertificationChange("name", e.target.value);
-                      if (formErrors.name) {
-                        setFormErrors((prev) => ({ ...prev, name: undefined }));
-                      }
-                    }}
-                    className={`mt-1 ${
-                      formErrors.name ? "border-red-500" : ""
-                    }`}
+                    onChange={(e) =>
+                      handleNewCertificationChange("name", e.target.value)
+                    }
+                    className={getInputClassName("new", "name", "mt-1")}
                     placeholder="e.g. AWS Certified Solutions Architect"
                   />
-                  {formErrors.name && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {formErrors.name}
-                    </p>
-                  )}
+                  {isFieldTouched("new", "name") &&
+                    getFieldError("new", "name") && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {getFieldError("new", "name")}
+                      </p>
+                    )}
                 </div>
 
                 <div className="mb-2">
@@ -652,26 +635,19 @@ export default function Certifications({ userId }: CertificationsProps) {
                   </label>
                   <Input
                     value={newCertification.issuer}
-                    onChange={(e) => {
-                      handleNewCertificationChange("issuer", e.target.value);
-                      if (formErrors.issuer) {
-                        setFormErrors((prev) => ({
-                          ...prev,
-                          issuer: undefined,
-                        }));
-                      }
-                    }}
-                    className={`mt-1 ${
-                      formErrors.issuer ? "border-red-500" : ""
-                    }`}
+                    onChange={(e) =>
+                      handleNewCertificationChange("issuer", e.target.value)
+                    }
+                    className={getInputClassName("new", "issuer", "mt-1")}
                     placeholder="e.g. Amazon Web Services"
                   />
-                  {formErrors.issuer && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {formErrors.issuer}
-                    </p>
-                  )}
+                  {isFieldTouched("new", "issuer") &&
+                    getFieldError("new", "issuer") && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {getFieldError("new", "issuer")}
+                      </p>
+                    )}
                 </div>
 
                 <div className="flex gap-2 mb-2">
@@ -682,29 +658,22 @@ export default function Certifications({ userId }: CertificationsProps) {
                     <Input
                       type="date"
                       value={newCertification.issueDate}
-                      onChange={(e) => {
+                      onChange={(e) =>
                         handleNewCertificationChange(
                           "issueDate",
                           e.target.value
-                        );
-                        if (formErrors.issueDate) {
-                          setFormErrors((prev) => ({
-                            ...prev,
-                            issueDate: undefined,
-                          }));
-                        }
-                      }}
-                      className={`mt-1 ${
-                        formErrors.issueDate ? "border-red-500" : ""
-                      }`}
+                        )
+                      }
+                      className={getInputClassName("new", "issueDate", "mt-1")}
                       max={getCurrentDate()}
                     />
-                    {formErrors.issueDate && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {formErrors.issueDate}
-                      </p>
-                    )}
+                    {isFieldTouched("new", "issueDate") &&
+                      getFieldError("new", "issueDate") && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {getFieldError("new", "issueDate")}
+                        </p>
+                      )}
                   </div>
                   <div className="w-1/2">
                     <label className="text-sm text-muted-foreground">
@@ -719,7 +688,11 @@ export default function Certifications({ userId }: CertificationsProps) {
                           e.target.value
                         )
                       }
-                      className="mt-1"
+                      className={getInputClassName(
+                        "new",
+                        "expirationDate",
+                        "mt-1"
+                      )}
                       max={getCurrentDate()}
                     />
                   </div>
@@ -732,29 +705,26 @@ export default function Certifications({ userId }: CertificationsProps) {
                   <Input
                     type="url"
                     value={newCertification.credentialUrl || ""}
-                    onChange={(e) => {
+                    onChange={(e) =>
                       handleNewCertificationChange(
                         "credentialUrl",
                         e.target.value
-                      );
-                      if (formErrors.credentialUrl) {
-                        setFormErrors((prev) => ({
-                          ...prev,
-                          credentialUrl: undefined,
-                        }));
-                      }
-                    }}
-                    className={`mt-1 ${
-                      formErrors.credentialUrl ? "border-red-500" : ""
-                    }`}
+                      )
+                    }
+                    className={getInputClassName(
+                      "new",
+                      "credentialUrl",
+                      "mt-1"
+                    )}
                     placeholder="https://www.example.com/credential/123"
                   />
-                  {formErrors.credentialUrl && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {formErrors.credentialUrl}
-                    </p>
-                  )}
+                  {isFieldTouched("new", "credentialUrl") &&
+                    getFieldError("new", "credentialUrl") && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {getFieldError("new", "credentialUrl")}
+                      </p>
+                    )}
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4">
