@@ -23,6 +23,7 @@ interface UserData {
   location?: string;
   phone?: string;
   bio?: string;
+  isAvailable?: boolean;
 }
 
 declare global {
@@ -54,6 +55,9 @@ export default function User({ userId }: UserProps) {
   const [validationErrors, setValidationErrors] = useState<z.ZodIssue[] | null>(
     null
   );
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
+    {}
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -61,7 +65,7 @@ export default function User({ userId }: UserProps) {
     async function fetchUser() {
       try {
         setError(null);
-        const response = await fetch("/api/auth/user");
+        const response = await fetch(`/api/users/${userId}`);
         if (!response.ok) throw new Error("Failed to fetch user");
         const userData = await response.json();
 
@@ -99,10 +103,40 @@ export default function User({ userId }: UserProps) {
       ...editedUser,
       [field]: value,
     });
+
+    // Mark field as touched when user interacts with it
+    setTouchedFields({
+      ...touchedFields,
+      [field]: true,
+    });
+  };
+
+  const handleAvailabilityToggle = (isAvailable: boolean) => {
+    if (!editedUser) return;
+    setEditedUser({
+      ...editedUser,
+      isAvailable,
+    });
+
+    // Mark field as touched
+    setTouchedFields({
+      ...touchedFields,
+      isAvailable: true,
+    });
   };
 
   const saveChanges = async () => {
     if (!editedUser) return;
+
+    // Mark all fields as touched when attempting to save
+    setTouchedFields({
+      name: true,
+      title: true,
+      location: true,
+      bio: true,
+      phone: true,
+      isAvailable: true,
+    });
 
     try {
       // Validate the edited user data using Zod
@@ -112,7 +146,7 @@ export default function User({ userId }: UserProps) {
       setError(null);
       setValidationErrors(null);
 
-      const response = await fetch("/api/auth/user", {
+      const response = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -123,6 +157,7 @@ export default function User({ userId }: UserProps) {
           location: editedUser.location || "",
           phone: editedUser.phone || "",
           bio: editedUser.bio || "",
+          isAvailable: editedUser.isAvailable,
         }),
       });
 
@@ -135,6 +170,8 @@ export default function User({ userId }: UserProps) {
       setUser(updatedUser);
       setEditedUser(updatedUser);
       setIsEditing(false);
+      // Reset touched fields after successful save
+      setTouchedFields({});
     } catch (error) {
       if (error instanceof z.ZodError) {
         setValidationErrors(error.issues);
@@ -150,6 +187,30 @@ export default function User({ userId }: UserProps) {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedUser(JSON.parse(JSON.stringify(user))); // Reset to current user data
+    setValidationErrors(null);
+    setTouchedFields({});
+  };
+
+  // Helper function to get validation error for a specific field
+  const getFieldError = (fieldName: string): string | null => {
+    if (!validationErrors) return null;
+    const fieldError = validationErrors.find((error) =>
+      error.path.includes(fieldName)
+    );
+    return fieldError ? fieldError.message : null;
+  };
+
+  // Helper function to determine input border color based on validation
+  const getInputClassName = (
+    fieldName: keyof UserData,
+    baseClassName: string = ""
+  ) => {
+    if (!touchedFields[fieldName]) return baseClassName;
+
+    const error = getFieldError(fieldName);
+    if (error)
+      return `${baseClassName} border-red-500 focus-visible:ring-red-500`;
+    return `${baseClassName} border-green-500 focus-visible:ring-green-500`;
   };
 
   if (loading) {
@@ -191,23 +252,45 @@ export default function User({ userId }: UserProps) {
             <div className="flex justify-between">
               <div>
                 {isEditing ? (
-                  <Input
-                    value={editedUser?.name || ""}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="text-2xl font-bold mb-2"
-                    placeholder="Your Name"
-                  />
+                  <div className="mb-4">
+                    <Input
+                      value={editedUser?.name || ""}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
+                      className={`text-2xl font-bold mb-1 ${getInputClassName(
+                        "name"
+                      )}`}
+                      placeholder="Your Name"
+                    />
+                    {touchedFields.name && getFieldError("name") && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {getFieldError("name")}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <h1 className="text-2xl font-bold">{user.name}</h1>
                 )}
 
                 {isEditing ? (
-                  <Input
-                    value={editedUser?.title || ""}
-                    onChange={(e) => handleInputChange("title", e.target.value)}
-                    className="text-lg text-muted-foreground"
-                    placeholder="Your Title (e.g. Software Developer)"
-                  />
+                  <div className="mb-4">
+                    <Input
+                      value={editedUser?.title || ""}
+                      onChange={(e) =>
+                        handleInputChange("title", e.target.value)
+                      }
+                      className={`text-lg text-muted-foreground ${getInputClassName(
+                        "title"
+                      )}`}
+                      placeholder="Your Title (e.g. Software Developer)"
+                    />
+                    {touchedFields.title && getFieldError("title") && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {getFieldError("title")}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <p className="text-lg text-muted-foreground">
                     {user.title || "Software Developer"}
@@ -246,54 +329,123 @@ export default function User({ userId }: UserProps) {
 
             {/* Contact & Location */}
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin className="mr-2 h-4 w-4" />
-                {isEditing ? (
-                  <Input
-                    value={editedUser?.location || ""}
-                    onChange={(e) =>
-                      handleInputChange("location", e.target.value)
-                    }
-                    className="text-sm"
-                    placeholder="Your Location"
-                  />
-                ) : (
-                  user.location || "San Francisco, CA"
-                )}
+              <div className="flex flex-col">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {isEditing ? (
+                    <Input
+                      value={editedUser?.location || ""}
+                      onChange={(e) =>
+                        handleInputChange("location", e.target.value)
+                      }
+                      className={`text-sm ${getInputClassName("location")}`}
+                      placeholder="Your Location"
+                    />
+                  ) : (
+                    user.location || "San Francisco, CA"
+                  )}
+                </div>
+                {isEditing &&
+                  touchedFields.location &&
+                  getFieldError("location") && (
+                    <p className="text-xs text-red-500 mt-1 ml-6">
+                      {getFieldError("location")}
+                    </p>
+                  )}
               </div>
+
               <div className="flex items-center text-sm text-muted-foreground">
                 <Mail className="mr-2 h-4 w-4" />
                 {user.email} {/* Email is not editable */}
               </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Phone className="mr-2 h-4 w-4" />
-                {isEditing ? (
-                  <Input
-                    value={editedUser?.phone || ""}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className="text-sm"
-                    placeholder="Your Phone Number"
-                  />
-                ) : (
-                  user.phone || "+1 (555) 123-4567"
+
+              <div className="flex flex-col">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Phone className="mr-2 h-4 w-4" />
+                  {isEditing ? (
+                    <Input
+                      value={editedUser?.phone || ""}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      className={`text-sm ${getInputClassName("phone")}`}
+                      placeholder="Your Phone Number"
+                    />
+                  ) : (
+                    user.phone || "+1 (555) 123-4567"
+                  )}
+                </div>
+                {isEditing && touchedFields.phone && getFieldError("phone") && (
+                  <p className="text-xs text-red-500 mt-1 ml-6">
+                    {getFieldError("phone")}
+                  </p>
                 )}
               </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="mr-2 h-4 w-4" />
-                Available for new opportunities
+
+              <div className="flex flex-col">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {isEditing ? (
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`cursor-pointer px-3 py-1 rounded-full text-xs ${
+                          editedUser?.isAvailable
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                        onClick={() => handleAvailabilityToggle(true)}
+                      >
+                        Available for work
+                      </div>
+                      <div
+                        className={`cursor-pointer px-3 py-1 rounded-full text-xs ${
+                          editedUser?.isAvailable === false
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                        onClick={() => handleAvailabilityToggle(false)}
+                      >
+                        Not available
+                      </div>
+                    </div>
+                  ) : (
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs ${
+                        user?.isAvailable
+                          ? "bg-green-100 text-green-800"
+                          : user?.isAvailable === false
+                          ? "bg-red-100 text-red-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {user?.isAvailable
+                        ? "Available for new opportunities"
+                        : user?.isAvailable === false
+                        ? "Not available for work"
+                        : "Availability status not set"}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Bio */}
             <div className="mt-4">
               {isEditing ? (
-                <Textarea
-                  value={editedUser?.bio || ""}
-                  onChange={(e) => handleInputChange("bio", e.target.value)}
-                  className="text-sm"
-                  placeholder="Write a short bio about yourself"
-                  rows={4}
-                />
+                <div>
+                  <Textarea
+                    value={editedUser?.bio || ""}
+                    onChange={(e) => handleInputChange("bio", e.target.value)}
+                    className={`text-sm ${getInputClassName("bio")}`}
+                    placeholder="Write a short bio about yourself"
+                    rows={4}
+                  />
+                  {touchedFields.bio && getFieldError("bio") && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {getFieldError("bio")}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <p className="text-sm">
                   {user.bio ||

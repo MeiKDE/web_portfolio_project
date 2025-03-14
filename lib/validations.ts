@@ -71,9 +71,15 @@ export const userSchema = z.object({
 
 // User profile validation schema (for profile updates)
 export const userProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  title: z.string().optional(),
-  location: z.string().optional(),
+  id: z.string(),
+  name: z.string().min(2, "Type your name"),
+  email: z.string().email("Valid email is required"),
+  image: z.string().optional(),
+  title: z.string().min(2, "Enter Job Title"),
+  location: z.string().min(2, "Where do you live?"),
   phone: z.string().optional(),
-  bio: z.string().optional(),
+  bio: z.string().min(10, "Tell us about yourself"),
+  isAvailable: z.boolean().optional(),
 });
+
+export type UserProfile = z.infer<typeof userProfileSchema>;

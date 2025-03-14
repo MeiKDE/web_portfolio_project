@@ -14,6 +14,7 @@ const userUpdateSchema = z.object({
   location: z.string().optional(),
   phone: z.string().optional(),
   bio: z.string().optional(),
+  isAvailable: z.boolean().optional(),
 });
 
 // GET user by ID from User table
@@ -36,7 +37,9 @@ export const GET = withAuth(
           image: true,
           title: true,
           location: true,
-          // Include any other non-sensitive fields you need
+          phone: true,
+          bio: true,
+          isAvailable: true,
         },
       });
 
@@ -92,6 +95,7 @@ export const PUT = withAuth(
           location: true,
           phone: true,
           bio: true,
+          isAvailable: true,
         },
       });
 
