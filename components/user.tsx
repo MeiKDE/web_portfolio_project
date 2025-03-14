@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import type { JSX } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { userSchema } from "@/lib/validations"; // Import the user validation schema
 import { z } from "zod";
 import { userProfileSchema } from "@/lib/validations"; // We'll create this schema
 
@@ -66,8 +64,15 @@ export default function User({ userId }: UserProps) {
         const response = await fetch("/api/auth/user");
         if (!response.ok) throw new Error("Failed to fetch user");
         const userData = await response.json();
-        setUser(userData.data);
-        setEditedUser(JSON.parse(JSON.stringify(userData.data)));
+
+        // Ensure we have the name from the User model
+        const userWithDefaults = {
+          ...userData.data,
+          name: userData.data.name || "User", // Use name from User model or fallback
+        };
+
+        setUser(userWithDefaults);
+        setEditedUser(JSON.parse(JSON.stringify(userWithDefaults)));
       } catch (error) {
         console.error("Error fetching user:", error);
         setError("Failed to load user profile. Please try again.");
@@ -169,7 +174,7 @@ export default function User({ userId }: UserProps) {
               {user.image ? (
                 <Image
                   src={user.image}
-                  alt={user.name}
+                  alt={user.name || "User"}
                   fill
                   className="object-cover"
                 />

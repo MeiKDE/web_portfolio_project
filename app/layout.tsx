@@ -1,4 +1,4 @@
-import Providers from "@/components/Providers";
+import Providers from "@/components/AuthProvider";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import MenuBar from "@/components/menu-bar";
