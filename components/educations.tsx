@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GraduationCap, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Education {
   id: string;
@@ -577,7 +578,9 @@ export default function Educations({ userId }: EducationProps) {
     console.log("Current editedEducation state:", editedEducation);
   }, [data, educationData, editedEducation]);
 
-  if (isLoading) return <div>Loading education...</div>;
+  if (isLoading) {
+    return <LoadingSpinner size="sm" text="Loading education..." />;
+  }
   if (error) return <div>Error loading education information</div>;
 
   return (

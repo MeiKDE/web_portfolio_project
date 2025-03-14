@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod"; // Import zod for validation
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 // Define Zod schema for experience validation
 const experienceSchema = z
@@ -729,7 +730,8 @@ export default function Experiences({ userId }: ExperienceProps) {
     return issue ? issue.message : null;
   };
 
-  if (isLoading) return <div>Loading experiences...</div>;
+  if (isLoading)
+    return <LoadingSpinner size="sm" text="Loading experiences..." />;
   if (error) return <div>Error loading experiences: {error.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 import { userProfileSchema } from "@/lib/validations"; // We'll create this schema
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface UserProps {
   userId: string;
@@ -214,7 +215,7 @@ export default function User({ userId }: UserProps) {
   };
 
   if (loading) {
-    return <div>Loading user profile...</div>;
+    return <LoadingSpinner size="sm" text="Loading user profile..." />;
   }
 
   if (error) {

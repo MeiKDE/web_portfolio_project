@@ -11,6 +11,7 @@ import Skills from "@/components/Skills";
 import Certifications from "@/components/Certifications";
 import User from "@/components/User";
 import SocialLinks from "@/components/SocialLinks";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useEffect } from "react";
 
 export default function HomePage() {
@@ -27,7 +28,7 @@ export default function HomePage() {
 
   // Show loading or protected content based on auth status
   if (status === "loading") {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+    return <LoadingSpinner fullPage text="Loading your profile..." />;
   }
 
   if (!session || !session.user) {

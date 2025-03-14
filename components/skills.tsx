@@ -8,6 +8,7 @@ import { Lightbulb, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
 import { skillSchema } from "@/lib/validations";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Skill {
   id: string;
@@ -339,7 +340,9 @@ export default function Skills({ userId }: SkillsProps) {
     return issue ? issue.message : null;
   };
 
-  if (isLoading) return <div>Loading skills...</div>;
+  if (isLoading) {
+    return <LoadingSpinner size="sm" text="Loading skills..." />;
+  }
   if (error) return <div>Error loading skills information</div>;
 
   // Group skills by category
