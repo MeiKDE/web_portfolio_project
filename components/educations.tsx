@@ -473,8 +473,8 @@ export default function Educations({ userId }: EducationProps) {
           institution: education.institution,
           degree: education.degree,
           fieldOfStudy: education.fieldOfStudy,
-          startYear: parseInt(education.startYear, 10),
-          endYear: education.endYear ? parseInt(education.endYear, 10) : null,
+          startYear: education.startYear,
+          endYear: education.endYear ? education.endYear : null,
           description: education.description || "",
         };
 
