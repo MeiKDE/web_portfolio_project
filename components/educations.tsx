@@ -216,8 +216,8 @@ export default function Educations({ userId }: EducationProps) {
     setEditable(!editable);
   };
 
-  // Add helper functions for validation errors
-  const getFieldError = (id: string, field: string): string | null => {
+  // Change this function name
+  const getLocalFieldError = (id: string, field: string): string | null => {
     if (!validationErrors[id]) return null;
 
     if (Array.isArray(validationErrors[id])) {
@@ -582,12 +582,12 @@ export default function Educations({ userId }: EducationProps) {
                     )}
                     placeholder="Institution*"
                   />
-                  {getFieldError(
+                  {getLocalFieldError(
                     editedEducation[editedEducation.length - 1].id,
                     "institution"
                   ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      {getFieldError(
+                      {getLocalFieldError(
                         editedEducation[editedEducation.length - 1].id,
                         "institution"
                       )}
@@ -613,12 +613,12 @@ export default function Educations({ userId }: EducationProps) {
                     )}
                     placeholder="Degree*"
                   />
-                  {getFieldError(
+                  {getLocalFieldError(
                     editedEducation[editedEducation.length - 1].id,
                     "degree"
                   ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      {getFieldError(
+                      {getLocalFieldError(
                         editedEducation[editedEducation.length - 1].id,
                         "degree"
                       )}
@@ -646,12 +646,12 @@ export default function Educations({ userId }: EducationProps) {
                     )}
                     placeholder="Field of Study*"
                   />
-                  {getFieldError(
+                  {getLocalFieldError(
                     editedEducation[editedEducation.length - 1].id,
                     "fieldOfStudy"
                   ) && (
                     <p className="text-red-500 text-xs mt-1">
-                      {getFieldError(
+                      {getLocalFieldError(
                         editedEducation[editedEducation.length - 1].id,
                         "fieldOfStudy"
                       )}
@@ -805,9 +805,9 @@ export default function Educations({ userId }: EducationProps) {
                             )}
                             placeholder="Institution*"
                           />
-                          {getFieldError(edu.id, "institution") && (
+                          {getLocalFieldError(edu.id, "institution") && (
                             <p className="text-red-500 text-xs mt-1">
-                              {getFieldError(edu.id, "institution")}
+                              {getLocalFieldError(edu.id, "institution")}
                             </p>
                           )}
                         </div>
@@ -830,9 +830,9 @@ export default function Educations({ userId }: EducationProps) {
                             )}
                             placeholder="Degree*"
                           />
-                          {getFieldError(edu.id, "degree") && (
+                          {getLocalFieldError(edu.id, "degree") && (
                             <p className="text-red-500 text-xs mt-1">
-                              {getFieldError(edu.id, "degree")}
+                              {getLocalFieldError(edu.id, "degree")}
                             </p>
                           )}
                         </div>
@@ -855,9 +855,9 @@ export default function Educations({ userId }: EducationProps) {
                             )}
                             placeholder="Field of Study*"
                           />
-                          {getFieldError(edu.id, "fieldOfStudy") && (
+                          {getLocalFieldError(edu.id, "fieldOfStudy") && (
                             <p className="text-red-500 text-xs mt-1">
-                              {getFieldError(edu.id, "fieldOfStudy")}
+                              {getLocalFieldError(edu.id, "fieldOfStudy")}
                             </p>
                           )}
                         </div>
@@ -881,9 +881,9 @@ export default function Educations({ userId }: EducationProps) {
                               )}
                               placeholder="Start Year*"
                             />
-                            {getFieldError(edu.id, "startYear") && (
+                            {getLocalFieldError(edu.id, "startYear") && (
                               <p className="text-red-500 text-xs mt-1">
-                                {getFieldError(edu.id, "startYear")}
+                                {getLocalFieldError(edu.id, "startYear")}
                               </p>
                             )}
                           </div>

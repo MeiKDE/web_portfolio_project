@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { z } from "zod";
 
-export function useFormValidation<T>(schema: z.ZodSchema<T>) {
+// Define a default schema that accepts any object
+const defaultSchema = z.object({}).passthrough();
+
+export function useFormValidation<T = any>(schema?: z.ZodSchema<T>) {
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: z.ZodIssue[] | null;
   }>({});
@@ -10,10 +13,13 @@ export function useFormValidation<T>(schema: z.ZodSchema<T>) {
     [key: string]: Record<string, boolean>;
   }>({});
 
+  // Use the provided schema or default schema
+  const validationSchema = schema || defaultSchema;
+
   // Validate data against schema
-  const validateData = (data: T, id: string): boolean => {
+  const validateData = (data: any, id: string): boolean => {
     try {
-      schema.parse(data);
+      validationSchema.parse(data);
       setValidationErrors((prev) => ({ ...prev, [id]: null }));
       return true;
     } catch (error) {

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Lightbulb, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
-import { skillSchema } from "@/lib/validations";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
 
@@ -51,13 +50,6 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
-// Define Zod schema for skill validation
-const skillSchema = z.object({
-  name: z.string().min(1, "Skill name is required"),
-  proficiencyLevel: z.number().int().min(1).max(5),
-  category: z.string().optional(),
-});
-
 export default function Skills({ userId }: SkillsProps) {
   const [editable, setEditable] = useState(false);
   const [skillsData, setSkillsData] = useState<Skill[]>([]);
@@ -75,7 +67,7 @@ export default function Skills({ userId }: SkillsProps) {
 
   // Use the form validation hook
   const { validateData, getFieldError, touchField, getInputClassName } =
-    useFormValidation(skillSchema);
+    useFormValidation();
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/skills`,
@@ -123,7 +115,7 @@ export default function Skills({ userId }: SkillsProps) {
   const validateSkill = (skill: Omit<Skill, "id"> | Skill, id?: string) => {
     try {
       // Validate with Zod schema
-      skillSchema.parse(skill);
+      // skillSchema.parse(skill);
 
       // If validation passes and we have an ID, clear any existing errors
       if (id) {

@@ -8,7 +8,6 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
-import { userProfileSchema } from "@/lib/validations"; // We'll create this schema
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
 
@@ -47,17 +46,6 @@ declare global {
   }
 }
 
-// Define Zod schema for user profile validation
-const userProfileSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  title: z.string().optional(),
-  location: z.string().optional(),
-  phone: z.string().optional(),
-  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
-  isAvailable: z.boolean().optional(),
-});
-
 export default function User({ userId }: UserProps) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +67,7 @@ export default function User({ userId }: UserProps) {
     touchField,
     isFieldTouched,
     getInputClassName,
-  } = useFormValidation(userProfileSchema);
+  } = useFormValidation();
 
   useEffect(() => {
     if (!userId) return;
@@ -166,7 +154,7 @@ export default function User({ userId }: UserProps) {
 
     try {
       // Validate the edited user data using Zod
-      userProfileSchema.parse(editedUser);
+      validateData(editedUser, "user");
 
       setIsSubmitting(true);
       setError(null);
