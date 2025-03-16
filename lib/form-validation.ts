@@ -91,16 +91,17 @@ export function useFormValidation<T = any>(schema?: z.ZodSchema<T>) {
 
   // Get CSS class based on validation state
   const getInputClassName = (
-    id: string,
-    field: string,
-    baseClassName: string = ""
+    formName: string,
+    fieldName: string,
+    baseClasses: string = ""
   ): string => {
-    if (!isFieldTouched(id, field)) return baseClassName;
+    const hasError =
+      isFieldTouched(formName, fieldName) &&
+      !!getFieldError(formName, fieldName);
 
-    const error = getFieldError(id, field);
-    if (error)
-      return `${baseClassName} border-red-500 focus-visible:ring-red-500`;
-    return `${baseClassName} border-green-500 focus-visible:ring-green-500`;
+    return `${baseClasses} ${
+      hasError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
+    }`;
   };
 
   return {

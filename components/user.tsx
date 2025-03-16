@@ -60,6 +60,7 @@ export default function User({ userId }: UserProps) {
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
     {}
   );
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   // Use the form validation hook
   const {
@@ -108,6 +109,8 @@ export default function User({ userId }: UserProps) {
   };
 
   const handleInputChange = (field: keyof UserData, value: any) => {
+    console.log(`Input changed: ${field} = ${value}`);
+
     // For image field, convert null to empty string
     if (field === "image" && value === null) {
       value = "";
@@ -116,12 +119,14 @@ export default function User({ userId }: UserProps) {
     // Update your state
     setEditedUser((prev) => (prev ? { ...prev, [field]: value } : null));
 
-    // Mark field as touched
+    // Mark field as touched for immediate validation feedback
     touchField("user", field as string);
+    console.log(`Field touched: ${field}`);
 
     // Validate if we have an edited user
     if (editedUser) {
       try {
+        // Always validate to provide immediate feedback
         const result = validateData(
           {
             ...editedUser,
@@ -130,9 +135,28 @@ export default function User({ userId }: UserProps) {
           "user"
         );
         console.log(`Validation result for ${field}:`, result);
+
+        // Check if there's an error for this field
+        const error = getFieldError("user", field as string);
+        console.log(`Error for ${field}:`, error);
       } catch (error) {
         console.error(`Validation error for ${field}:`, error);
       }
+    }
+
+    // For phone field, do direct validation
+    if (field === "phone" && value) {
+      const phoneRegex =
+        /^(\+\d{1,3}( )?)?((\(\d{1,3}\))|\d{1,3})[- .]?\d{3,4}[- .]?\d{4}$/;
+      if (!phoneRegex.test(value)) {
+        setPhoneError(
+          "Invalid phone number format. Please use a standard format like +1 (123) 456-7890"
+        );
+      } else {
+        setPhoneError(null);
+      }
+    } else if (field === "phone" && !value) {
+      setPhoneError(null); // Clear error for empty phone
     }
   };
 
@@ -413,23 +437,27 @@ export default function User({ userId }: UserProps) {
                         onChange={(e) =>
                           handleInputChange("phone", e.target.value)
                         }
-                        className={getInputClassName(
+                        className={`${getInputClassName(
                           "user",
                           "phone",
                           "text-sm"
-                        )}
+                        )} ${
+                          phoneError
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : ""
+                        }`}
                         placeholder="Your Phone Number (Optional)"
+                        aria-invalid={!!phoneError}
                       />
                     ) : (
                       user?.phone || "No phone number provided"
                     )}
                   </div>
-                  {isFieldTouched("user", "phone") &&
-                    getFieldError("user", "phone") && (
-                      <p className="text-red-500 text-xs mt-1 ml-6">
-                        {getFieldError("user", "phone")}
-                      </p>
-                    )}
+                  {phoneError && (
+                    <p className="text-red-500 text-xs mt-1 ml-6 font-medium">
+                      {phoneError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -673,19 +701,27 @@ export default function User({ userId }: UserProps) {
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className={getInputClassName("user", "phone", "text-sm")}
+                      className={`${getInputClassName(
+                        "user",
+                        "phone",
+                        "text-sm"
+                      )} ${
+                        phoneError
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
                       placeholder="Your Phone Number (Optional)"
+                      aria-invalid={!!phoneError}
                     />
                   ) : (
                     user?.phone || "No phone number provided"
                   )}
                 </div>
-                {isFieldTouched("user", "phone") &&
-                  getFieldError("user", "phone") && (
-                    <p className="text-red-500 text-xs mt-1 ml-6">
-                      {getFieldError("user", "phone")}
-                    </p>
-                  )}
+                {phoneError && (
+                  <p className="text-red-500 text-xs mt-1 ml-6 font-medium">
+                    {phoneError}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col">

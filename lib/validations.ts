@@ -69,23 +69,37 @@ export const userSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
+// Phone number regex pattern for international format
+// Allows formats like: +1 (123) 456-7890, +44 7911 123456, 123-456-7890
+const phoneRegex =
+  /^(\+\d{1,3}( )?)?((\(\d{1,3}\))|\d{1,3})[- .]?\d{3,4}[- .]?\d{4}$/;
+
 // User profile validation schema (for profile updates)
 export const userProfileSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  image: z
-    .union([z.string(), z.null()])
-    .transform((val) => (val === null ? "" : val))
-    .pipe(z.string()),
-  title: z.string().optional(),
-  location: z.string().optional(),
+  id: z.string().optional(),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  email: z.string().email({ message: "Invalid email address" }).optional(),
+  image: z.string().optional().nullable(),
+  title: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
   phone: z
-    .union([z.string(), z.null()])
-    .transform((val) => (val === null ? "" : val))
-    .pipe(z.string().optional()),
-  bio: z.string().optional(),
-  isAvailable: z.boolean().optional(),
+    .string()
+    .optional()
+    .nullable()
+    .refine(
+      (val) => {
+        // If empty or null, it's valid (since phone is optional)
+        if (!val) return true;
+        // Otherwise, check against regex
+        return phoneRegex.test(val);
+      },
+      {
+        message:
+          "Invalid phone number format. Please use a standard format like +1 (123) 456-7890",
+      }
+    ),
+  bio: z.string().optional().nullable(),
+  isAvailable: z.boolean().optional().nullable(),
 });
 
-export type UserProfile = z.infer<typeof userProfileSchema>;
+export type UserProfileData = z.infer<typeof userProfileSchema>;
