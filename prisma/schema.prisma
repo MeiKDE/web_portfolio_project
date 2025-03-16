@@ -30,7 +30,7 @@ model User {
   updatedAt         DateTime        @updatedAt
   image             String?
   verificationToken String? @map("verification_token")
-  isAvailable       Boolean?
+  isAvailable       Boolean?        @default(false) 
   
   // Relations
   experiences       Experience[]

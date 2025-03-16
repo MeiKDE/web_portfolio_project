@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
+import { userProfileSchema } from "@/lib/validations";
 
 interface UserProps {
   userId: string;
@@ -154,7 +155,7 @@ export default function User({ userId }: UserProps) {
 
     try {
       // Validate the edited user data using Zod
-      validateData(editedUser, "user");
+      const validatedData = userProfileSchema.parse(editedUser);
 
       setIsSubmitting(true);
       setError(null);
@@ -165,19 +166,12 @@ export default function User({ userId }: UserProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: editedUser.name,
-          title: editedUser.title || "",
-          location: editedUser.location || "",
-          phone: editedUser.phone || "",
-          bio: editedUser.bio || "",
-          isAvailable: editedUser.isAvailable,
-        }),
+        body: JSON.stringify(validatedData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update profile");
+        throw new Error(errorData.message || "Failed to update profile");
       }
 
       const { data: updatedUser } = await response.json();
