@@ -73,11 +73,17 @@ export const userSchema = z.object({
 export const userProfileSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  image: z.string().optional(),
+  email: z.string().email("Invalid email address"),
+  image: z
+    .union([z.string(), z.null()])
+    .transform((val) => (val === null ? "" : val))
+    .pipe(z.string()),
   title: z.string().optional(),
   location: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z
+    .union([z.string(), z.null()])
+    .transform((val) => (val === null ? "" : val))
+    .pipe(z.string().optional()),
   bio: z.string().optional(),
   isAvailable: z.boolean().optional(),
 });

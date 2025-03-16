@@ -41,3 +41,15 @@ createdb profile_db
 ### connect to the database
 
 psql -d profile_db
+
+### 1. Run Prisma Validation Commands
+
+### The most direct way to validate your schema is to run Prisma's validation commands:
+
+npx prisma validate
+
+### 2. Generate Prisma Client
+
+### When you generate the Prisma client, it will also validate your schema:
+
+npx prisma generate

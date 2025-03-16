@@ -97,6 +97,7 @@ function main() {
                                     salt: johnPassword.salt,
                                     createdAt: new Date(),
                                     updatedAt: new Date(),
+                                    isAvailable: false,
                                     // Create skills
                                     skills: {
                                         create: [
@@ -270,6 +271,7 @@ function main() {
                                     salt: socialAuthPassword.salt,
                                     createdAt: new Date(),
                                     updatedAt: new Date(),
+                                    isAvailable: false,
                                     // Create skills
                                     skills: {
                                         create: [
