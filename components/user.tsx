@@ -152,8 +152,11 @@ export default function User({ userId }: UserProps) {
 
     // Mark field as touched
     setFormState((prev) => ({
-      ...prev.touchedFields,
-      isAvailable: true,
+      ...prev,
+      touchedFields: {
+        ...prev.touchedFields,
+        isAvailable: true,
+      },
     }));
   };
 
@@ -186,8 +189,11 @@ export default function User({ userId }: UserProps) {
     }, {} as Record<string, boolean>);
 
     setFormState((prev) => ({
-      ...prev.touchedFields,
-      ...newTouchedFields,
+      ...prev,
+      touchedFields: {
+        ...prev.touchedFields,
+        ...newTouchedFields,
+      },
     }));
 
     // Validate all fields before submitting
@@ -227,8 +233,11 @@ export default function User({ userId }: UserProps) {
         setTimeout(() => setSaveSuccess(false), 3000); // Hide after 3 seconds
         // Reset touched fields after successful save
         setFormState((prev) => ({
-          ...prev.touchedFields,
-          ...newTouchedFields,
+          ...prev,
+          touchedFields: {
+            ...prev.touchedFields,
+            ...newTouchedFields,
+          },
         }));
         console.log("Profile updated successfully");
       } else {
@@ -267,8 +276,12 @@ export default function User({ userId }: UserProps) {
         setIsEditing(false);
         setEditedUser(JSON.parse(JSON.stringify(user))); // Reset to current user data
         setFormState((prev) => ({
-          ...prev.validationErrors,
+          ...prev,
+          validationErrors: prev.validationErrors,
           touchedFields: {},
+          phoneError: prev.phoneError,
+          isSubmitting: prev.isSubmitting,
+          error: prev.error,
         }));
       }
     } else {
@@ -304,7 +317,11 @@ export default function User({ userId }: UserProps) {
           <div>User not found</div>
         ) : (
           <div className="flex flex-col md:flex-row gap-6">
-            <ProfileImage user={user} />
+            <ProfileImage
+              user={editedUser || user}
+              editable={isEditing}
+              onImageChange={(imageUrl) => handleInputChange("image", imageUrl)}
+            />
 
             {/* Profile Info */}
             <div className="flex-grow">
