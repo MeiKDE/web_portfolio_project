@@ -227,7 +227,6 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
-  allowDangerousEmailAccountLinking: true,
 };
 
 // Make sure to export the config as default as well

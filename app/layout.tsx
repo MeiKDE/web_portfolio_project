@@ -60,7 +60,7 @@ export default async function RootLayout({
         />
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
-        <AuthProvider session={session}>
+        <AuthProvider>
           <MenuBar />
           <main>{children}</main>
         </AuthProvider>

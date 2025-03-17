@@ -33,6 +33,10 @@ model User {
   verificationToken String? @map("verification_token")
   isAvailable       Boolean?        @default(false) 
   
+  // Add new fields for resume upload feature
+  isUploadResumeForProfile Boolean  @default(false)
+  hasCompletedProfileSetup Boolean  @default(false)
+  
   // Relations
   experiences       Experience[]
   education         Education[]
