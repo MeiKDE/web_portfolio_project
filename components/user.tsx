@@ -12,6 +12,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
 import { userProfileSchema } from "@/lib/validations";
 import ProfileImage from "@/components/ProfileImage";
+import PhoneInput from "@/components/PhoneInput";
 
 interface UserProps {
   userId: string;
@@ -510,32 +511,24 @@ export default function User({ userId }: UserProps) {
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Phone className="mr-2 h-4 w-4" />
                     {isEditing ? (
-                      <Input
-                        value={editedUser?.phone || ""}
-                        onChange={(e) =>
-                          handleInputChange("phone", e.target.value)
-                        }
-                        className={`${getInputClassName(
-                          "user",
-                          "phone",
-                          "text-sm"
-                        )} ${
-                          formState.phoneError
-                            ? "border-red-500 focus-visible:ring-red-500"
-                            : ""
-                        }`}
-                        placeholder="Your Phone Number (Optional)"
-                        aria-invalid={!!formState.phoneError}
-                      />
+                      <div className="flex flex-col">
+                        <PhoneInput
+                          value={editedUser?.phone || ""}
+                          onChange={(value) =>
+                            handleInputChange("phone", value)
+                          }
+                          error={formState.phoneError}
+                          className={getInputClassName(
+                            "user",
+                            "phone",
+                            "text-sm"
+                          )}
+                        />
+                      </div>
                     ) : (
                       user?.phone || "No phone number provided"
                     )}
                   </div>
-                  {formState.phoneError && (
-                    <p className="text-red-500 text-xs mt-1 ml-6 font-medium">
-                      {formState.phoneError}
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex flex-col">
