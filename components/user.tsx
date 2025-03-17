@@ -127,21 +127,10 @@ export default function User({ userId }: UserProps) {
       }
     }
 
-    // For phone field, do direct validation
-    if (field === "phone" && value) {
-      const phoneRegex =
-        /^(\+\d{1,3}( )?)?((\(\d{1,3}\))|\d{1,3})[- .]?\d{3,4}[- .]?\d{4}$/;
-      if (!phoneRegex.test(value)) {
-        setFormState((prev) => ({
-          ...prev,
-          phoneError:
-            "Invalid phone number format. Please use a standard format like +1 (123) 456-7890",
-        }));
-      } else {
-        setFormState((prev) => ({ ...prev, phoneError: null }));
-      }
-    } else if (field === "phone" && !value) {
-      setFormState((prev) => ({ ...prev, phoneError: null })); // Clear error for empty phone
+    // For phone field, let the PhoneInput component handle validation
+    if (field === "phone") {
+      // Clear any previous phone errors - our PhoneInput component now handles this
+      setFormState((prev) => ({ ...prev, phoneError: null }));
     }
   };
 

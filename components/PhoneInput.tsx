@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Globe } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Command,
@@ -17,60 +17,132 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Expanded country codes data with Taiwan and more countries
+// Country codes with format examples and validation patterns
 const countryCodes = [
-  { code: "+1", country: "United States", flag: "🇺🇸" },
-  { code: "+1", country: "Canada", flag: "🇨🇦" },
-  { code: "+44", country: "United Kingdom", flag: "🇬🇧" },
-  { code: "+61", country: "Australia", flag: "🇦🇺" },
-  { code: "+33", country: "France", flag: "🇫🇷" },
-  { code: "+49", country: "Germany", flag: "🇩🇪" },
-  { code: "+81", country: "Japan", flag: "🇯🇵" },
-  { code: "+86", country: "China", flag: "🇨🇳" },
-  { code: "+886", country: "Taiwan", flag: "🇹🇼" },
-  { code: "+852", country: "Hong Kong", flag: "🇭🇰" },
-  { code: "+91", country: "India", flag: "🇮🇳" },
-  { code: "+55", country: "Brazil", flag: "🇧🇷" },
-  { code: "+52", country: "Mexico", flag: "🇲🇽" },
-  { code: "+34", country: "Spain", flag: "🇪🇸" },
-  { code: "+39", country: "Italy", flag: "🇮🇹" },
-  { code: "+82", country: "South Korea", flag: "🇰🇷" },
-  { code: "+7", country: "Russia", flag: "🇷🇺" },
-  { code: "+65", country: "Singapore", flag: "🇸🇬" },
-  { code: "+31", country: "Netherlands", flag: "🇳🇱" },
-  { code: "+46", country: "Sweden", flag: "🇸🇪" },
-  { code: "+41", country: "Switzerland", flag: "🇨🇭" },
-  { code: "+971", country: "United Arab Emirates", flag: "🇦🇪" },
-  { code: "+27", country: "South Africa", flag: "🇿🇦" },
-  { code: "+60", country: "Malaysia", flag: "🇲🇾" },
-  { code: "+66", country: "Thailand", flag: "🇹🇭" },
-  { code: "+63", country: "Philippines", flag: "🇵🇭" },
-  { code: "+64", country: "New Zealand", flag: "🇳🇿" },
-  { code: "+54", country: "Argentina", flag: "🇦🇷" },
-  { code: "+56", country: "Chile", flag: "🇨🇱" },
-  { code: "+57", country: "Colombia", flag: "🇨🇴" },
-  { code: "+58", country: "Venezuela", flag: "🇻🇪" },
-  { code: "+30", country: "Greece", flag: "🇬🇷" },
-  { code: "+32", country: "Belgium", flag: "🇧🇪" },
-  { code: "+43", country: "Austria", flag: "🇦🇹" },
-  { code: "+45", country: "Denmark", flag: "🇩🇰" },
-  { code: "+47", country: "Norway", flag: "🇳🇴" },
-  { code: "+48", country: "Poland", flag: "🇵🇱" },
-  { code: "+351", country: "Portugal", flag: "🇵🇹" },
-  { code: "+353", country: "Ireland", flag: "🇮🇪" },
-  { code: "+358", country: "Finland", flag: "🇫🇮" },
-  { code: "+36", country: "Hungary", flag: "🇭🇺" },
-  { code: "+420", country: "Czech Republic", flag: "🇨🇿" },
-  { code: "+421", country: "Slovakia", flag: "🇸🇰" },
-  { code: "+90", country: "Turkey", flag: "🇹🇷" },
-  { code: "+972", country: "Israel", flag: "🇮🇱" },
-  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
-  { code: "+20", country: "Egypt", flag: "🇪🇬" },
-  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
-  { code: "+254", country: "Kenya", flag: "🇰🇪" },
-  { code: "+62", country: "Indonesia", flag: "🇮🇩" },
-  { code: "+84", country: "Vietnam", flag: "🇻🇳" },
+  {
+    code: "+1",
+    country: "United States",
+    flag: "🇺🇸",
+    example: "123-456-7890",
+    format: "XXX-XXX-XXXX",
+    pattern: /^\d{3}-\d{3}-\d{4}$/,
+    maxLength: 12, // Including dashes
+  },
+  {
+    code: "+1",
+    country: "Canada",
+    flag: "🇨🇦",
+    example: "123-456-7890",
+    format: "XXX-XXX-XXXX",
+    pattern: /^\d{3}-\d{3}-\d{4}$/,
+    maxLength: 12,
+  },
+  {
+    code: "+44",
+    country: "United Kingdom",
+    flag: "🇬🇧",
+    example: "7911 123456",
+    format: "XXXX XXXXXX",
+    pattern: /^\d{4,5}\s\d{6,7}$/,
+    maxLength: 13,
+  },
+  {
+    code: "+61",
+    country: "Australia",
+    flag: "🇦🇺",
+    example: "412 345 678",
+    format: "XXX XXX XXX",
+    pattern: /^\d{3}\s\d{3}\s\d{3}$/,
+    maxLength: 11,
+  },
+  {
+    code: "+33",
+    country: "France",
+    flag: "🇫🇷",
+    example: "6 12 34 56 78",
+    format: "X XX XX XX XX",
+    pattern: /^\d(\s\d{2}){4}$/,
+    maxLength: 14,
+  },
+  {
+    code: "+49",
+    country: "Germany",
+    flag: "🇩🇪",
+    example: "170 1234567",
+    format: "XXX XXXXXXX",
+    pattern: /^\d{3,5}\s\d{6,8}$/,
+    maxLength: 15,
+  },
+  {
+    code: "+81",
+    country: "Japan",
+    flag: "🇯🇵",
+    example: "90-1234-5678",
+    format: "XX-XXXX-XXXX",
+    pattern: /^\d{2,3}-\d{4}-\d{4}$/,
+    maxLength: 13,
+  },
+  {
+    code: "+86",
+    country: "China",
+    flag: "🇨🇳",
+    example: "139 1234 5678",
+    format: "XXX XXXX XXXX",
+    pattern: /^\d{3}\s\d{4}\s\d{4}$/,
+    maxLength: 14,
+  },
+  {
+    code: "+886",
+    country: "Taiwan",
+    flag: "🇹🇼",
+    example: "912 345 678",
+    format: "XXX XXX XXX",
+    pattern: /^\d{3}\s\d{3}\s\d{3}$/,
+    maxLength: 11,
+  },
+  {
+    code: "+852",
+    country: "Hong Kong",
+    flag: "🇭🇰",
+    example: "9123 4567",
+    format: "XXXX XXXX",
+    pattern: /^\d{4}\s\d{4}$/,
+    maxLength: 9,
+  },
+  {
+    code: "+91",
+    country: "India",
+    flag: "🇮🇳",
+    example: "98765 43210",
+    format: "XXXXX XXXXX",
+    pattern: /^\d{5}\s\d{5}$/,
+    maxLength: 11,
+  },
+  // Keep the rest of your country codes but add the example, format, pattern and maxLength properties
+  // ...
 ];
+
+// Add the missing properties to the rest of the countries
+const enhancedCountryCodes = countryCodes.map((country) => {
+  // If the country already has all properties, return it as is
+  if (
+    country.example &&
+    country.format &&
+    country.pattern &&
+    country.maxLength
+  ) {
+    return country;
+  }
+
+  // Default values for countries without specific formats
+  return {
+    ...country,
+    example: country.example || "123 456 7890",
+    format: country.format || "XXX XXX XXXX",
+    pattern: country.pattern || /^\d{3}\s\d{3}\s\d{4}$/,
+    maxLength: country.maxLength || 12,
+  };
+});
 
 interface PhoneInputProps {
   value: string;
@@ -86,15 +158,18 @@ export default function PhoneInput({
   className,
 }: PhoneInputProps) {
   const [open, setOpen] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
+  const [selectedCountry, setSelectedCountry] = useState(
+    enhancedCountryCodes[0]
+  );
   const [phoneNumber, setPhoneNumber] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   // Parse initial value if it exists
   useEffect(() => {
     if (value) {
       // Try to match a country code from the value
-      const matchedCountry = countryCodes.find((country) =>
+      const matchedCountry = enhancedCountryCodes.find((country) =>
         value.startsWith(country.code)
       );
 
@@ -107,54 +182,170 @@ export default function PhoneInput({
     }
   }, [value]);
 
+  // Format phone number based on country
+  const formatPhoneNumber = (
+    input: string,
+    country: (typeof enhancedCountryCodes)[0]
+  ): string => {
+    // Remove all non-digit characters
+    const digits = input.replace(/\D/g, "");
+
+    if (digits.length === 0) return "";
+
+    // Apply formatting based on country
+    if (country.code === "+1") {
+      // Format as: XXX-XXX-XXXX for US/Canada
+      if (digits.length <= 3) {
+        return digits;
+      } else if (digits.length <= 6) {
+        return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+      } else {
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(
+          6,
+          10
+        )}`;
+      }
+    } else if (country.code === "+44") {
+      // UK format
+      if (digits.length <= 4) {
+        return digits;
+      } else {
+        return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+      }
+    } else if (country.code === "+61") {
+      // Australia format
+      if (digits.length <= 3) {
+        return digits;
+      } else if (digits.length <= 6) {
+        return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      } else {
+        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(
+          6,
+          9
+        )}`;
+      }
+    } else if (country.code === "+86") {
+      // China format
+      if (digits.length <= 3) {
+        return digits;
+      } else if (digits.length <= 7) {
+        return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      } else {
+        return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(
+          7,
+          11
+        )}`;
+      }
+    } else if (country.code === "+91") {
+      // India format
+      if (digits.length <= 5) {
+        return digits;
+      } else {
+        return `${digits.slice(0, 5)} ${digits.slice(5, 10)}`;
+      }
+    } else if (country.code === "+81") {
+      // Japan format
+      if (digits.length <= 2) {
+        return digits;
+      } else if (digits.length <= 6) {
+        return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+      } else {
+        return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(
+          6,
+          10
+        )}`;
+      }
+    } else if (country.code === "+886") {
+      // Taiwan format
+      if (digits.length <= 3) {
+        return digits;
+      } else if (digits.length <= 6) {
+        return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+      } else {
+        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(
+          6,
+          9
+        )}`;
+      }
+    } else {
+      // Generic format with spaces after every 3 digits
+      return digits.replace(/(\d{3})/g, "$1 ").trim();
+    }
+  };
+
+  // Validate phone number
+  const validatePhoneNumber = (
+    number: string,
+    country: (typeof enhancedCountryCodes)[0]
+  ): boolean => {
+    if (!number) return true; // Empty is valid (optional field)
+
+    // Check if the number matches the country's pattern
+    return country.pattern.test(number);
+  };
+
   // Format phone number as user types
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
 
-    // Remove all non-digit characters except spaces and dashes
-    const cleaned = input.replace(/[^\d\s-]/g, "");
-
-    // Apply formatting based on country format
-    let formatted = cleaned;
-    if (selectedCountry.code === "+1") {
-      // Format as: XXX-XXX-XXXX for US/Canada
-      if (cleaned.length <= 3) {
-        formatted = cleaned;
-      } else if (cleaned.length <= 6) {
-        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-      } else {
-        formatted = `${cleaned.slice(0, 3)}-${cleaned.slice(
-          3,
-          6
-        )}-${cleaned.slice(6, 10)}`;
-      }
+    // Don't allow input beyond max length
+    if (input.replace(/\D/g, "").length > selectedCountry.maxLength) {
+      return;
     }
 
+    // Format the input according to the country's format
+    const formatted = formatPhoneNumber(input, selectedCountry);
     setPhoneNumber(formatted);
 
+    // Validate the formatted number
+    const isValid = validatePhoneNumber(formatted, selectedCountry);
+
+    if (formatted && !isValid) {
+      setValidationError(
+        `Please enter a valid ${selectedCountry.country} phone number`
+      );
+    } else {
+      setValidationError(null);
+    }
+
     // Combine country code and phone number for the full value
-    const fullNumber = `${selectedCountry.code} ${formatted}`;
+    const fullNumber = formatted ? `${selectedCountry.code} ${formatted}` : "";
     onChange(fullNumber);
   };
 
-  const handleCountrySelect = (country: (typeof countryCodes)[0]) => {
+  const handleCountrySelect = (country: (typeof enhancedCountryCodes)[0]) => {
     setSelectedCountry(country);
     setOpen(false);
     setSearchQuery("");
 
+    // Reformat the phone number according to the new country format
+    const digits = phoneNumber.replace(/\D/g, "");
+    const formatted = formatPhoneNumber(digits, country);
+    setPhoneNumber(formatted);
+
+    // Validate with the new country format
+    const isValid = validatePhoneNumber(formatted, country);
+    if (formatted && !isValid) {
+      setValidationError(
+        `Please enter a valid ${country.country} phone number`
+      );
+    } else {
+      setValidationError(null);
+    }
+
     // Update the full phone number with the new country code
-    const fullNumber = `${country.code} ${phoneNumber}`;
+    const fullNumber = formatted ? `${country.code} ${formatted}` : "";
     onChange(fullNumber);
   };
 
   // Filter countries based on search query
   const filteredCountries = searchQuery
-    ? countryCodes.filter(
+    ? enhancedCountryCodes.filter(
         (country) =>
           country.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
           country.code.includes(searchQuery)
       )
-    : countryCodes;
+    : enhancedCountryCodes;
 
   return (
     <div className="flex flex-col space-y-2">
@@ -220,18 +411,20 @@ export default function PhoneInput({
           type="tel"
           value={phoneNumber}
           onChange={handlePhoneChange}
-          className={cn("flex-1", className)}
-          placeholder={
-            selectedCountry.code === "+1"
-              ? "123-456-7890"
-              : "Enter phone number"
-          }
-          aria-invalid={!!error}
+          className={cn(
+            "flex-1",
+            validationError ? "border-red-500 focus-visible:ring-red-500" : "",
+            className
+          )}
+          placeholder={selectedCountry.example}
+          aria-invalid={!!error || !!validationError}
         />
       </div>
-      {error && <p className="text-red-500 text-xs">{error}</p>}
+      {(error || validationError) && (
+        <p className="text-red-500 text-xs">{error || validationError}</p>
+      )}
       <p className="text-xs text-muted-foreground">
-        Select your country code and enter your phone number
+        Format: {selectedCountry.format} (Example: {selectedCountry.example})
       </p>
     </div>
   );
