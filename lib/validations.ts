@@ -77,29 +77,19 @@ const phoneRegex =
 // User profile validation schema (for profile updates)
 export const userProfileSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  email: z.string().email({ message: "Invalid email address" }).optional(),
-  image: z.string().optional().nullable(),
-  title: z.string().optional().nullable(),
-  location: z.string().optional().nullable(),
-  phone: z
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  profile_email: z
     .string()
+    .email("Invalid email format")
     .optional()
-    .nullable()
-    .refine(
-      (val) => {
-        // If empty or null, it's valid (since phone is optional)
-        if (!val) return true;
-        // Otherwise, check against regex
-        return phoneRegex.test(val);
-      },
-      {
-        message:
-          "Invalid phone number format. Please use a standard format like +1 (123) 456-7890",
-      }
-    ),
-  bio: z.string().optional().nullable(),
-  isAvailable: z.boolean().optional().nullable(),
+    .or(z.literal("")),
+  image: z.string().optional().or(z.literal("")),
+  title: z.string().optional().or(z.literal("")),
+  location: z.string().optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  bio: z.string().optional().or(z.literal("")),
+  isAvailable: z.boolean().optional(),
 });
 
 export type UserProfileData = z.infer<typeof userProfileSchema>;

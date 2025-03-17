@@ -11,6 +11,12 @@ npx prisma migrate reset --force --skip-seed
 ### 2 run the Prisma migrations to create the tables
 
 npx prisma migrate dev
+or
+npx prisma migrate dev --name add_profile_email
+
+### Apply the migration:
+
+npx prisma generate
 
 ### 3. To run the seed file, run the following command:
 

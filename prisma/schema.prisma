@@ -13,7 +13,8 @@ datasource db {
 model User {
   id                String          @id @default(cuid())
   name              String
-  email             String    @unique
+  email             String?         @unique
+  profile_email     String?         // New field for contact email
   emailVerified     DateTime?
   hashedPassword    String?
   salt              String?

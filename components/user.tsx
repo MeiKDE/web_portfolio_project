@@ -21,6 +21,7 @@ interface UserData {
   id: string;
   name: string;
   email: string;
+  profile_email?: string;
   image?: string;
   title?: string;
   location?: string;
@@ -170,6 +171,9 @@ export default function User({ userId }: UserProps) {
       image: editedUser.image === null ? "" : editedUser.image || "",
       // Ensure phone is never null
       phone: editedUser.phone === null ? "" : editedUser.phone || "",
+      // Ensure profile_email is never null
+      profile_email:
+        editedUser.profile_email === null ? "" : editedUser.profile_email || "",
     };
 
     console.log("Attempting to save user data:", userToSubmit);
@@ -181,6 +185,7 @@ export default function User({ userId }: UserProps) {
       "location",
       "bio",
       "phone",
+      "profile_email",
       "isAvailable",
     ];
     const newTouchedFields = allFields.reduce((acc, field) => {
@@ -204,40 +209,57 @@ export default function User({ userId }: UserProps) {
       // Continue with submission if validation passes
       setFormState((prev) => ({ ...prev, isSubmitting: true, error: null }));
 
-      // Make sure we're calling the correct API endpoint
+      // Make sure we're calling the correct API endpoint (now using App Router format)
       const apiUrl = `/api/users/${userId}`;
       console.log(`Sending PUT request to ${apiUrl}`);
+
+      // Create a properly formatted payload that matches your backend expectations
+      const payload = {
+        id: userId,
+        name: validatedData.name,
+        email: validatedData.email,
+        title: validatedData.title || "",
+        location: validatedData.location || "",
+        bio: validatedData.bio || "",
+        phone: validatedData.phone || "",
+        profile_email: validatedData.profile_email || "",
+        image: validatedData.image || "",
+        isAvailable:
+          validatedData.isAvailable === undefined
+            ? null
+            : validatedData.isAvailable,
+      };
+
+      console.log("Formatted payload:", payload);
 
       const response = await fetch(apiUrl, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(validatedData),
+        body: JSON.stringify(payload),
       });
 
-      console.log("Response status:", response.status);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
       const responseData = await response.json();
       console.log("Response data:", responseData);
-
-      if (!response.ok) {
-        throw new Error(responseData.message || "Failed to update profile");
-      }
 
       // Update the user state with the response data
       if (responseData.data) {
         setUser(responseData.data);
-        setEditedUser(responseData.data);
+        setEditedUser(JSON.parse(JSON.stringify(responseData.data)));
         setIsEditing(false);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000); // Hide after 3 seconds
         // Reset touched fields after successful save
         setFormState((prev) => ({
           ...prev,
-          touchedFields: {
-            ...prev.touchedFields,
-            ...newTouchedFields,
-          },
+          touchedFields: {},
+          validationErrors: {},
         }));
         console.log("Profile updated successfully");
       } else {
@@ -447,7 +469,41 @@ export default function User({ userId }: UserProps) {
 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Mail className="mr-2 h-4 w-4" />
-                  {user?.email} {/* Email is not editable */}
+                  {isEditing ? (
+                    <div className="flex flex-col w-full">
+                      <div className="text-xs text-muted-foreground mb-1">
+                        Account Email (cannot be changed): {user?.email}
+                      </div>
+                      <Input
+                        value={editedUser?.profile_email || ""}
+                        onChange={(e) =>
+                          handleInputChange("profile_email", e.target.value)
+                        }
+                        className={getInputClassName(
+                          "user",
+                          "profile_email",
+                          "text-sm"
+                        )}
+                        placeholder="Contact Email (Optional)"
+                      />
+                      {isFieldTouched("user", "profile_email") &&
+                        getFieldError("user", "profile_email") && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {getFieldError("user", "profile_email")}
+                          </p>
+                        )}
+                    </div>
+                  ) : (
+                    <span>
+                      {user?.profile_email || user?.email}
+                      {user?.profile_email &&
+                        user?.profile_email !== user?.email && (
+                          <span className="text-xs ml-2 text-muted-foreground">
+                            (Contact email)
+                          </span>
+                        )}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
