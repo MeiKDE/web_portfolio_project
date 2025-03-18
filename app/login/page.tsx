@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -17,9 +17,88 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(error || "");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showPasswordRequirements, setShowPasswordRequirements] =
+    useState(false);
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+  });
+
+  // Clear search param errors when component mounts
+  useEffect(() => {
+    if (error) {
+      console.log("Error from URL:", error);
+      // Handle specific error codes from NextAuth
+      if (error === "CredentialsSignin") {
+        setLoginError(
+          "Login failed. Please check if your account exists and your credentials are correct."
+        );
+      } else {
+        setLoginError(error);
+      }
+    }
+  }, [error]);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError("Email is required");
+      return false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError(
+        "Please enter a valid email address (e.g., user@example.com)"
+      );
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    const criteria = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    setPasswordCriteria(criteria);
+
+    if (!password) {
+      setPasswordError("Password is required");
+      return false;
+    }
+
+    // Check if all criteria are met
+    const allCriteriaMet = Object.values(criteria).every(
+      (value) => value === true
+    );
+
+    if (!allCriteriaMet) {
+      setPasswordError("Password does not meet security requirements");
+      return false;
+    }
+
+    setPasswordError("");
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
     setIsLoading(true);
     setLoginError("");
 
@@ -31,7 +110,19 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setLoginError(result.error);
+        // Handle specific error codes from NextAuth
+        if (
+          result.error === "CredentialsSignin" ||
+          result.error === "User not found or missing password data"
+        ) {
+          setLoginError(
+            "No account found with this email address. Please check your email or register for a new account."
+          );
+        } else if (result.error.includes("Invalid password")) {
+          setLoginError("Incorrect password. Please try again.");
+        } else {
+          setLoginError(result.error);
+        }
         setIsLoading(false);
       } else {
         router.push(callbackUrl);
@@ -46,6 +137,45 @@ export default function LoginPage() {
   const handleGoogleSignIn = () => {
     setIsLoading(true);
     signIn("google", { callbackUrl: "/" });
+  };
+
+  // Update the renderAccountNotFoundMessage function to handle different error types
+  const renderErrorHelperMessage = () => {
+    //console.log("Current login error:", loginError);
+
+    if (!loginError) return null;
+
+    if (
+      loginError.includes("No account found") ||
+      loginError.includes("Login failed") ||
+      loginError.includes("account exists")
+    ) {
+      return (
+        <div className="mt-2 text-sm">
+          <span>This account doesn't exist. </span>
+          <Link
+            href="/register"
+            className="text-indigo-600 hover:text-indigo-500 font-medium"
+          >
+            Register here
+          </Link>
+        </div>
+      );
+    } else if (loginError.includes("Incorrect password")) {
+      return (
+        <div className="mt-2 text-sm">
+          <span>Please double-check your password and try again. </span>
+          <Link
+            href="/forgot-password"
+            className="text-indigo-600 hover:text-indigo-500 font-medium"
+          >
+            Forgot password?
+          </Link>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -63,7 +193,8 @@ export default function LoginPage() {
 
         {loginError && (
           <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-            {loginError}
+            <p className="font-medium">{loginError}</p>
+            {renderErrorHelperMessage()}
           </div>
         )}
 
@@ -103,10 +234,22 @@ export default function LoginPage() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) validateEmail(e.target.value);
+                }}
+                onBlur={() => validateEmail(email)}
+                className={`mt-1 block w-full rounded-md border ${
+                  emailError ? "border-red-500" : "border-gray-300"
+                } px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500`}
                 placeholder="Email address"
               />
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Enter a valid email address (e.g., user@example.com)
+              </p>
             </div>
             <div>
               <label
@@ -121,10 +264,103 @@ export default function LoginPage() {
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                onChange={(e) => {
+                  const newPassword = e.target.value;
+                  setPassword(newPassword);
+                  validatePassword(newPassword);
+                  if (passwordError) validatePassword(newPassword);
+                }}
+                onBlur={() => validatePassword(password)}
+                onFocus={() => setShowPasswordRequirements(true)}
+                className={`mt-1 block w-full rounded-md border ${
+                  passwordError ? "border-red-500" : "border-gray-300"
+                } px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500`}
                 placeholder="Password"
               />
+              {passwordError && (
+                <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+              )}
+              {showPasswordRequirements && (
+                <div className="mt-1 text-xs text-gray-500">
+                  <p>Enter your password to sign in</p>
+                  <div className="mt-1">
+                    <p className="font-medium mb-1">
+                      A secure password should have:
+                    </p>
+                    <ul className="list-none pl-1 space-y-1">
+                      <li className="flex items-center">
+                        <span
+                          className={`mr-2 ${
+                            passwordCriteria.length
+                              ? "text-green-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {passwordCriteria.length ? "✓" : "○"}
+                        </span>
+                        At least 8 characters
+                      </li>
+                      <li className="flex items-center">
+                        <span
+                          className={`mr-2 ${
+                            passwordCriteria.uppercase
+                              ? "text-green-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {passwordCriteria.uppercase ? "✓" : "○"}
+                        </span>
+                        Uppercase letters
+                      </li>
+                      <li className="flex items-center">
+                        <span
+                          className={`mr-2 ${
+                            passwordCriteria.lowercase
+                              ? "text-green-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {passwordCriteria.lowercase ? "✓" : "○"}
+                        </span>
+                        Lowercase letters
+                      </li>
+                      <li className="flex items-center">
+                        <span
+                          className={`mr-2 ${
+                            passwordCriteria.number
+                              ? "text-green-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {passwordCriteria.number ? "✓" : "○"}
+                        </span>
+                        At least one number
+                      </li>
+                      <li className="flex items-center">
+                        <span
+                          className={`mr-2 ${
+                            passwordCriteria.special
+                              ? "text-green-500"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {passwordCriteria.special ? "✓" : "○"}
+                        </span>
+                        At least one special character (!@#$%^&*)
+                      </li>
+                    </ul>
+                  </div>
+                  <p className="mt-2">
+                    Forgot your password?{" "}
+                    <Link
+                      href="/forgot-password"
+                      className="text-indigo-600 hover:text-indigo-500"
+                    >
+                      Reset it here
+                    </Link>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
