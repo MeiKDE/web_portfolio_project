@@ -38,10 +38,10 @@ export const GET = withAuth(
       console.error("Error fetching skills:", error);
 
       if (error instanceof Error) {
-        return errorResponse(`Failed to fetch skills: ${error.message}`);
+        return errorResponse(500, `Failed to fetch skills: ${error.message}`);
       }
 
-      return errorResponse("Failed to fetch skills");
+      return errorResponse(500, "Failed to fetch skills");
     }
   }
 );
@@ -58,7 +58,7 @@ export const POST = withAuth(
 
       // Only allow users to add skills to their own profile
       if (user.id !== userId) {
-        return errorResponse("Forbidden", 403);
+        return errorResponse(403, "Forbidden");
       }
 
       // Get the skill data from the request
@@ -69,9 +69,9 @@ export const POST = withAuth(
 
       if (!validationResult.success) {
         return errorResponse(
+          400,
           "Invalid skill data: " +
-            JSON.stringify(validationResult.error.format()),
-          400
+            JSON.stringify(validationResult.error.format())
         );
       }
 
@@ -91,16 +91,16 @@ export const POST = withAuth(
 
       if (error instanceof z.ZodError) {
         return errorResponse(
-          "Validation error: " + JSON.stringify(error.format()),
-          400
+          400,
+          "Validation error: " + JSON.stringify(error.format())
         );
       }
 
       if (error instanceof Error) {
-        return errorResponse(`Failed to create skill: ${error.message}`);
+        return errorResponse(500, `Failed to create skill: ${error.message}`);
       }
 
-      return errorResponse("Failed to create skill");
+      return errorResponse(500, "Failed to create skill");
     }
   }
 );

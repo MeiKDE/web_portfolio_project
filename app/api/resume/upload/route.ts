@@ -7,6 +7,16 @@ import { parseResumePDF } from "@/lib/resume-parser";
 import { updateUserProfile } from "@/lib/user-service";
 import prisma from "@/lib/prisma";
 
+// Helper function to convert text to title case
+function toTitleCase(text: string): string {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
@@ -76,7 +86,19 @@ export async function POST(request: NextRequest) {
       console.log("Resume data parsed successfully");
 
       // Update user profile with parsed data
-      await updateUserProfile(userId, resumeData);
+      // Store resumeData.email in profile_email if it exists
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: resumeData.name ? toTitleCase(resumeData.name) : undefined,
+          title: resumeData.title ? toTitleCase(resumeData.title) : undefined,
+          location: resumeData.location
+            ? toTitleCase(resumeData.location)
+            : undefined,
+          bio: resumeData.bio,
+          ...(resumeData.email ? { profile_email: resumeData.email } : {}),
+        },
+      });
       console.log("User profile updated successfully");
 
       return successResponse({

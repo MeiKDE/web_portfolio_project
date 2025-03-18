@@ -41,9 +41,8 @@ export function handleApiError(
   // Handle Zod validation errors
   if (error instanceof z.ZodError) {
     return errorResponse(
-      "Validation error",
-      HTTP_STATUS.BAD_REQUEST,
-      error.format()
+      400,
+      "Validation error" + HTTP_STATUS.BAD_REQUEST + error.format()
     );
   }
 
@@ -56,8 +55,8 @@ export function handleApiError(
   if (error instanceof Error) {
     const safeMessage = sanitizeErrorMessage(error.message);
     return errorResponse(
-      `${defaultMessage}: ${safeMessage}`,
-      HTTP_STATUS.INTERNAL_SERVER_ERROR
+      500,
+      `${defaultMessage}: ${safeMessage}` + HTTP_STATUS.INTERNAL_SERVER_ERROR
     );
   }
 
@@ -70,22 +69,25 @@ export function handleApiError(
     switch (prismaError.code) {
       case "P2002": // Unique constraint failed
         return errorResponse(
-          "A record with this information already exists",
-          HTTP_STATUS.CONFLICT
+          409,
+          "A record with this information already exists" + HTTP_STATUS.CONFLICT
         );
       case "P2025": // Record not found
-        return errorResponse("Record not found", HTTP_STATUS.NOT_FOUND);
+        return errorResponse(404, "Record not found" + HTTP_STATUS.NOT_FOUND);
       default:
         // For other Prisma errors, return a generic message but log details
         const safeMessage = prismaError.message
           ? sanitizeErrorMessage(prismaError.message)
           : "Database error";
-        return errorResponse(safeMessage, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        return errorResponse(
+          500,
+          safeMessage + HTTP_STATUS.INTERNAL_SERVER_ERROR
+        );
     }
   }
 
   // For unknown error types
-  return errorResponse(defaultMessage, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  return errorResponse(500, defaultMessage + HTTP_STATUS.INTERNAL_SERVER_ERROR);
 }
 
 /**
@@ -111,7 +113,7 @@ export class ApiError extends Error {
  * Handles an ApiError by converting it to an appropriate response
  */
 export function handleApiErrorInstance(error: ApiError) {
-  return errorResponse(error.message, error.statusCode, error.details);
+  return errorResponse(400, error.message + error.statusCode + error.details);
 }
 
 /**

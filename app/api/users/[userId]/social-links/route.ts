@@ -19,7 +19,7 @@ export async function GET(
     return successResponse(socialLinks);
   } catch (error) {
     console.error("Error fetching social links:", error);
-    return errorResponse("Failed to fetch social links");
+    return errorResponse(500, "Failed to fetch social links");
   }
 }
 
@@ -41,6 +41,6 @@ export async function POST(
     return successResponse(socialLink, 201);
   } catch (error) {
     console.error("Error creating social link:", error);
-    return errorResponse("Failed to create social link");
+    return errorResponse(500, "Failed to create social link");
   }
 }

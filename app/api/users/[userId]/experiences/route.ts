@@ -18,13 +18,13 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return errorResponse("Not authenticated", 401);
+      return errorResponse(401, "Not authenticated");
     }
 
     // For security, only allow users to see their own experiences
     // or implement admin check here if needed
     if (session.user.id !== params.userId) {
-      return errorResponse("Not authorized to view these experiences", 403);
+      return errorResponse(403, "Not authorized to view these experiences");
     }
 
     const experiences = await prisma.experience.findMany({
@@ -39,7 +39,7 @@ export async function GET(
     return successResponse(experiences);
   } catch (error) {
     console.error("Error fetching experiences:", error);
-    return errorResponse("Failed to fetch experiences");
+    return errorResponse(500, "Failed to fetch experiences");
   }
 }
 
@@ -56,14 +56,14 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return errorResponse("Not authenticated", 401);
+      return errorResponse(401, "Not authenticated");
     }
 
     // For security, only allow users to add experiences to their own profile
     if (session.user.id !== params.userId) {
       return errorResponse(
-        "Not authorized to add experiences for this user",
-        403
+        403,
+        "Not authorized to add experiences for this user"
       );
     }
 
@@ -80,10 +80,7 @@ export async function POST(
     const validationResult = experienceSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return errorResponse(
-        "Invalid experience data",
-        validationResult.error.format()
-      );
+      return errorResponse(400, "Invalid experience data");
     }
 
     const newExperience = await prisma.experience.create({
@@ -96,6 +93,6 @@ export async function POST(
     return successResponse(newExperience);
   } catch (error) {
     console.error("Error creating experience:", error);
-    return errorResponse("Failed to create experience");
+    return errorResponse(500, "Failed to create experience");
   }
 }

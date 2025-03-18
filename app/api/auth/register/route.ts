@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
 
     // Basic validation
     if (!email || !password || !name) {
-      return errorResponse("Missing required fields", 400);
+      return errorResponse(400, "Missing required fields");
     }
 
-    // Find existing user
+    // Find existing user by email
     const existingUser = await prisma.user.findUnique({
       where: { email },
       include: { accounts: true },
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       const hasCredentials = existingUser.hashedPassword && existingUser.salt;
 
       if (hasCredentials) {
-        return errorResponse("Credentials already exist for this email", 400);
+        return errorResponse(400, "Credentials already exist for this email");
       }
 
       // Hash the password
@@ -76,8 +76,10 @@ export async function POST(req: NextRequest) {
         data: {
           hashedPassword,
           salt,
-          // Don't change the provider if it's GOOGLE
-          // This allows the user to use both methods
+          name: name,
+          // Don't update the email field as it's used for authentication
+          // If there's a resume email, store it in profile_email
+          ...(data.resumeEmail ? { profile_email: data.resumeEmail } : {}),
         },
       });
 
@@ -99,6 +101,10 @@ export async function POST(req: NextRequest) {
         title: "New User",
         location: "Not specified",
         bio: "",
+        // If there's a resume email that's different from the auth email, store it
+        ...(data.resumeEmail && data.resumeEmail !== email
+          ? { profile_email: data.resumeEmail }
+          : {}),
       },
     });
 
@@ -124,6 +130,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     // Add logging here to catch any email sending errors
     console.error("Registration error:", error);
-    return errorResponse("Error creating user", 500);
+    return errorResponse(500, "Error creating user");
   }
 }

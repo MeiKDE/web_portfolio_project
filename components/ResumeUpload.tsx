@@ -32,6 +32,15 @@ type ResumeData = {
   skills?: string[];
 };
 
+function toTitleCase(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export default function ResumeUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -113,9 +122,13 @@ export default function ResumeUpload() {
               {profileData.name?.charAt(0) || "U"}
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{profileData.name}</h2>
-              <p className="text-gray-600">{profileData.title}</p>
-              <p className="text-gray-500">{profileData.location}</p>
+              <h2 className="text-2xl font-bold">
+                {toTitleCase(profileData.name)}
+              </h2>
+              <p className="text-gray-600">{toTitleCase(profileData.title)}</p>
+              <p className="text-gray-500">
+                {toTitleCase(profileData.location)}
+              </p>
             </div>
           </div>
 

@@ -22,7 +22,7 @@ export async function GET(
     return successResponse(certifications);
   } catch (error) {
     console.error("Error fetching certifications:", error);
-    return errorResponse("Failed to fetch certifications");
+    return errorResponse(500, "Failed to fetch certifications");
   }
 }
 
@@ -35,14 +35,14 @@ export async function POST(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session) {
-      return errorResponse("Unauthorized", 401);
+      return errorResponse(401, "Unauthorized");
     }
 
     // Verify the user is adding to their own profile or is an admin
     if (params.userId !== session.user.id && !(session.user as any).isAdmin) {
       return errorResponse(
-        "Unauthorized access to this user's certifications",
-        403
+        403,
+        "Unauthorized access to this user's certifications"
       );
     }
 
@@ -54,11 +54,7 @@ export async function POST(
 
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.format());
-      return errorResponse(
-        "Invalid certification data",
-        400,
-        validationResult.error.format()
-      );
+      return errorResponse(400, "Invalid certification data");
     }
 
     // Create the certification in the database
@@ -69,14 +65,17 @@ export async function POST(
       },
     });
 
-    return successResponse(certification, 201);
+    return successResponse(certification);
   } catch (error) {
     console.error("Error creating certification:", error);
 
     if (error instanceof Error) {
-      return errorResponse(`Failed to create certification: ${error.message}`);
+      return errorResponse(
+        500,
+        `Failed to create certification: ${error.message}`
+      );
     }
 
-    return errorResponse("Failed to create certification");
+    return errorResponse(500, "Failed to create certification");
   }
 }

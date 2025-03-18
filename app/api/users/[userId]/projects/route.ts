@@ -19,7 +19,7 @@ export async function GET(
     return successResponse(projects);
   } catch (error) {
     console.error("Error fetching projects:", error);
-    return errorResponse("Failed to fetch projects");
+    return errorResponse(500, "Failed to fetch projects");
   }
 }
 
@@ -41,6 +41,6 @@ export async function POST(
     return successResponse(project, 201);
   } catch (error) {
     console.error("Error creating project:", error);
-    return errorResponse("Failed to create project");
+    return errorResponse(500, "Failed to create project");
   }
 }
