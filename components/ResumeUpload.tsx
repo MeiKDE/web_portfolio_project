@@ -11,6 +11,7 @@ export default function ResumeUpload() {
   const [choice, setChoice] = useState<"upload" | "manual" | null>(null);
   const { data: session } = useSession();
   const router = useRouter();
+  const [success, setSuccess] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -23,39 +24,43 @@ export default function ResumeUpload() {
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setError("Please select a file to upload");
-      return;
-    }
-
-    setIsUploading(true);
-    setError("");
-
+  const handleUpload = async (file: File) => {
     try {
-      // Create form data for file upload
+      setIsUploading(true);
+      setError("");
+
+      // Create form data for the file
       const formData = new FormData();
       formData.append("resume", file);
 
-      // Upload the file
+      console.log("Uploading resume PDF...");
       const response = await fetch("/api/resume/upload", {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload resume");
-      }
+      console.log("ln41 Check Response:", response);
 
       const data = await response.json();
 
-      // Redirect to profile page with parsed data
-      router.push("/profile");
-    } catch (err) {
-      setError("Error uploading resume. Please try again.");
-      console.error(err);
-    } finally {
+      console.log("ln43 Check Data:", data);
+
+      if (!response.ok) {
+        console.error("Upload error details:", data);
+        throw new Error(
+          `PDF processing error: ${data.message || "Unknown error"}`
+        );
+      }
+
       setIsUploading(false);
+      setSuccess(true);
+      // Optionally redirect to profile page after successful upload
+      // router.push("/profile");
+    } catch (error: unknown) {
+      console.error("Resume upload failed:", error);
+      setIsUploading(false);
+      setError(
+        error instanceof Error ? error.message : "Failed to upload resume"
+      );
     }
   };
 
@@ -131,7 +136,31 @@ export default function ResumeUpload() {
         />
       </div>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && (
+        <div className="text-red-500 mb-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p className="font-semibold">Error:</p>
+          <p>{error}</p>
+          {error.includes("parse") && (
+            <p className="mt-2 text-sm">
+              Our system couldn't properly read your resume. This might be due
+              to formatting or the PDF structure. You can try a different PDF or
+              continue with manual setup.
+            </p>
+          )}
+        </div>
+      )}
+
+      {success && (
+        <p className="text-green-500 mb-4 p-3 bg-green-50 border border-green-200 rounded">
+          Resume uploaded and parsed successfully!
+          <button
+            onClick={() => router.push("/profile")}
+            className="ml-2 underline text-blue-600 hover:text-blue-800"
+          >
+            View your profile
+          </button>
+        </p>
+      )}
 
       <div className="flex justify-between">
         <button
@@ -141,7 +170,7 @@ export default function ResumeUpload() {
           Back
         </button>
         <button
-          onClick={handleUpload}
+          onClick={() => file && handleUpload(file)}
           disabled={!file || isUploading}
           className={`bg-blue-600 text-white py-2 px-4 rounded ${
             !file || isUploading
@@ -152,6 +181,17 @@ export default function ResumeUpload() {
           {isUploading ? "Uploading..." : "Upload and Parse Resume"}
         </button>
       </div>
+
+      {error && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleManualSetup}
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            Continue with manual setup instead
+          </button>
+        </div>
+      )}
     </div>
   );
 }

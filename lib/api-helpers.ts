@@ -4,31 +4,29 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createApiError } from "./error-handler";
 
-// Create a response object with the given data and status
+/**
+ * Creates a standardized success response
+ */
 export function successResponse(data: any) {
-  return new Response(
-    JSON.stringify({
-      error: false,
-      data,
-    }),
-    {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }
 
-// Create an error response with the given message, status, and optional details
-export function errorResponse(message: string, status = 400) {
+/**
+ * Creates a standardized error response
+ */
+export function errorResponse(statusCode: number, message: string) {
   return new Response(
     JSON.stringify({
       error: true,
       message,
     }),
     {
-      status,
+      status: statusCode,
       headers: {
         "Content-Type": "application/json",
       },
@@ -42,6 +40,11 @@ type RouteHandler = (
   context: { params: any },
   user: any
 ) => Promise<Response>;
+
+// Create a custom error type that includes statusCode
+interface ApiError extends Error {
+  statusCode?: number;
+}
 
 // withAuth higher-order function
 export function withAuth(handler: RouteHandler) {
@@ -67,10 +70,12 @@ export function withAuth(handler: RouteHandler) {
       console.error("Authentication error:", error);
 
       if (error instanceof Error) {
-        return errorResponse(error.message, (error as any).statusCode || 500);
+        // Cast to ApiError to access statusCode property
+        const apiError = error as ApiError;
+        return errorResponse(apiError.statusCode || 500, apiError.message);
       }
 
-      return errorResponse("Authentication failed");
+      return errorResponse(500, "Authentication failed");
     }
   };
 }
@@ -117,10 +122,13 @@ export function withOwnership(
       );
 
       if (error instanceof Error) {
-        return errorResponse(error.message, (error as any).statusCode || 500);
+        // Cast to ApiError to access statusCode property
+        const apiError = error as ApiError;
+        return errorResponse(apiError.statusCode || 500, apiError.message);
       }
 
       return errorResponse(
+        500,
         `Failed to verify ownership of ${String(resourceType)}`
       );
     }

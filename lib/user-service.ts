@@ -1,114 +1,190 @@
 import prisma from "@/lib/prisma";
+// Remove the db import since it's causing an error
+// import { db } from '@/lib/db'; // Assuming you have a database connection
 
 export async function getUserProfile(userId: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        experiences: true,
-        education: true,
-        skills: true,
-        certifications: true,
-        projects: true,
-        socialLinks: true,
+    const userProfile = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        // Remove hasCompletedProfileSetup as it doesn't exist in UserSelect type
       },
     });
 
-    // Handle case where user might not have the new fields yet
-    return user;
+    return userProfile;
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    throw new Error("Failed to fetch user profile");
+    return null;
   }
 }
 
-export async function updateUserProfile(userId: string, profileData: any) {
+/**
+ * Updates a user's profile with parsed resume data
+ */
+export async function updateUserProfile(userId: string, resumeData: any) {
   try {
-    // Extract related data that needs to be handled separately
-    const {
-      workExperience,
-      education,
-      skills,
-      certifications,
-      projects,
-      socialLinks,
-      ...userData
-    } = profileData;
+    console.log("Resume data received:", JSON.stringify(resumeData, null, 2));
 
-    // Start a transaction to update all related data
-    const result = await prisma.$transaction(async (tx) => {
-      // Update user data
-      const updatedUser = await tx.user.update({
+    // First check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    // Update basic user information
+    if (
+      resumeData.name ||
+      resumeData.profile_email ||
+      resumeData.phone ||
+      resumeData.bio ||
+      resumeData.title ||
+      resumeData.location
+    ) {
+      await prisma.user.update({
         where: { id: userId },
         data: {
-          ...userData,
+          name: resumeData.name || undefined,
+          email: resumeData.profile_email || resumeData.email || undefined,
+          phone: resumeData.phone || undefined,
+          bio: resumeData.bio || resumeData.summary || undefined,
+          title: resumeData.title || undefined,
+          location: resumeData.location || undefined,
+          // Match the camelCase field names from your Prisma schema
           isUploadResumeForProfile: true,
           hasCompletedProfileSetup: true,
         },
       });
+    }
 
-      // Handle work experience if provided
-      if (workExperience && Array.isArray(workExperience)) {
-        // Delete existing experiences and create new ones
-        await tx.experience.deleteMany({
+    // Process skills with safer checks
+    try {
+      if (
+        resumeData.skills &&
+        Array.isArray(resumeData.skills) &&
+        resumeData.skills.length > 0
+      ) {
+        // First delete existing skills
+        await prisma.skill.deleteMany({
           where: { userId },
         });
 
-        for (const exp of workExperience) {
-          await tx.experience.create({
-            data: {
-              ...exp,
-              userId,
-              startDate: new Date(exp.startDate),
-              endDate: exp.endDate ? new Date(exp.endDate) : null,
-            },
-          });
+        // Process skills in batches to avoid connection limits
+        for (const skill of resumeData.skills) {
+          if (typeof skill === "string" && skill.trim()) {
+            await prisma.skill.create({
+              data: {
+                userId,
+                name: skill,
+                category: "General", // Default category
+              },
+            });
+          }
         }
       }
+    } catch (skillError) {
+      console.error("Error updating skills:", skillError);
+      // Continue with other updates even if skills fail
+    }
 
-      // Handle education if provided
-      if (education && Array.isArray(education)) {
-        await tx.education.deleteMany({
+    // Process experience with safer validation
+    try {
+      const experiences = resumeData.workExperience || resumeData.experience;
+      if (experiences && Array.isArray(experiences) && experiences.length > 0) {
+        // First delete existing experience entries
+        await prisma.experience.deleteMany({
           where: { userId },
         });
 
-        for (const edu of education) {
-          await tx.education.create({
-            data: {
-              ...edu,
-              userId,
-              startYear: parseInt(edu.startYear),
-              endYear: parseInt(edu.endYear),
-            },
-          });
+        // Then add new experience entries
+        for (const exp of experiences) {
+          if (exp && typeof exp === "object") {
+            // Validate required dates
+            const now = new Date();
+            let startDate = exp.startDate ? new Date(exp.startDate) : now;
+
+            // If startDate is invalid, use current date
+            if (isNaN(startDate.getTime())) startDate = now;
+
+            // For endDate, use current date if invalid or missing
+            let endDate = exp.endDate ? new Date(exp.endDate) : now;
+            if (isNaN(endDate.getTime())) endDate = now;
+
+            await prisma.experience.create({
+              data: {
+                userId,
+                position: exp.position || exp.title || "Untitled Position",
+                company: exp.company || "Unknown Company",
+                location: exp.location || "",
+                startDate,
+                endDate,
+                description: exp.description || "",
+                isCurrentPosition: Boolean(exp.isCurrentPosition),
+              },
+            });
+          }
         }
       }
+    } catch (expError) {
+      console.error("Error updating experience:", expError);
+      // Continue with other updates even if experience fails
+    }
 
-      // Handle skills if provided
-      if (skills && Array.isArray(skills)) {
-        await tx.skill.deleteMany({
+    // Process education with safer validation
+    try {
+      if (
+        resumeData.education &&
+        Array.isArray(resumeData.education) &&
+        resumeData.education.length > 0
+      ) {
+        // First delete existing education entries
+        await prisma.education.deleteMany({
           where: { userId },
         });
 
-        for (const skill of skills) {
-          await tx.skill.create({
-            data: {
-              name: typeof skill === "string" ? skill : skill.name,
-              category: typeof skill === "string" ? "General" : skill.category,
-              proficiencyLevel:
-                typeof skill === "string" ? 3 : skill.proficiencyLevel,
-              userId,
-            },
-          });
+        const currentYear = new Date().getFullYear();
+
+        // Then add new education entries
+        for (const edu of resumeData.education) {
+          if (edu && typeof edu === "object") {
+            // Parse years with validation
+            const startYear = edu.startYear
+              ? parseInt(edu.startYear)
+              : currentYear - 4;
+            const endYear = edu.endYear ? parseInt(edu.endYear) : currentYear;
+
+            await prisma.education.create({
+              data: {
+                userId,
+                degree: edu.degree || "Degree",
+                institution: edu.institution || "Institution",
+                fieldOfStudy: edu.fieldOfStudy || "Unknown Field",
+                startYear: isNaN(startYear) ? currentYear - 4 : startYear,
+                endYear: isNaN(endYear) ? currentYear : endYear,
+              },
+            });
+          }
         }
       }
+    } catch (eduError) {
+      console.error("Error updating education:", eduError);
+      // Continue if education updates fail
+    }
 
-      return updatedUser;
-    });
-
-    return result;
-  } catch (error) {
+    return true;
+  } catch (error: unknown) {
     console.error("Error updating user profile:", error);
-    throw new Error("Failed to update user profile");
+    throw new Error(
+      `Failed to update user profile: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
