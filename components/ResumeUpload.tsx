@@ -96,6 +96,9 @@ export default function ResumeUpload() {
       if (data.data && data.data.resumeData) {
         setProfileData(data.data.resumeData);
       }
+
+      // Redirect to profile page after saving
+      router.push("/profile");
     } catch (error: unknown) {
       console.error("Resume upload failed:", error);
       setIsUploading(false);
@@ -226,11 +229,8 @@ export default function ResumeUpload() {
                   "Profile saved successfully, redirecting to profile page"
                 );
 
-                // Redirect to profile page after saving - more explicit URL
-                router.push("/profile").catch(() => {
-                  // Fallback if router.push fails
-                  window.location.href = "/profile";
-                });
+                // Redirect to profile page after saving
+                router.push("/profile");
               } catch (error) {
                 console.error("Error saving profile:", error);
                 // Still redirect to profile page even if there's an error

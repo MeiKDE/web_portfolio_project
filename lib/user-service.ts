@@ -26,8 +26,8 @@ export async function getUserProfile(userId: string) {
       location: user.location || "",
       title: user.title || "",
       bio: user.bio || "",
-      hasCompletedProfileSetup: user.hasCompletedProfileSetup,
-      isUploadResumeForProfile: user.isUploadResumeForProfile,
+      hasCompletedProfileSetup: user.hasCompletedProfileSetup ?? false,
+      isUploadResumeForProfile: user.isUploadResumeForProfile ?? false,
       experiences: user.experiences,
       education: user.education,
       skills: user.skills,
@@ -71,7 +71,7 @@ export async function updateUserProfile(userId: string, resumeData: any) {
           bio: resumeData.bio || resumeData.summary || undefined,
           title: resumeData.title || undefined,
           location: resumeData.location || undefined,
-          // Match the camelCase field names from your Prisma schema
+          // These fields do exist in your schema, so uncomment them
           isUploadResumeForProfile: true,
           hasCompletedProfileSetup: true,
         },

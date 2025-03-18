@@ -14,11 +14,11 @@ npx prisma migrate dev
 or
 npx prisma migrate dev --name add_profile_email
 
-### Apply the migration:
+### Apply the migration
 
 npx prisma generate
 
-### 3. To run the seed file, run the following command:
+### 3. To run the seed file, run the following command
 
 npx tsc prisma/seed.ts
 mv prisma/seed.js prisma/seed.cjs
@@ -26,11 +26,11 @@ node prisma/seed.cjs
 
 note: avoid importing modules from seed.ts to avoid errors
 
-### To run the prisma studio, run the following command:
+### To run the prisma studio, run the following command
 
 npx prisma studio
 
-### To override the remote branch, run the following command:
+### To override the remote branch, run the following command
 
 git push --force-with-lease
 
@@ -50,12 +50,12 @@ psql -d profile_db
 
 ### 1. Run Prisma Validation Commands
 
-### The most direct way to validate your schema is to run Prisma's validation commands:
+### The most direct way to validate your schema is to run Prisma's validation commands
 
 npx prisma validate
 
 ### 2. Generate Prisma Client
 
-### When you generate the Prisma client, it will also validate your schema:
+### When you generate the Prisma client, it will also validate your schema
 
 npx prisma generate

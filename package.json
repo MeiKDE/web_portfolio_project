@@ -60,7 +60,6 @@
     "node-fetch": "^3.3.2",
     "openai": "^4.87.3",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^5.0.375",
     "react": "^18",
     "react-day-picker": "8.10.1",
     "react-dom": "^18",
