@@ -67,7 +67,6 @@ export async function updateUserProfile(userId: string, resumeData: any) {
         where: { id: userId },
         data: {
           name: resumeData.name || undefined,
-          email: resumeData.profile_email || resumeData.email || undefined,
           phone: resumeData.phone || undefined,
           bio: resumeData.bio || resumeData.summary || undefined,
           title: resumeData.title || undefined,

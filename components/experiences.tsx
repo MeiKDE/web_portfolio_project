@@ -213,9 +213,10 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   // Update local state when data is fetched
   useEffect(() => {
+    console.log("ln216: apiResponse:", apiResponse);
     if (apiResponse && !apiResponse.error) {
       // Extract the data array from the API response
-      const experiences = apiResponse.data || [];
+      const experiences = apiResponse || [];
       setExperienceData(experiences);
 
       // Format dates for editing
@@ -229,7 +230,7 @@ export default function Experiences({ userId }: ExperienceProps) {
 
       setEditedExperiences(formattedExperiences);
     }
-  }, [apiResponse]);
+  }, [apiResponse, setExperienceData, setEditedExperiences]);
 
   // Call this in useEffect
   useEffect(() => {
