@@ -12,14 +12,14 @@ datasource db {
 
 model User {
   id                String          @id @default(cuid())
-  name              String
-  email             String?         @unique
+  name              String?
+  email             String          @unique
   profile_email     String?         // New field for contact email
   emailVerified     DateTime?
   hashedPassword    String?
   salt              String?
   password          String?         // Optional for OAuth users
-  provider          AuthProvider    @default(CREDENTIALS)  // Enum for OAuth providers
+  provider          String?         // To track authentication provider (google, credentials, etc.)
   providerId        String?         // Stores the provider's user ID for OAuth users
   title             String?
   location          String?

@@ -16,8 +16,8 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      name?: string | null;
-      email?: string | null;
+      name: string;
+      email: string;
       image?: string | null;
       title?: string | null;
       location?: string | null;
@@ -25,6 +25,7 @@ declare module "next-auth" {
       bio?: string | null;
       // Add any other fields you need
     };
+    provider?: string;
   }
 }
 

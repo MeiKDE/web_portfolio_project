@@ -4,12 +4,13 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { redirect, useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import Link from "next/link";
 
 // Import UI components
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
+import { Edit, Lightbulb, CheckCircle, X, Upload } from "lucide-react";
 
 // Import profile components
 import UserProfile from "@/components/User";
@@ -18,6 +19,7 @@ import Educations from "@/components/Educations";
 import Skills from "@/components/Skills";
 import Certifications from "@/components/Certifications";
 import SocialLinks from "@/components/SocialLinks";
+import ResumeUpload from "@/components/ResumeUpload";
 
 // Add this near the top of the file
 interface UserProfileType {
@@ -32,6 +34,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserProfileType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showResumeMessage, setShowResumeMessage] = useState(true);
+  const [showResumeUpload, setShowResumeUpload] = useState(false);
 
   useEffect(() => {
     // Handle authentication
@@ -67,6 +71,17 @@ export default function ProfilePage() {
     }
   }, [status, session, router]);
 
+  // Add new useEffect for auto-dismissing message
+  useEffect(() => {
+    if (userProfile?.isUploadResumeForProfile && showResumeMessage) {
+      const timer = setTimeout(() => {
+        setShowResumeMessage(false);
+      }, 5000); // Message will disappear after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [userProfile?.isUploadResumeForProfile, showResumeMessage]);
+
   // Show loading spinner while checking auth status or fetching profile
   if (status === "loading" || isLoading) {
     return <LoadingSpinner fullPage text="Loading your profile..." />;
@@ -77,16 +92,44 @@ export default function ProfilePage() {
     return null;
   }
 
+  if (showResumeUpload) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <ResumeUpload
+          fromProfile={true}
+          onClose={() => setShowResumeUpload(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {userProfile?.isUploadResumeForProfile && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+      {userProfile?.isUploadResumeForProfile && showResumeMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 relative">
           <p>
             Your profile has been populated from your resume. Feel free to make
             any adjustments needed.
           </p>
+          <button
+            onClick={() => setShowResumeMessage(false)}
+            className="absolute top-2 right-2 text-green-700 hover:text-green-900"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
+
+      {/* Update Upload Resume Button to use state instead of Link */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => setShowResumeUpload(true)}
+          className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          Upload Your Resume
+        </button>
+      </div>
 
       {/* Profile Header */}
       <UserProfile userId={session.user.id} />

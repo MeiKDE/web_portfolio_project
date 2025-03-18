@@ -25,8 +25,8 @@ async function main() {
   await prisma.user.deleteMany({});
 
   // Generate password hash and salt once
-  const johnPassword = hashPassword("password123");
-  const socialAuthPassword = hashPassword("password456");
+  const johnPassword = hashPassword("Password123!");
+  const socialAuthPassword = hashPassword("Password456!");
 
   // Create users with different authentication scenarios
   const users = await Promise.all([

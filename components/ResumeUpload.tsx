@@ -41,7 +41,16 @@ function toTitleCase(text: string | null | undefined): string {
     .join(" ");
 }
 
-export default function ResumeUpload() {
+// Add a new prop to track if we're coming from profile page
+interface ResumeUploadProps {
+  fromProfile?: boolean;
+  onClose?: () => void;
+}
+
+export default function ResumeUpload({
+  fromProfile = false,
+  onClose,
+}: ResumeUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
@@ -71,16 +80,15 @@ export default function ResumeUpload() {
       const formData = new FormData();
       formData.append("resume", file);
 
-      console.log("Uploading resume PDF...");
+      console.log("Starting resume upload...");
       const response = await fetch("/api/resume/upload", {
         method: "POST",
         body: formData,
       });
-      console.log("ln41 Check Response:", response);
+      console.log("Upload response status:", response.status);
 
       const data = await response.json();
-
-      console.log("ln43 Check Data:", data);
+      console.log("Upload response data:", data);
 
       if (!response.ok) {
         console.error("Upload error details:", data);
@@ -94,11 +102,15 @@ export default function ResumeUpload() {
 
       // Store the profile data for display
       if (data.data && data.data.resumeData) {
+        console.log("Setting profile data:", data.data.resumeData);
         setProfileData(data.data.resumeData);
+      } else {
+        console.log("No resume data found in response");
+        // If no profile data, redirect to profile page
+        console.log("Redirecting to profile page...");
+        router.push("/profile");
+        return;
       }
-
-      // Redirect to profile page after saving
-      router.push("/profile");
     } catch (error: unknown) {
       console.error("Resume upload failed:", error);
       setIsUploading(false);
@@ -109,7 +121,11 @@ export default function ResumeUpload() {
   };
 
   const handleManualSetup = () => {
-    router.push("/profile");
+    if (fromProfile && onClose) {
+      onClose();
+    } else {
+      router.push("/");
+    }
   };
 
   const renderProfilePreview = () => {
@@ -210,33 +226,7 @@ export default function ResumeUpload() {
 
         <div className="mt-8 flex justify-center space-x-4">
           <button
-            onClick={async () => {
-              try {
-                // Create an API call to save the profile data directly
-                const response = await fetch("/api/profile/save", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ profileData }),
-                });
-
-                if (!response.ok) {
-                  throw new Error("Failed to save profile");
-                }
-
-                console.log(
-                  "Profile saved successfully, redirecting to profile page"
-                );
-
-                // Redirect to profile page after saving
-                router.push("/profile");
-              } catch (error) {
-                console.error("Error saving profile:", error);
-                // Still redirect to profile page even if there's an error
-                window.location.href = "/profile";
-              }
-            }}
+            onClick={saveProfileAndRedirect}
             className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 mr-4"
           >
             Keep This As My Profile
@@ -257,6 +247,44 @@ export default function ResumeUpload() {
     );
   };
 
+  const saveProfileAndRedirect = async () => {
+    try {
+      console.log("Saving profile data...");
+      const response = await fetch("/api/profile/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ profileData }),
+      });
+
+      console.log("Save response status:", response.status);
+      const data = await response.json();
+      console.log("Save response data:", data);
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      console.log("Profile saved successfully");
+
+      // Use onClose if coming from profile page, otherwise redirect
+      if (fromProfile && onClose) {
+        onClose();
+      } else {
+        router.push("/profile");
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      // Use onClose if coming from profile page, otherwise redirect
+      if (fromProfile && onClose) {
+        onClose();
+      } else {
+        router.push("/profile");
+      }
+    }
+  };
+
   if (!session) {
     return null; // Don't show if not logged in
   }
@@ -265,7 +293,7 @@ export default function ResumeUpload() {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto mt-10">
         <h2 className="text-2xl font-bold mb-4">
-          Welcome to Your Profile Setup
+          {fromProfile ? "Upload Resume" : "Welcome to Your Profile Setup"}
         </h2>
         <p className="mb-6">
           Would you like to upload your resume as a PDF to populate your profile
@@ -279,10 +307,16 @@ export default function ResumeUpload() {
             Upload Resume PDF
           </button>
           <button
-            onClick={() => setChoice("manual")}
+            onClick={() => {
+              if (fromProfile && onClose) {
+                onClose();
+              } else {
+                setChoice("manual");
+              }
+            }}
             className="bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300"
           >
-            Update Manually
+            {fromProfile ? "Return to Profile" : "Update Manually"}
           </button>
         </div>
       </div>
@@ -309,81 +343,87 @@ export default function ResumeUpload() {
 
   return (
     <div className="max-w-4xl mx-auto mt-10">
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Upload Your Resume</h2>
-        <p className="mb-6">
-          Upload your resume as a PDF file, and we'll use AI to extract
-          information and populate your profile.
-        </p>
-
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select PDF Resume</label>
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className="w-full border border-gray-300 p-2 rounded"
-          />
-        </div>
-
-        {error && (
-          <div className="text-red-500 mb-4 p-3 bg-red-50 border border-red-200 rounded">
-            <p className="font-semibold">Error:</p>
-            <p>{error}</p>
-            {error.includes("parse") && (
-              <p className="mt-2 text-sm">
-                Our system couldn't properly read your resume. This might be due
-                to formatting or the PDF structure. You can try a different PDF
-                or continue with manual setup.
-              </p>
-            )}
-          </div>
-        )}
-
-        {success && !profileData && (
-          <p className="text-green-500 mb-4 p-3 bg-green-50 border border-green-200 rounded">
-            Resume uploaded and parsed successfully!
-            <button
-              onClick={() => router.push("/profile")}
-              className="ml-2 underline text-blue-600 hover:text-blue-800"
-            >
-              View your profile
-            </button>
+      {/* Only show upload section if we don't have profile data to preview */}
+      {!profileData && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Upload Your Resume</h2>
+          <p className="mb-6">
+            Upload your resume as a PDF file, and we'll use AI to extract
+            information and populate your profile.
           </p>
-        )}
 
-        <div className="flex justify-between">
-          <button
-            onClick={() => setChoice(null)}
-            className="bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300"
-          >
-            Back
-          </button>
-          <button
-            onClick={() => file && handleUpload(file)}
-            disabled={!file || isUploading}
-            className={`bg-blue-600 text-white py-2 px-4 rounded ${
-              !file || isUploading
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-blue-700"
-            }`}
-          >
-            {isUploading ? "Uploading..." : "Upload and Parse Resume"}
-          </button>
-        </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">
+              Select PDF Resume
+            </label>
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
 
-        {error && (
-          <div className="mt-4 text-center">
+          {error && (
+            <div className="text-red-500 mb-4 p-3 bg-red-50 border border-red-200 rounded">
+              <p className="font-semibold">Error:</p>
+              <p>{error}</p>
+              {error.includes("parse") && (
+                <p className="mt-2 text-sm">
+                  Our system couldn't properly read your resume. This might be
+                  due to formatting or the PDF structure. You can try a
+                  different PDF or continue with manual setup.
+                </p>
+              )}
+            </div>
+          )}
+
+          {success && !profileData && (
+            <p className="text-green-500 mb-4 p-3 bg-green-50 border border-green-200 rounded">
+              Resume uploaded and parsed successfully!
+              <button
+                onClick={() => router.push("/profile")}
+                className="ml-2 underline text-blue-600 hover:text-blue-800"
+              >
+                View your profile
+              </button>
+            </p>
+          )}
+
+          <div className="flex justify-between">
             <button
-              onClick={handleManualSetup}
-              className="text-blue-600 hover:text-blue-800 underline"
+              onClick={() => setChoice(null)}
+              className="bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300"
             >
-              Continue with manual setup instead
+              Back
+            </button>
+            <button
+              onClick={() => file && handleUpload(file)}
+              disabled={!file || isUploading}
+              className={`bg-blue-600 text-white py-2 px-4 rounded ${
+                !file || isUploading
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-blue-700"
+              }`}
+            >
+              {isUploading ? "Uploading..." : "Upload and Parse Resume"}
             </button>
           </div>
-        )}
-      </div>
 
+          {error && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleManualSetup}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
+                Continue with manual setup instead
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Show profile preview if we have data */}
       {success && profileData && renderProfilePreview()}
     </div>
   );
