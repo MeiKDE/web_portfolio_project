@@ -192,13 +192,53 @@ export default function ResumeUpload() {
           </div>
         )}
 
-        <div className="mt-8 text-center">
-          <Link
-            href="/profile"
-            className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700"
+        <div className="mt-8 flex justify-center space-x-4">
+          <button
+            onClick={async () => {
+              try {
+                // Create an API call to save the profile data directly
+                const response = await fetch("/api/profile/save", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ profileData }),
+                });
+
+                if (!response.ok) {
+                  throw new Error("Failed to save profile");
+                }
+
+                console.log(
+                  "Profile saved successfully, redirecting to profile page"
+                );
+
+                // Redirect to profile page after saving - more explicit URL
+                router.push("/profile").catch(() => {
+                  // Fallback if router.push fails
+                  window.location.href = "/profile";
+                });
+              } catch (error) {
+                console.error("Error saving profile:", error);
+                // Still redirect to profile page even if there's an error
+                window.location.href = "/profile";
+              }
+            }}
+            className="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 mr-4"
           >
-            Go to Full Profile
-          </Link>
+            Keep This As My Profile
+          </button>
+
+          <button
+            onClick={() => {
+              // Simply redirect to the profile page for manual editing
+              // The data is already saved in the database
+              router.push("/profile");
+            }}
+            className="bg-gray-200 text-gray-800 py-2 px-6 rounded-lg hover:bg-gray-300"
+          >
+            Update My Profile Manually
+          </button>
         </div>
       </div>
     );

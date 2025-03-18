@@ -4,22 +4,37 @@ import prisma from "@/lib/prisma";
 
 export async function getUserProfile(userId: string) {
   try {
-    const userProfile = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        // Remove hasCompletedProfileSetup as it doesn't exist in UserSelect type
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        experiences: true,
+        education: true,
+        skills: true,
       },
     });
 
-    return userProfile;
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || "",
+      profile_email: user.email, // Map this explicitly
+      location: user.location || "",
+      title: user.title || "",
+      bio: user.bio || "",
+      hasCompletedProfileSetup: user.hasCompletedProfileSetup,
+      isUploadResumeForProfile: user.isUploadResumeForProfile,
+      experiences: user.experiences,
+      education: user.education,
+      skills: user.skills,
+    };
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    return null;
+    throw error;
   }
 }
 

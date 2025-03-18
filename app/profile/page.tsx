@@ -1,27 +1,85 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { getUserProfile } from "@/lib/user-service";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function ProfilePage() {
-  const session = await getServerSession(authOptions);
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { redirect, useRouter } from "next/navigation";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
-  if (!session?.user) {
-    redirect("/api/auth/signin");
+// Import UI components
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
+
+// Import profile components
+import UserProfile from "@/components/User";
+import Experiences from "@/components/Experiences";
+import Educations from "@/components/Educations";
+import Skills from "@/components/Skills";
+import Certifications from "@/components/Certifications";
+import SocialLinks from "@/components/SocialLinks";
+
+// Add this near the top of the file
+interface UserProfileType {
+  id: string;
+  hasCompletedProfileSetup?: boolean;
+  isUploadResumeForProfile?: boolean;
+  // Add other profile properties as needed
+}
+
+export default function ProfilePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [userProfile, setUserProfile] = useState<UserProfileType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Handle authentication
+    if (status === "unauthenticated") {
+      router.push("/api/auth/signin");
+      return;
+    }
+
+    // Once authenticated, fetch user profile data
+    if (status === "authenticated" && session?.user?.id) {
+      const fetchUserProfile = async () => {
+        try {
+          const response = await fetch(
+            `/api/profile?userId=${session.user.id}`
+          );
+          if (!response.ok) throw new Error("Failed to fetch profile");
+
+          const data = await response.json();
+          setUserProfile(data);
+
+          // If user hasn't completed profile setup, redirect to homepage
+          if (!data?.hasCompletedProfileSetup) {
+            router.push("/");
+          }
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchUserProfile();
+    }
+  }, [status, session, router]);
+
+  // Show loading spinner while checking auth status or fetching profile
+  if (status === "loading" || isLoading) {
+    return <LoadingSpinner fullPage text="Loading your profile..." />;
   }
 
-  const userProfile = await getUserProfile(session.user.id);
-
-  // If user hasn't completed profile setup, redirect to homepage
-  if (!userProfile?.hasCompletedProfileSetup) {
-    redirect("/");
+  // Don't render anything if not authenticated (router will redirect)
+  if (!session || !session.user) {
+    return null;
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
-
-      {userProfile.isUploadResumeForProfile && (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      {userProfile?.isUploadResumeForProfile && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
           <p>
             Your profile has been populated from your resume. Feel free to make
@@ -30,78 +88,174 @@ export default async function ProfilePage() {
         </div>
       )}
 
-      {/* Display profile information */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Personal Information</h2>
-        <p>
-          <strong>Name:</strong> {userProfile.name}
-        </p>
-        <p>
-          <strong>Email:</strong> {userProfile.profile_email}
-        </p>
-        <p>
-          <strong>Phone:</strong> {userProfile.phone}
-        </p>
-        <p>
-          <strong>Location:</strong> {userProfile.location}
-        </p>
-        <p>
-          <strong>Title:</strong> {userProfile.title}
-        </p>
-        <p>
-          <strong>Bio:</strong> {userProfile.bio}
-        </p>
-      </div>
+      {/* Profile Header */}
+      <UserProfile userId={session.user.id} />
 
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Work Experience</h2>
-        {userProfile.experiences.map((exp) => (
-          <div key={exp.id} className="mb-4 pb-4 border-b">
-            <h3 className="font-semibold">
-              {exp.position} at {exp.company}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {new Date(exp.startDate).toLocaleDateString()} -
-              {exp.endDate
-                ? new Date(exp.endDate).toLocaleDateString()
-                : "Present"}
-            </p>
-            <p>{exp.description}</p>
-          </div>
-        ))}
-      </div>
+      {/* Main Content */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Left Column - Resume */}
+        <div className="md:col-span-2 space-y-8">
+          {/* Experience Section */}
+          <Experiences userId={session.user.id} />
 
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Education</h2>
-        {userProfile.education.map((edu) => (
-          <div key={edu.id} className="mb-4 pb-4 border-b">
-            <h3 className="font-semibold">
-              {edu.degree} in {edu.fieldOfStudy}
-            </h3>
-            <p className="text-sm text-gray-600">
-              {edu.institution}, {edu.startYear} - {edu.endYear}
-            </p>
-            <p>{edu.description}</p>
-          </div>
-        ))}
-      </div>
+          {/* Education Section */}
+          <Educations userId={session.user.id} />
 
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4">Skills</h2>
-        <div className="flex flex-wrap gap-2">
-          {userProfile.skills.map((skill) => (
-            <span
-              key={skill.id}
-              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-            >
-              {skill.name}
-            </span>
-          ))}
+          {/* Skills Section */}
+          <Skills userId={session.user.id} />
+
+          {/* Certifications Section */}
+          <Certifications userId={session.user.id} />
+        </div>
+
+        {/* Right Column - Portfolio, Cover Letter, Contact */}
+        <div className="space-y-8">
+          {/* Portfolio Showcase */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Portfolio Showcase</h3>
+                <Button variant="ghost" size="sm">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </div>
+
+              <Tabs defaultValue="all" className="w-full">
+                <TabsList className="grid grid-cols-4 mb-4">
+                  <TabsTrigger value="all">All</TabsTrigger>
+                  <TabsTrigger value="frontend">Frontend</TabsTrigger>
+                  <TabsTrigger value="backend">Backend</TabsTrigger>
+                  <TabsTrigger value="fullstack">Full Stack</TabsTrigger>
+                </TabsList>
+                <TabsContent value="all" className="space-y-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">E-commerce Platform</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Full Stack · React, Node.js, MongoDB
+                      </p>
+                      <p className="text-sm mt-2">
+                        A complete e-commerce solution with payment processing
+                        and inventory management.
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">
+                        Real-time Analytics Dashboard
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Frontend · React, D3.js, WebSockets
+                      </p>
+                      <p className="text-sm mt-2">
+                        Interactive dashboard for visualizing real-time data
+                        streams.
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">API Gateway Service</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Backend · Node.js, Express, Redis
+                      </p>
+                      <p className="text-sm mt-2">
+                        Microservice gateway with rate limiting and caching
+                        capabilities.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="frontend" className="space-y-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">
+                        Real-time Analytics Dashboard
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Frontend · React, D3.js, WebSockets
+                      </p>
+                      <p className="text-sm mt-2">
+                        Interactive dashboard for visualizing real-time data
+                        streams.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="backend" className="space-y-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">API Gateway Service</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Backend · Node.js, Express, Redis
+                      </p>
+                      <p className="text-sm mt-2">
+                        Microservice gateway with rate limiting and caching
+                        capabilities.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="fullstack" className="space-y-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold">E-commerce Platform</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Full Stack · React, Node.js, MongoDB
+                      </p>
+                      <p className="text-sm mt-2">
+                        A complete e-commerce solution with payment processing
+                        and inventory management.
+                      </p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+
+              {/* AI Suggestion */}
+              <div className="mt-4 p-3 bg-muted rounded-md border border-border">
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-grow">
+                    <p className="text-sm font-medium">AI Suggestion:</p>
+                    <p className="text-sm">
+                      Based on your skills, consider adding a GraphQL project to
+                      showcase your expertise in this technology.
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                      >
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Create Project
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact & Social Links */}
+          <Card>
+            <CardContent className="p-6">
+              <SocialLinks />
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Add form for editing profile data */}
-      {/* ... */}
     </div>
   );
 }

@@ -26,15 +26,11 @@ export default async function Home() {
     if (!userProfile?.hasCompletedProfileSetup) {
       return <ResumeUpload />;
     }
-  }
 
-  // Regular homepage content for returning users or non-logged in users
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <h1 className="text-4xl font-bold mb-6">Welcome to Resume Builder</h1>
-        {/* ... other content ... */}
-      </div>
-    </main>
-  );
+    // For returning users (completed profile setup), redirect to profile page
+    redirect("/profile");
+  } else {
+    // For non-logged in users, also redirect to profile page
+    redirect("/profile");
+  }
 }
