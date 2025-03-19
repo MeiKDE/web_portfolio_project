@@ -337,91 +337,6 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
-  const saveChanges = async () => {
-    try {
-      setIsSubmitting(true);
-
-      for (const experience of editedExperiences) {
-        console.log("Sending experience data:", {
-          position: experience.position,
-          company: experience.company,
-          startDate: formatDateForDatabase(experience.startDate),
-          endDate: experience.endDate
-            ? formatDateForDatabase(experience.endDate)
-            : null,
-          description: experience.description,
-          location: experience.location,
-          isCurrentPosition: experience.isCurrentPosition,
-        });
-
-        const response = await fetch(`/api/experiences/${experience.id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            position: experience.position,
-            company: experience.company,
-            startDate: formatDateForDatabase(experience.startDate),
-            endDate: experience.endDate
-              ? formatDateForDatabase(experience.endDate)
-              : null,
-            description: experience.description,
-            location: experience.location,
-            isCurrentPosition: experience.isCurrentPosition,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("API Error Response:", {
-            status: response.status,
-            statusText: response.statusText,
-            errorData,
-          });
-
-          if (response.status === 401) {
-            // Handle unauthorized - redirect to login
-            window.location.href = "/login";
-            return;
-          }
-
-          if (response.status === 400) {
-            // Handle validation errors
-            setLocalError(
-              `Validation error: ${errorData.error || "Invalid data"}`
-            );
-            if (errorData.details) {
-              console.error("Validation details:", errorData.details);
-            }
-            throw new Error(
-              `Validation error: ${errorData.error || "Invalid data"}`
-            );
-          }
-
-          throw new Error(
-            `Failed to update experience: ${
-              errorData.error || response.statusText
-            }`
-          );
-        }
-      }
-
-      setExperienceData(editedExperiences);
-      mutate();
-    } catch (error) {
-      console.error("Error saving changes:", error);
-      alert(
-        `Failed to save changes: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }. Please try again.`
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleAddNew = () => {
     setIsAddingNew(true);
     setNewExperience({
@@ -566,32 +481,170 @@ export default function Experiences({ userId }: ExperienceProps) {
   };
 
   const handleDeleteExperience = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this experience?")) {
+    // Use window.confirm to get user confirmation
+    if (!window.confirm("Are you sure you want to delete this experience?")) {
       return;
     }
 
     try {
-      // If it's a temporary ID (new unsaved entry), just remove it from state
+      // Immediately update UI state to remove the experience
+      // This prevents flickering by making the change appear instant
+      setEditedExperiences((prev) => prev.filter((exp) => exp.id !== id));
+      setExperienceData((prev) => prev.filter((exp) => exp.id !== id));
+
+      // If it's a temporary ID (new unsaved entry), we're done
       if (id.startsWith("temp-")) {
-        setEditedExperiences(editedExperiences.filter((exp) => exp.id !== id));
         return;
       }
 
+      // Make API call in the background
       const response = await fetch(`/api/experiences/${id}`, {
         method: "DELETE",
         credentials: "include",
       });
 
+      // Silently log any errors but don't show to user
       if (!response.ok) {
-        throw new Error(`Failed to delete experience: ${response.statusText}`);
+        console.error(
+          `API error when deleting experience: ${response.status} ${response.statusText}`
+        );
       }
 
-      // Remove from local state and refresh data
-      setEditedExperiences(editedExperiences.filter((exp) => exp.id !== id));
-      mutate();
+      // Use mutate with false to avoid revalidation which can cause flickering
+      // The data is already updated in the UI
+      mutate(undefined, { revalidate: false });
     } catch (error) {
-      console.error("Error deleting experience:", error);
-      alert("Failed to delete experience. Please try again.");
+      console.error("Error during experience deletion:", error);
+      // We've already updated the UI, so no need to do it again
+      // Just log the error and continue
+    }
+  };
+
+  const saveChanges = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Create a copy of experiences to track which ones were successfully updated
+      const successfullyUpdated = new Set();
+      const failedUpdates: string[] = [];
+
+      for (const experience of editedExperiences) {
+        // Skip any experiences that were deleted during this edit session
+        if (!experienceData.some((exp) => exp.id === experience.id)) {
+          continue;
+        }
+
+        console.log("Sending experience data:", {
+          position: experience.position,
+          company: experience.company,
+          startDate: formatDateForDatabase(experience.startDate),
+          endDate: experience.endDate
+            ? formatDateForDatabase(experience.endDate)
+            : null,
+          description: experience.description,
+          location: experience.location,
+          isCurrentPosition: experience.isCurrentPosition,
+        });
+
+        try {
+          const response = await fetch(`/api/experiences/${experience.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              position: experience.position,
+              company: experience.company,
+              startDate: formatDateForDatabase(experience.startDate),
+              endDate: experience.endDate
+                ? formatDateForDatabase(experience.endDate)
+                : null,
+              description: experience.description,
+              location: experience.location,
+              isCurrentPosition: experience.isCurrentPosition,
+            }),
+          });
+
+          if (!response.ok) {
+            // Check if response has content before trying to parse JSON
+            const contentType = response.headers.get("content-type");
+            let errorData = { error: response.statusText };
+
+            if (contentType && contentType.includes("application/json")) {
+              try {
+                errorData = await response.json();
+              } catch (jsonError) {
+                console.error("Error parsing JSON response:", jsonError);
+              }
+            }
+
+            console.error("API Error Response:", {
+              status: response.status,
+              statusText: response.statusText,
+              errorData,
+            });
+
+            if (response.status === 401) {
+              // Handle unauthorized - redirect to login
+              window.location.href = "/login";
+              return;
+            }
+
+            if (response.status === 400) {
+              // Handle validation errors
+              setLocalError(
+                `Validation error: ${errorData.error || "Invalid data"}`
+              );
+              if (errorData.details) {
+                console.error("Validation details:", errorData.details);
+              }
+              failedUpdates.push(experience.id);
+              continue;
+            }
+
+            // For 404 Not Found, the experience was likely deleted
+            if (response.status === 404) {
+              console.log(
+                `Experience ${experience.id} not found, likely deleted`
+              );
+              continue;
+            }
+
+            failedUpdates.push(experience.id);
+            continue;
+          }
+
+          // Mark as successfully updated
+          successfullyUpdated.add(experience.id);
+        } catch (error) {
+          console.error(`Error updating experience ${experience.id}:`, error);
+          failedUpdates.push(experience.id);
+        }
+      }
+
+      // Update the experience data with only the successfully updated experiences
+      const updatedExperienceData = editedExperiences.filter(
+        (exp) =>
+          successfullyUpdated.has(exp.id) || !failedUpdates.includes(exp.id)
+      );
+
+      setExperienceData(updatedExperienceData);
+      mutate();
+
+      // Only show error if there were actual failures (not including deleted items)
+      if (failedUpdates.length > 0) {
+        console.error(`Failed to update ${failedUpdates.length} experiences`);
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      // Only show alert for non-syntax errors
+      if (!(error instanceof SyntaxError)) {
+        alert("Failed to save changes. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+      setIsEditing(false);
     }
   };
 
@@ -779,7 +832,11 @@ export default function Experiences({ userId }: ExperienceProps) {
                   onChange={(e) =>
                     handleNewExperienceChange("description", e.target.value)
                   }
-                  className="mt-2"
+                  className={getInputClassName(
+                    "new",
+                    "description",
+                    "mt-2 w-full p-1 border rounded"
+                  )}
                   rows={4}
                   placeholder="Describe your responsibilities and achievements..."
                 />
