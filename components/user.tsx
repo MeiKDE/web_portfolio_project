@@ -36,25 +36,21 @@ export default function User({ userId }: UserProps) {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<UserData | null>(null);
-  const [formState, setFormState] = useState({
-    validationErrors: {} as Record<string, string>,
-    touchedFields: {} as Record<string, boolean>,
-    phoneError: null as string | null,
-    isSubmitting: false,
-    error: null as string | null,
-  });
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const fetchController = useRef<AbortController | null>(null);
   const hasFetched = useRef(false);
 
-  // Use the form validation hook
+  // Use the form validation hook with the userProfileSchema
   const {
     validateData,
     getFieldError,
     touchField,
     isFieldTouched,
     getInputClassName,
-  } = useFormValidation();
+  } = useFormValidation(userProfileSchema);
 
   // Memoize the fetch function to avoid recreation on each render
   const fetchUser = useCallback(async () => {
@@ -70,7 +66,7 @@ export default function User({ userId }: UserProps) {
     fetchController.current = new AbortController();
 
     try {
-      setFormState((prev) => ({ ...prev, error: null }));
+      setError(null);
       setLoading(true);
 
       const response = await fetch(`/api/users/${userId}`, {
@@ -94,10 +90,7 @@ export default function User({ userId }: UserProps) {
       // Only log and set error if it's not an abort error
       if (!(error instanceof DOMException && error.name === "AbortError")) {
         console.error("Error fetching user:", error);
-        setFormState((prev) => ({
-          ...prev,
-          error: "Failed to load user profile. Please try again.",
-        }));
+        setError("Failed to load user profile. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -132,13 +125,12 @@ export default function User({ userId }: UserProps) {
       return { ...prev, [field]: value };
     });
 
-    // Validate the field if it's part of userProfileSchema
-    try {
-      const partialSchema = userProfileSchema.pick({ [field]: true });
-      validateData("user", { [field]: value }, partialSchema);
-    } catch (error) {
-      console.error(`Error validating field ${field}:`, error);
-    }
+    // Mark field as touched and validate
+    touchField("user", field);
+
+    // Create a validation object with just the updated field
+    const fieldUpdate = { ...editedUser, [field]: value };
+    validateData(fieldUpdate, "user");
   };
 
   const handleAvailabilityToggle = (isAvailable: boolean) => {
@@ -149,41 +141,65 @@ export default function User({ userId }: UserProps) {
     });
 
     // Mark field as touched
-    setFormState((prev) => ({
-      ...prev,
-      touchedFields: {
-        ...prev.touchedFields,
-        isAvailable: true,
-      },
-    }));
+    touchField("user", "isAvailable");
+
+    // Validate the updated data
+    const updatedUser = { ...editedUser, isAvailable };
+    validateData(updatedUser, "user");
   };
 
   const saveChanges = async () => {
     if (!editedUser || !user) return;
 
     try {
-      // Validate all fields
-      const validationResult = validateData(
-        "user",
-        editedUser,
-        userProfileSchema
-      );
-      if (!validationResult.success) {
-        return; // Validation failed, errors are in formState
+      // Validate all fields and mark them as touched
+      Object.keys(editedUser).forEach((field) => {
+        touchField("user", field);
+      });
+
+      // Validate the entire form
+      const isValid = validateData(editedUser, "user");
+
+      // Check for phone error as well
+      if (!isValid || phoneError) {
+        // Scroll to the first error if there is one
+        const firstErrorElement = document.querySelector(".border-red-500");
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+        return;
       }
 
-      setFormState((prev) => ({ ...prev, isSubmitting: true, error: null }));
+      setIsSubmitting(true);
+      setError(null);
+
+      // Create a sanitized copy of the user data
+      const sanitizedUserData = { ...editedUser };
+
+      // Handle empty strings for profile_email (omit if empty)
+      if (sanitizedUserData.profile_email === "") {
+        delete sanitizedUserData.profile_email;
+      }
+
+      // Handle empty string for image (omit if empty)
+      if (sanitizedUserData.image === "") {
+        delete sanitizedUserData.image;
+      }
 
       const response = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editedUser),
+        body: JSON.stringify(sanitizedUserData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("API Error Response:", errorData);
         throw new Error(errorData.message || "Failed to update profile");
       }
 
@@ -199,30 +215,19 @@ export default function User({ userId }: UserProps) {
       }, 3000);
     } catch (error) {
       console.error("Error saving profile:", error);
-      setFormState((prev) => ({
-        ...prev,
-        error:
-          error instanceof Error ? error.message : "Failed to save profile",
-      }));
+      setError(
+        error instanceof Error ? error.message : "Failed to save profile"
+      );
     } finally {
-      setFormState((prev) => ({ ...prev, isSubmitting: false }));
+      setIsSubmitting(false);
     }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedUser(JSON.parse(JSON.stringify(user)));
-    setFormState({
-      validationErrors: {},
-      touchedFields: {},
-      phoneError: null,
-      isSubmitting: false,
-      error: null,
-    });
-  };
-
-  const updateFormState = (updates: Partial<typeof formState>) => {
-    setFormState((prev) => ({ ...prev, ...updates }));
+    setPhoneError(null);
+    setError(null);
   };
 
   // Handle phone validation
@@ -235,10 +240,7 @@ export default function User({ userId }: UserProps) {
 
   const handlePhoneChange = (value: string) => {
     const isValid = validatePhone(value);
-    setFormState((prev) => ({
-      ...prev,
-      phoneError: isValid ? null : "Please enter a valid phone number",
-    }));
+    setPhoneError(isValid ? null : "Please enter a valid phone number");
     handleInputChange("phone", value);
   };
 
@@ -255,9 +257,9 @@ export default function User({ userId }: UserProps) {
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        {formState.error && (
+        {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            <strong>Error:</strong> {formState.error}
+            <strong>Error:</strong> {error}
           </div>
         )}
 
@@ -283,6 +285,9 @@ export default function User({ userId }: UserProps) {
                 <div>
                   {isEditing ? (
                     <div className="mb-2 w-full md:max-w-sm">
+                      <label className="text-sm text-muted-foreground mb-1 block">
+                        Name <span className="text-red-500">*</span>
+                      </label>
                       <Input
                         value={editedUser?.name || ""}
                         onChange={(e) =>
@@ -304,6 +309,9 @@ export default function User({ userId }: UserProps) {
 
                   {isEditing ? (
                     <div className="mb-2 w-full md:max-w-sm">
+                      <label className="text-sm text-muted-foreground mb-1 block">
+                        Professional Title
+                      </label>
                       <Input
                         value={editedUser?.title || ""}
                         onChange={(e) =>
@@ -332,7 +340,7 @@ export default function User({ userId }: UserProps) {
                       variant="outline"
                       size="sm"
                       onClick={handleCancelEdit}
-                      disabled={formState.isSubmitting}
+                      disabled={isSubmitting}
                       className="w-full sm:w-auto"
                     >
                       <X className="mr-2 h-4 w-4" />
@@ -342,11 +350,11 @@ export default function User({ userId }: UserProps) {
                       variant="default"
                       size="sm"
                       onClick={saveChanges}
-                      disabled={formState.isSubmitting}
+                      disabled={isSubmitting}
                       className="w-full sm:w-auto"
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      {formState.isSubmitting ? "Saving..." : "Save"}
+                      {isSubmitting ? "Saving..." : "Save"}
                     </Button>
                   </div>
                 ) : (
@@ -367,6 +375,9 @@ export default function User({ userId }: UserProps) {
                   <MapPin className="mr-2 h-4 w-4" />
                   {isEditing ? (
                     <div className="w-full">
+                      <label className="text-sm text-muted-foreground mb-1 block">
+                        Location
+                      </label>
                       <Input
                         value={editedUser?.location || ""}
                         onChange={(e) =>
@@ -395,6 +406,9 @@ export default function User({ userId }: UserProps) {
                   <Mail className="mr-2 h-4 w-4" />
                   {isEditing ? (
                     <div className="flex flex-col w-full">
+                      <label className="text-sm text-muted-foreground mb-1 block">
+                        Contact Email <span className="text-red-500">*</span>
+                      </label>
                       <div className="text-xs text-muted-foreground mb-1">
                         Account Email (cannot be changed): {user?.email}
                       </div>
@@ -434,19 +448,20 @@ export default function User({ userId }: UserProps) {
                   <Phone className="mr-2 h-4 w-4" />
                   {isEditing ? (
                     <div className="w-full">
+                      <label className="text-sm text-muted-foreground mb-1 block">
+                        Phone Number
+                      </label>
                       <PhoneInput
                         value={editedUser?.phone || ""}
                         onChange={handlePhoneChange}
                         className={
-                          formState.phoneError
-                            ? "border-red-500 text-sm"
-                            : "text-sm"
+                          phoneError ? "border-red-500 text-sm" : "text-sm"
                         }
-                        placeholder="Your Phone Number (Optional)"
+                        error={phoneError}
                       />
-                      {formState.phoneError && (
+                      {phoneError && (
                         <p className="text-red-500 text-xs mt-1">
-                          {formState.phoneError}
+                          {phoneError}
                         </p>
                       )}
                     </div>
@@ -481,6 +496,13 @@ export default function User({ userId }: UserProps) {
                   </p>
                 )}
               </div>
+
+              {/* Required fields note */}
+              {isEditing && (
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <span className="text-red-500">*</span> Required fields
+                </div>
+              )}
             </div>
           </div>
         )}

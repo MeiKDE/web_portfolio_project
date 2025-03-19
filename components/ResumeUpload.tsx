@@ -104,12 +104,32 @@ export default function ResumeUpload({
       if (data.data && data.data.resumeData) {
         console.log("Setting profile data:", data.data.resumeData);
         setProfileData(data.data.resumeData);
+
+        // Automatically save the profile data without requiring user confirmation
+        if (fromProfile) {
+          const saved = await saveProfileData(data.data.resumeData);
+          if (saved) {
+            // Use onClose if coming from profile page
+            if (onClose) {
+              onClose();
+            } else {
+              // If no onClose provided, use a special query parameter to trigger a refresh
+              router.push("/profile?updated=true");
+            }
+          }
+          return;
+        }
       } else {
         console.log("No resume data found in response");
         // If no profile data, redirect to profile page
-        console.log("Redirecting to profile page...");
-        router.push("/profile");
-        return;
+        if (fromProfile) {
+          if (onClose) {
+            onClose();
+          } else {
+            router.push("/profile?updated=true");
+          }
+          return;
+        }
       }
     } catch (error: unknown) {
       console.error("Resume upload failed:", error);
@@ -120,11 +140,39 @@ export default function ResumeUpload({
     }
   };
 
+  const saveProfileData = async (profileData: ResumeData) => {
+    try {
+      console.log("Automatically saving profile data...");
+      const response = await fetch("/api/profile/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ profileData }),
+      });
+
+      console.log("Save response status:", response.status);
+      const data = await response.json();
+      console.log("Save response data:", data);
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      console.log("Profile saved successfully");
+      return true;
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      return false;
+    }
+  };
+
   const handleManualSetup = () => {
     if (fromProfile && onClose) {
       onClose();
     } else {
-      router.push("/");
+      // Use a special query parameter to trigger a refresh
+      router.push("/profile?updated=true");
     }
   };
 
@@ -236,7 +284,11 @@ export default function ResumeUpload({
             onClick={() => {
               // Simply redirect to the profile page for manual editing
               // The data is already saved in the database
-              router.push("/profile");
+              if (fromProfile && onClose) {
+                onClose();
+              } else {
+                router.push("/profile?updated=true");
+              }
             }}
             className="bg-gray-200 text-gray-800 py-2 px-6 rounded-lg hover:bg-gray-300"
           >
@@ -250,37 +302,24 @@ export default function ResumeUpload({
   const saveProfileAndRedirect = async () => {
     try {
       console.log("Saving profile data...");
-      const response = await fetch("/api/profile/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ profileData }),
-      });
+      const saved = await saveProfileData(profileData!);
 
-      console.log("Save response status:", response.status);
-      const data = await response.json();
-      console.log("Save response data:", data);
-
-      if (!response.ok) {
-        throw new Error("Failed to save profile");
-      }
-
-      console.log("Profile saved successfully");
-
-      // Use onClose if coming from profile page, otherwise redirect
-      if (fromProfile && onClose) {
-        onClose();
-      } else {
-        router.push("/profile");
+      if (saved) {
+        // Use onClose if coming from profile page, otherwise redirect
+        if (fromProfile && onClose) {
+          onClose();
+        } else {
+          // Add a query parameter to force a refresh of the profile page
+          router.push("/profile?updated=true");
+        }
       }
     } catch (error) {
       console.error("Error saving profile:", error);
-      // Use onClose if coming from profile page, otherwise redirect
+      // Still try to return to profile page even if there's an error
       if (fromProfile && onClose) {
         onClose();
       } else {
-        router.push("/profile");
+        router.push("/profile?updated=true");
       }
     }
   };
@@ -343,8 +382,8 @@ export default function ResumeUpload({
 
   return (
     <div className="max-w-4xl mx-auto mt-10">
-      {/* Only show upload section if we don't have profile data to preview */}
-      {!profileData && (
+      {/* Only show upload section if we haven't successfully uploaded */}
+      {!success && (
         <div className="bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold mb-4">Upload Your Resume</h2>
           <p className="mb-6">
@@ -376,18 +415,6 @@ export default function ResumeUpload({
                 </p>
               )}
             </div>
-          )}
-
-          {success && !profileData && (
-            <p className="text-green-500 mb-4 p-3 bg-green-50 border border-green-200 rounded">
-              Resume uploaded and parsed successfully!
-              <button
-                onClick={() => router.push("/profile")}
-                className="ml-2 underline text-blue-600 hover:text-blue-800"
-              >
-                View your profile
-              </button>
-            </p>
           )}
 
           <div className="flex justify-between">
