@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return errorResponse("Not authenticated", 401, { authenticated: false });
+    return errorResponse(401, "Not authenticated");
   }
 
   return successResponse({ authenticated: true });

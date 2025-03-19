@@ -19,7 +19,11 @@ export const GET = withOwnership(
       });
 
       if (!education) {
-        return createApiError.notFound("Education entry not found");
+        return handleApiError(
+          new Error("Education entry not found"),
+          "Education entry not found",
+          "GET /education/[id]"
+        );
       }
 
       return successResponse(education);
