@@ -1,8 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 
@@ -36,42 +36,48 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showResumeMessage, setShowResumeMessage] = useState(true);
   const [showResumeUpload, setShowResumeUpload] = useState(false);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
+
+  // Memoize the fetchUserProfile function to prevent recreating on each render
+  const fetchUserProfile = useCallback(
+    async (userId: string) => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/profile?userId=${userId}`);
+
+        if (!response.ok) throw new Error("Failed to fetch profile");
+
+        const data = await response.json();
+        setUserProfile(data.data);
+
+        // If user hasn't completed profile setup, redirect to homepage
+        if (!data.data?.hasCompletedProfileSetup) {
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      } finally {
+        setIsLoading(false);
+        setFetchAttempted(true);
+      }
+    },
+    [router]
+  );
 
   useEffect(() => {
-    // Handle authentication
+    // Only redirect if session is definitely not authenticated
     if (status === "unauthenticated") {
-      router.push("/api/auth/signin");
+      router.push("/login");
       return;
     }
 
-    // Once authenticated, fetch user profile data
-    if (status === "authenticated" && session?.user?.id) {
-      const fetchUserProfile = async () => {
-        try {
-          const response = await fetch(
-            `/api/profile?userId=${session.user.id}`
-          );
-          if (!response.ok) throw new Error("Failed to fetch profile");
-
-          const data = await response.json();
-          setUserProfile(data);
-
-          // If user hasn't completed profile setup, redirect to homepage
-          if (!data?.hasCompletedProfileSetup) {
-            router.push("/");
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchUserProfile();
+    // Only fetch if authenticated and we have a user ID and haven't already fetched
+    if (status === "authenticated" && session?.user?.id && !fetchAttempted) {
+      fetchUserProfile(session.user.id);
     }
-  }, [status, session, router]);
+  }, [status, session, router, fetchUserProfile, fetchAttempted]);
 
-  // Add new useEffect for auto-dismissing message
+  // Add new useEffect for auto-dismissing message with stable dependencies
   useEffect(() => {
     if (userProfile?.isUploadResumeForProfile && showResumeMessage) {
       const timer = setTimeout(() => {
@@ -83,12 +89,12 @@ export default function ProfilePage() {
   }, [userProfile?.isUploadResumeForProfile, showResumeMessage]);
 
   // Show loading spinner while checking auth status or fetching profile
-  if (status === "loading" || isLoading) {
+  if (status === "loading" || (isLoading && !fetchAttempted)) {
     return <LoadingSpinner fullPage text="Loading your profile..." />;
   }
 
   // Don't render anything if not authenticated (router will redirect)
-  if (!session || !session.user) {
+  if (status === "unauthenticated") {
     return null;
   }
 
@@ -99,6 +105,29 @@ export default function ProfilePage() {
           fromProfile={true}
           onClose={() => setShowResumeUpload(false)}
         />
+      </div>
+    );
+  }
+
+  // Wait for profile data before rendering
+  if (!userProfile && fetchAttempted) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h2 className="text-2xl font-semibold">Profile not found</h2>
+        <p className="mt-2 text-gray-600">
+          We couldn't retrieve your profile information.
+        </p>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            if (session?.user?.id) {
+              setFetchAttempted(false);
+              fetchUserProfile(session.user.id);
+            }
+          }}
+        >
+          Retry
+        </Button>
       </div>
     );
   }
@@ -132,23 +161,23 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Header */}
-      <UserProfile userId={session.user.id} />
+      {session?.user?.id && <UserProfile userId={session.user.id} />}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          <Experiences userId={session.user.id} />
+          {session?.user?.id && <Experiences userId={session.user.id} />}
 
           {/* Education Section */}
-          <Educations userId={session.user.id} />
+          {session?.user?.id && <Educations userId={session.user.id} />}
 
           {/* Skills Section */}
-          <Skills userId={session.user.id} />
+          {session?.user?.id && <Skills userId={session.user.id} />}
 
           {/* Certifications Section */}
-          <Certifications userId={session.user.id} />
+          {session?.user?.id && <Certifications userId={session.user.id} />}
         </div>
 
         {/* Right Column - Portfolio, Cover Letter, Contact */}

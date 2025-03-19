@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
@@ -44,6 +44,8 @@ export default function User({ userId }: UserProps) {
     error: null as string | null,
   });
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const fetchController = useRef<AbortController | null>(null);
+  const hasFetched = useRef(false);
 
   // Use the form validation hook
   const {
@@ -54,37 +56,64 @@ export default function User({ userId }: UserProps) {
     getInputClassName,
   } = useFormValidation();
 
-  useEffect(() => {
-    if (!userId) return;
+  // Memoize the fetch function to avoid recreation on each render
+  const fetchUser = useCallback(async () => {
+    // Skip if no userId or already fetched
+    if (!userId || hasFetched.current) return;
 
-    async function fetchUser() {
-      try {
-        setFormState((prev) => ({ ...prev, error: null }));
-        const response = await fetch(`/api/users/${userId}`);
-        if (!response.ok) throw new Error("Failed to fetch user");
-        const userData = await response.json();
+    // Cancel previous fetch if it exists
+    if (fetchController.current) {
+      fetchController.current.abort();
+    }
 
-        // Ensure we have the name from the User model
-        const userWithDefaults = {
-          ...userData.data,
-          name: userData.data.name || "User", // Use name from User model or fallback
-        };
+    // Create new controller for this fetch
+    fetchController.current = new AbortController();
 
-        setUser(userWithDefaults);
-        setEditedUser(JSON.parse(JSON.stringify(userWithDefaults)));
-      } catch (error) {
+    try {
+      setFormState((prev) => ({ ...prev, error: null }));
+      setLoading(true);
+
+      const response = await fetch(`/api/users/${userId}`, {
+        signal: fetchController.current.signal,
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch user");
+
+      const userData = await response.json();
+
+      // Ensure we have the name from the User model
+      const userWithDefaults = {
+        ...userData.data,
+        name: userData.data.name || "User", // Use name from User model or fallback
+      };
+
+      setUser(userWithDefaults);
+      setEditedUser(JSON.parse(JSON.stringify(userWithDefaults)));
+      hasFetched.current = true;
+    } catch (error) {
+      // Only log and set error if it's not an abort error
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
         console.error("Error fetching user:", error);
         setFormState((prev) => ({
           ...prev,
           error: "Failed to load user profile. Please try again.",
         }));
-      } finally {
-        setLoading(false);
       }
+    } finally {
+      setLoading(false);
     }
-
-    fetchUser();
   }, [userId]);
+
+  useEffect(() => {
+    fetchUser();
+
+    // Cleanup function to abort fetch if component unmounts
+    return () => {
+      if (fetchController.current) {
+        fetchController.current.abort();
+      }
+    };
+  }, [fetchUser]);
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -94,43 +123,21 @@ export default function User({ userId }: UserProps) {
     }
   };
 
-  const handleInputChange = (field: keyof UserData, value: any) => {
-    // For image field, convert null to empty string
-    if (field === "image" && value === null) {
-      value = "";
-    }
+  const handleInputChange = (field: string, value: any) => {
+    // Skip if user or editedUser is not available
+    if (!editedUser) return;
 
-    // Update your state
-    setEditedUser((prev) => (prev ? { ...prev, [field]: value } : null));
+    setEditedUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
 
-    // Mark field as touched for immediate validation feedback
-    touchField("user", field as string);
-
-    // Validate if we have an edited user
-    if (editedUser) {
-      try {
-        // Always validate to provide immediate feedback
-        const result = validateData(
-          {
-            ...editedUser,
-            [field]: value,
-          },
-          "user"
-        );
-        console.log(`Validation result for ${field}:`, result);
-
-        // Check if there's an error for this field
-        const error = getFieldError("user", field as string);
-        console.log(`Error for ${field}:`, error);
-      } catch (error) {
-        console.error(`Validation error for ${field}:`, error);
-      }
-    }
-
-    // For phone field, let the PhoneInput component handle validation
-    if (field === "phone") {
-      // Clear any previous phone errors - our PhoneInput component now handles this
-      setFormState((prev) => ({ ...prev, phoneError: null }));
+    // Validate the field if it's part of userProfileSchema
+    try {
+      const partialSchema = userProfileSchema.pick({ [field]: true });
+      validateData("user", { [field]: value }, partialSchema);
+    } catch (error) {
+      console.error(`Error validating field ${field}:`, error);
     }
   };
 
@@ -152,82 +159,27 @@ export default function User({ userId }: UserProps) {
   };
 
   const saveChanges = async () => {
-    if (!editedUser) return;
+    if (!editedUser || !user) return;
 
-    // Create a copy of editedUser with null values converted to empty strings
-    const userToSubmit = {
-      ...editedUser,
-      // Ensure image is never null
-      image: editedUser.image === null ? "" : editedUser.image || "",
-      // Ensure phone is never null
-      phone: editedUser.phone === null ? "" : editedUser.phone || "",
-      // Ensure profile_email is never null
-      profile_email:
-        editedUser.profile_email === null ? "" : editedUser.profile_email || "",
-    };
-
-    console.log("Attempting to save user data:", userToSubmit);
-
-    // Mark all fields as touched when attempting to save
-    const allFields = [
-      "name",
-      "title",
-      "location",
-      "bio",
-      "phone",
-      "profile_email",
-      "isAvailable",
-    ];
-    const newTouchedFields = allFields.reduce((acc, field) => {
-      acc[field] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
-
-    setFormState((prev) => ({
-      ...prev,
-      touchedFields: {
-        ...prev.touchedFields,
-        ...newTouchedFields,
-      },
-    }));
-
-    // Validate all fields before submitting
     try {
-      // Validate the edited user data using Zod
-      const validatedData = userProfileSchema.parse(userToSubmit);
+      // Validate all fields
+      const validationResult = validateData(
+        "user",
+        editedUser,
+        userProfileSchema
+      );
+      if (!validationResult.success) {
+        return; // Validation failed, errors are in formState
+      }
 
-      // Continue with submission if validation passes
       setFormState((prev) => ({ ...prev, isSubmitting: true, error: null }));
 
-      // Make sure we're calling the correct API endpoint (now using App Router format)
-      const apiUrl = `/api/users/${userId}`;
-      console.log(`Sending PUT request to ${apiUrl}`);
-
-      // Create a properly formatted payload that matches your backend expectations
-      const payload = {
-        id: userId,
-        name: validatedData.name,
-        email: validatedData.email,
-        title: validatedData.title || "",
-        location: validatedData.location || "",
-        bio: validatedData.bio || "",
-        phone: validatedData.phone || "",
-        profile_email: validatedData.profile_email || "",
-        image: validatedData.image || "",
-        isAvailable:
-          validatedData.isAvailable === undefined
-            ? null
-            : validatedData.isAvailable,
-      };
-
-      console.log("Formatted payload:", payload);
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(editedUser),
       });
 
       if (!response.ok) {
@@ -235,46 +187,22 @@ export default function User({ userId }: UserProps) {
         throw new Error(errorData.message || "Failed to update profile");
       }
 
-      const responseData = await response.json();
-      console.log("Response data:", responseData);
+      const updatedUser = await response.json();
+      setUser(updatedUser.data);
+      setEditedUser(JSON.parse(JSON.stringify(updatedUser.data)));
+      setIsEditing(false);
+      setSaveSuccess(true);
 
-      // Update the user state with the response data
-      if (responseData.data) {
-        setUser(responseData.data);
-        setEditedUser(JSON.parse(JSON.stringify(responseData.data)));
-        setIsEditing(false);
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000); // Hide after 3 seconds
-        // Reset touched fields after successful save
-        setFormState((prev) => ({
-          ...prev,
-          touchedFields: {},
-          validationErrors: {},
-        }));
-        console.log("Profile updated successfully");
-      } else {
-        throw new Error("Invalid response format from server");
-      }
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error("Validation error:", error.issues);
-        const errors: Record<string, string> = {};
-        error.issues.forEach((err: any) => {
-          if (err.path && err.path.length > 0) {
-            const fieldName = err.path[0];
-            errors[fieldName] = err.message;
-          }
-        });
-        setFormState((prev) => ({ ...prev, validationErrors: errors }));
-        return;
-      }
-      console.error("Error saving changes:", error);
+      console.error("Error saving profile:", error);
       setFormState((prev) => ({
         ...prev,
         error:
-          typeof error === "object" && error !== null && "message" in error
-            ? String(error.message)
-            : "Failed to save changes. Please try again.",
+          error instanceof Error ? error.message : "Failed to save profile",
       }));
     } finally {
       setFormState((prev) => ({ ...prev, isSubmitting: false }));
@@ -282,32 +210,46 @@ export default function User({ userId }: UserProps) {
   };
 
   const handleCancelEdit = () => {
-    // Check if user has made changes before showing confirmation
-    if (JSON.stringify(user) !== JSON.stringify(editedUser)) {
-      if (window.confirm("Are you sure you want to discard your changes?")) {
-        setIsEditing(false);
-        setEditedUser(JSON.parse(JSON.stringify(user))); // Reset to current user data
-        setFormState((prev) => ({
-          ...prev,
-          validationErrors: prev.validationErrors,
-          touchedFields: {},
-          phoneError: prev.phoneError,
-          isSubmitting: prev.isSubmitting,
-          error: prev.error,
-        }));
-      }
-    } else {
-      // No changes made, just exit edit mode
-      setIsEditing(false);
-    }
+    setIsEditing(false);
+    setEditedUser(JSON.parse(JSON.stringify(user)));
+    setFormState({
+      validationErrors: {},
+      touchedFields: {},
+      phoneError: null,
+      isSubmitting: false,
+      error: null,
+    });
   };
 
   const updateFormState = (updates: Partial<typeof formState>) => {
     setFormState((prev) => ({ ...prev, ...updates }));
   };
 
-  if (loading) {
-    return <LoadingSpinner size="sm" text="Loading user profile..." />;
+  // Handle phone validation
+  const validatePhone = (phone: string) => {
+    if (!phone) return true;
+    // Simple phone validation - can be enhanced as needed
+    const phoneRegex = /^\+?[0-9\s\-\(\)]{7,}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const isValid = validatePhone(value);
+    setFormState((prev) => ({
+      ...prev,
+      phoneError: isValid ? null : "Please enter a valid phone number",
+    }));
+    handleInputChange("phone", value);
+  };
+
+  if (loading && !user) {
+    return (
+      <Card className="mb-8">
+        <CardContent className="p-6 flex justify-center items-center min-h-[200px]">
+          <LoadingSpinner text="Loading profile..." />
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -336,22 +278,18 @@ export default function User({ userId }: UserProps) {
             />
 
             {/* Profile Info */}
-            <div className="flex-grow">
-              <div className="flex justify-between">
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                 <div>
                   {isEditing ? (
-                    <div className="mb-4">
+                    <div className="mb-2 w-full md:max-w-sm">
                       <Input
                         value={editedUser?.name || ""}
                         onChange={(e) =>
                           handleInputChange("name", e.target.value)
                         }
-                        className={getInputClassName(
-                          "user",
-                          "name",
-                          "font-semibold"
-                        )}
-                        placeholder="Your Name*"
+                        className={getInputClassName("user", "name", "text-xl")}
+                        placeholder="Your Name"
                       />
                       {isFieldTouched("user", "name") &&
                         getFieldError("user", "name") && (
@@ -361,22 +299,18 @@ export default function User({ userId }: UserProps) {
                         )}
                     </div>
                   ) : (
-                    <h1 className="text-2xl font-bold">{user?.name}</h1>
+                    <h2 className="text-2xl font-bold">{user.name}</h2>
                   )}
 
                   {isEditing ? (
-                    <div className="mb-4">
+                    <div className="mb-2 w-full md:max-w-sm">
                       <Input
                         value={editedUser?.title || ""}
                         onChange={(e) =>
                           handleInputChange("title", e.target.value)
                         }
-                        className={getInputClassName(
-                          "user",
-                          "title",
-                          "text-lg text-muted-foreground"
-                        )}
-                        placeholder="Your Title (e.g. Software Developer)"
+                        className={getInputClassName("user", "title")}
+                        placeholder="Your Professional Title"
                       />
                       {isFieldTouched("user", "title") &&
                         getFieldError("user", "title") && (
@@ -386,8 +320,8 @@ export default function User({ userId }: UserProps) {
                         )}
                     </div>
                   ) : (
-                    <p className="text-lg text-muted-foreground">
-                      {user?.title || "Software Developer"}
+                    <p className="text-gray-500">
+                      {user.title || "No title set"}
                     </p>
                   )}
                 </div>
@@ -428,11 +362,11 @@ export default function User({ userId }: UserProps) {
               </div>
 
               {/* Contact & Location */}
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex flex-col">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="mr-2 h-4 w-4" />
-                    {isEditing ? (
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {isEditing ? (
+                    <div className="w-full">
                       <Input
                         value={editedUser?.location || ""}
                         onChange={(e) =>
@@ -443,18 +377,18 @@ export default function User({ userId }: UserProps) {
                           "location",
                           "text-sm"
                         )}
-                        placeholder="Your Location"
+                        placeholder="Your Location (e.g., New York, NY)"
                       />
-                    ) : (
-                      user?.location || "San Francisco, CA"
-                    )}
-                  </div>
-                  {isFieldTouched("user", "location") &&
-                    getFieldError("user", "location") && (
-                      <p className="text-red-500 text-xs mt-1 ml-6">
-                        {getFieldError("user", "location")}
-                      </p>
-                    )}
+                      {isFieldTouched("user", "location") &&
+                        getFieldError("user", "location") && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {getFieldError("user", "location")}
+                          </p>
+                        )}
+                    </div>
+                  ) : (
+                    <span>{user.location || "No location set"}</span>
+                  )}
                 </div>
 
                 <div className="flex items-center text-sm text-muted-foreground">
@@ -496,86 +430,42 @@ export default function User({ userId }: UserProps) {
                   )}
                 </div>
 
-                <div className="flex flex-col">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Phone className="mr-2 h-4 w-4" />
-                    {isEditing ? (
-                      <div className="flex flex-col">
-                        <PhoneInput
-                          value={editedUser?.phone || ""}
-                          onChange={(value) =>
-                            handleInputChange("phone", value)
-                          }
-                          error={formState.phoneError}
-                          className={getInputClassName(
-                            "user",
-                            "phone",
-                            "text-sm"
-                          )}
-                        />
-                      </div>
-                    ) : (
-                      user?.phone || "No phone number provided"
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {isEditing ? (
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`cursor-pointer px-3 py-1 rounded-full text-xs ${
-                            editedUser?.isAvailable
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                          onClick={() => handleAvailabilityToggle(true)}
-                        >
-                          Available for work
-                        </div>
-                        <div
-                          className={`cursor-pointer px-3 py-1 rounded-full text-xs ${
-                            editedUser?.isAvailable === false
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                          onClick={() => handleAvailabilityToggle(false)}
-                        >
-                          Not available
-                        </div>
-                      </div>
-                    ) : (
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          user?.isAvailable
-                            ? "bg-green-100 text-green-800"
-                            : user?.isAvailable === false
-                            ? "bg-red-100 text-red-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {user?.isAvailable
-                          ? "Available for new opportunities"
-                          : user?.isAvailable === false
-                          ? "Not available for work"
-                          : "Availability status not set"}
-                      </span>
-                    )}
-                  </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Phone className="mr-2 h-4 w-4" />
+                  {isEditing ? (
+                    <div className="w-full">
+                      <PhoneInput
+                        value={editedUser?.phone || ""}
+                        onChange={handlePhoneChange}
+                        className={
+                          formState.phoneError
+                            ? "border-red-500 text-sm"
+                            : "text-sm"
+                        }
+                        placeholder="Your Phone Number (Optional)"
+                      />
+                      {formState.phoneError && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formState.phoneError}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <span>{user.phone || "No phone number set"}</span>
+                  )}
                 </div>
               </div>
 
               {/* Bio */}
-              <div className="mt-4">
+              <div className="mt-6">
+                <h3 className="font-medium mb-2">About Me</h3>
                 {isEditing ? (
                   <div>
                     <Textarea
                       value={editedUser?.bio || ""}
                       onChange={(e) => handleInputChange("bio", e.target.value)}
-                      className={getInputClassName("user", "bio", "text-sm")}
-                      placeholder="Write a short bio about yourself"
+                      className={getInputClassName("user", "bio")}
+                      placeholder="Tell us about yourself, your expertise, and your interests..."
                       rows={4}
                     />
                     {isFieldTouched("user", "bio") &&
@@ -586,9 +476,8 @@ export default function User({ userId }: UserProps) {
                       )}
                   </div>
                 ) : (
-                  <p className="text-sm">
-                    {user?.bio ||
-                      "Experienced software developer with a passion for building scalable web applications. Specialized in React, Node.js, and cloud technologies."}
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {user.bio || "No bio added yet"}
                   </p>
                 )}
               </div>

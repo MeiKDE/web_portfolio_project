@@ -59,3 +59,7 @@ npx prisma validate
 ### When you generate the Prisma client, it will also validate your schema
 
 npx prisma generate
+
+### run the script to disconnect all PostgreSQL connections:
+
+node scripts/disconnect_postgres.js

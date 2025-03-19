@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return errorResponse("Unauthorized", 401);
+      return errorResponse(401, "Unauthorized");
     }
 
     // Fetch all users (you might want to add pagination or filtering)
@@ -33,9 +33,9 @@ export async function GET() {
         /\b(password|token|secret|key)\b/gi,
         "***"
       );
-      return errorResponse(`Failed to fetch users: ${safeErrorMessage}`);
+      return errorResponse(500, `Failed to fetch users: ${safeErrorMessage}`);
     }
 
-    return errorResponse("Failed to fetch users");
+    return errorResponse(500, "Failed to fetch users");
   }
 }

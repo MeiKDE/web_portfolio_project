@@ -7,25 +7,36 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // Get the token and check authentication status
-  const token = await getToken({ req: request });
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
   const isAuthenticated = !!token;
 
   // Define paths that require authentication
   const authRequiredPaths = [
     "/dashboard",
     "/profile",
+    "/resume-builder",
+    "/portfolio",
     "/", // Add root path to protected routes
-    // Add other protected routes here
   ];
 
   // Define public paths that don't require authentication
-  const publicPaths = ["/login", "/register", "/forgot-password", "/api/auth"];
+  const publicPaths = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/api/auth",
+    "/auth/error",
+  ];
 
   // Check if the path is for static assets
   const isStaticAsset =
     path.startsWith("/_next") ||
     path.includes("/images/") ||
-    path.includes(".ico");
+    path.includes(".ico") ||
+    path.includes("/fonts/");
 
   // If it's a static asset, allow the request
   if (isStaticAsset) {
@@ -42,14 +53,18 @@ export async function middleware(request: NextRequest) {
     (publicPath) => path === publicPath || path.startsWith(`${publicPath}/`)
   );
 
-  console.log("Path:", path);
-  console.log("Auth required:", isAuthRequired);
-  console.log("Is authenticated:", isAuthenticated);
-  console.log("Is public path:", isPublicPath);
+  // Log information only in development environment
+  if (process.env.NODE_ENV === "development") {
+    console.log("Path:", path);
+    console.log("Auth required:", isAuthRequired);
+    console.log("Is authenticated:", isAuthenticated);
+    console.log("Is public path:", isPublicPath);
+  }
 
   // Redirect to login if authentication is required but user is not authenticated
   if (isAuthRequired && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
+    // Store the original URL to redirect back after login
     loginUrl.searchParams.set("callbackUrl", encodeURI(request.nextUrl.href));
     return NextResponse.redirect(loginUrl);
   }

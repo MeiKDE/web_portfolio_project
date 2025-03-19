@@ -120,9 +120,44 @@ const checkSession = async (userId: string) => {
     const response = await fetch("/api/auth/me", {
       credentials: "include",
     });
+
+    if (!response.ok) {
+      console.error(
+        "Session check failed:",
+        response.status,
+        response.statusText
+      );
+      return null;
+    }
+
     const data = await response.json();
     console.log("Current session user:", data);
     console.log("URL userId:", userId);
+
+    // Check also if we can access the experiences endpoint
+    try {
+      const experiencesResponse = await fetch(
+        `/api/users/${userId}/experiences`,
+        {
+          credentials: "include",
+        }
+      );
+      console.log("Experiences endpoint check:", {
+        status: experiencesResponse.status,
+        ok: experiencesResponse.ok,
+      });
+
+      if (experiencesResponse.ok) {
+        const expData = await experiencesResponse.json();
+        console.log(
+          "Experiences data shape:",
+          expData.data ? "Has data property" : "No data property"
+        );
+      }
+    } catch (expError) {
+      console.error("Experiences endpoint check failed:", expError);
+    }
+
     return data;
   } catch (error) {
     console.error("Error checking session:", error);
@@ -214,19 +249,22 @@ export default function Experiences({ userId }: ExperienceProps) {
   // Update local state when data is fetched
   useEffect(() => {
     console.log("ln216: apiResponse:", apiResponse);
-    if (apiResponse && !apiResponse.error) {
+    if (apiResponse && apiResponse.data) {
       // Extract the data array from the API response
-      const experiences = apiResponse || [];
+      const experiences = apiResponse.data || [];
       setExperienceData(experiences);
 
       // Format dates for editing
-      const formattedExperiences = experiences.map((exp: Experience) => ({
-        ...exp,
-        startDate: exp.startDate
-          ? formatDateForInput(exp.startDate)
-          : getCurrentDate(),
-        endDate: exp.endDate ? formatDateForInput(exp.endDate) : null,
-      }));
+      const formattedExperiences =
+        experiences && Array.isArray(experiences)
+          ? experiences.map((exp: Experience) => ({
+              ...exp,
+              startDate: exp.startDate
+                ? formatDateForInput(exp.startDate)
+                : getCurrentDate(),
+              endDate: exp.endDate ? formatDateForInput(exp.endDate) : null,
+            }))
+          : [];
 
       setEditedExperiences(formattedExperiences);
     }

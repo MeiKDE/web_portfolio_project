@@ -4,10 +4,8 @@ import "./globals.css";
 import MenuBar from "@/components/MenuBar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { headers } from "next/headers";
-import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,20 +19,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
-  // Protected routes logic
-  const isProtectedRoute = (pathname: string) => {
-    return pathname.startsWith("/admin") || pathname.startsWith("/");
-  };
-
-  // Check if current path is protected
-  const currentPath = headers().get("x-pathname") || "/";
-  console.error("session", session);
-  // if (isProtectedRoute(currentPath) && !session) {
-  //   console.log("Redirecting to login");
-  //   redirect("/login?callbackUrl=" + encodeURIComponent(currentPath));
-  // }
+  // Pre-fetch session to hydrate the session on first render
+  await getServerSession(authOptions);
 
   return (
     <html lang="en" suppressHydrationWarning={true}>

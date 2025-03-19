@@ -113,7 +113,11 @@ export class ApiError extends Error {
  * Handles an ApiError by converting it to an appropriate response
  */
 export function handleApiErrorInstance(error: ApiError) {
-  return errorResponse(400, error.message + error.statusCode + error.details);
+  return errorResponse(
+    error.statusCode,
+    error.message +
+      (error.details ? ` (Details: ${JSON.stringify(error.details)})` : "")
+  );
 }
 
 /**

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return errorResponse("Not authenticated", 401);
+      return errorResponse(401, "Not authenticated");
     }
 
     const experiences = await prisma.experience.findMany({
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     return successResponse(experiences);
   } catch (error) {
     console.error("Error fetching experiences:", error);
-    return errorResponse("Failed to fetch experiences");
+    return errorResponse(500, "Failed to fetch experiences");
   }
 }
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return errorResponse("Not authenticated", 401);
+      return errorResponse(401, "Not authenticated");
     }
 
     const body = await request.json();
@@ -53,8 +53,9 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return errorResponse(
-        "Invalid experience data",
-        validationResult.error.format()
+        400,
+        "Invalid experience data: " +
+          JSON.stringify(validationResult.error.format())
       );
     }
 
@@ -68,6 +69,6 @@ export async function POST(request: NextRequest) {
     return successResponse(newExperience);
   } catch (error) {
     console.error("Error creating experience:", error);
-    return errorResponse("Failed to create experience");
+    return errorResponse(500, "Failed to create experience");
   }
 }

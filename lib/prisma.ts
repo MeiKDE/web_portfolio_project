@@ -6,15 +6,23 @@ import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const prisma = new PrismaClient();
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ["query", "error", "warn"],
+  });
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export default prisma;
 
-// Add error handling to your Prisma client
-try {
-  // Test database connection on startup
-  prisma.$connect();
-  console.log("Database connection established");
-} catch (error) {
-  console.error("Failed to connect to database:", error);
+// Only test connection during actual server startup, not during hot reloads
+if (process.env.NODE_ENV === "production") {
+  try {
+    // Test database connection on startup
+    prisma.$connect();
+    console.log("Database connection established");
+  } catch (error) {
+    console.error("Failed to connect to database:", error);
+  }
 }

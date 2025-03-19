@@ -17,7 +17,9 @@ interface ExtendedSession extends Session {
     email?: string | null;
     name?: string | null;
     image?: string | null;
+    role?: string;
   };
+  provider?: string;
 }
 
 // Function to hash password using crypto
@@ -120,6 +122,10 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+        // Store the user's role if available
+        if ("role" in user) {
+          token.role = user.role;
+        }
       }
       // Include the provider in the token
       if (account) {
@@ -130,6 +136,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        // Add role to the session if available in the token
+        if ("role" in token) {
+          (session.user as any).role = token.role;
+        }
         // You can add the provider to the session if needed
         (session as any).provider = token.provider;
       }
@@ -287,7 +297,7 @@ export async function withAuthApi(
     const user = await getCurrentUser();
 
     if (!user) {
-      return errorResponse("Unauthorized", 401);
+      return errorResponse(401, "Unauthorized");
     }
 
     return handler(req, user);
