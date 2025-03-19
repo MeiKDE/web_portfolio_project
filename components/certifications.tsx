@@ -159,6 +159,9 @@ export default function Certifications({ userId }: CertificationsProps) {
     issueDate?: string;
     credentialUrl?: string;
   }>({});
+  const [newCertificationErrors, setNewCertificationErrors] = useState<{
+    [key: string]: string | null;
+  }>({});
 
   // Use the form validation hook
   const {
@@ -439,12 +442,25 @@ export default function Certifications({ userId }: CertificationsProps) {
   const handleSaveNewCertification = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate the form first
-    if (!validateForm()) {
-      console.log("Form validation failed", formErrors);
-      return; // Stop submission if validation fails
+    // Validate required fields
+    const errors: { [key: string]: string | null } = {};
+    if (!newCertification.name) {
+      errors.name = "Certification Name is required.";
+    }
+    if (!newCertification.issuer) {
+      errors.issuer = "Issuing Organization is required.";
+    }
+    if (!newCertification.issueDate) {
+      errors.issueDate = "Issue Date is required.";
     }
 
+    // Set errors if any
+    if (Object.keys(errors).length > 0) {
+      setNewCertificationErrors(errors);
+      return;
+    }
+
+    // Proceed with saving the new certification if no errors
     try {
       setIsSubmitting(true);
 
@@ -465,8 +481,6 @@ export default function Certifications({ userId }: CertificationsProps) {
             : null,
       };
 
-      console.log("Sending certification data:", formattedCertification);
-
       const response = await fetch(`/api/users/${userId}/certifications`, {
         method: "POST",
         headers: {
@@ -476,36 +490,14 @@ export default function Certifications({ userId }: CertificationsProps) {
         body: JSON.stringify(formattedCertification),
       });
 
-      // Log the raw response for debugging
-      console.log("Response status:", response.status);
-
-      // Check for authentication issues
-      if (response.status === 401) {
-        alert("You must be logged in to add certifications");
-        return;
-      }
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response text:", errorText);
-
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: errorText || response.statusText };
-        }
-
-        console.error("API error response:", errorData);
+        const errorData = await response.json();
         throw new Error(
           `Failed to add certification: ${
             errorData.error || response.statusText
           }`
         );
       }
-
-      const result = await response.json();
-      console.log("API success response:", result);
 
       // Reset form and refresh data
       setIsAddingNew(false);
@@ -516,17 +508,12 @@ export default function Certifications({ userId }: CertificationsProps) {
         expirationDate: "",
         credentialUrl: "",
       });
-      setFormErrors({});
+      setNewCertificationErrors({}); // Clear errors
 
       // Refresh the data
       mutate();
     } catch (error) {
       console.error("Error adding certification:", error);
-      alert(
-        `Error adding certification: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
     } finally {
       setIsSubmitting(false);
     }
@@ -617,16 +604,16 @@ export default function Certifications({ userId }: CertificationsProps) {
                     onChange={(e) =>
                       handleNewCertificationChange("name", e.target.value)
                     }
-                    className={getInputClassName("new", "name", "mt-1")}
+                    className={`mt-1 ${
+                      newCertificationErrors.name ? "border-red-500" : ""
+                    }`}
                     placeholder="e.g. AWS Certified Solutions Architect"
                   />
-                  {isFieldTouched("new", "name") &&
-                    getFieldError("new", "name") && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {getFieldError("new", "name")}
-                      </p>
-                    )}
+                  {newCertificationErrors.name && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {newCertificationErrors.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="mb-2">
@@ -638,16 +625,16 @@ export default function Certifications({ userId }: CertificationsProps) {
                     onChange={(e) =>
                       handleNewCertificationChange("issuer", e.target.value)
                     }
-                    className={getInputClassName("new", "issuer", "mt-1")}
+                    className={`mt-1 ${
+                      newCertificationErrors.issuer ? "border-red-500" : ""
+                    }`}
                     placeholder="e.g. Amazon Web Services"
                   />
-                  {isFieldTouched("new", "issuer") &&
-                    getFieldError("new", "issuer") && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {getFieldError("new", "issuer")}
-                      </p>
-                    )}
+                  {newCertificationErrors.issuer && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {newCertificationErrors.issuer}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-2 mb-2">
@@ -664,16 +651,16 @@ export default function Certifications({ userId }: CertificationsProps) {
                           e.target.value
                         )
                       }
-                      className={getInputClassName("new", "issueDate", "mt-1")}
+                      className={`mt-1 ${
+                        newCertificationErrors.issueDate ? "border-red-500" : ""
+                      }`}
                       max={getCurrentDate()}
                     />
-                    {isFieldTouched("new", "issueDate") &&
-                      getFieldError("new", "issueDate") && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          {getFieldError("new", "issueDate")}
-                        </p>
-                      )}
+                    {newCertificationErrors.issueDate && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {newCertificationErrors.issueDate}
+                      </p>
+                    )}
                   </div>
                   <div className="w-1/2">
                     <label className="text-sm text-muted-foreground">
@@ -688,11 +675,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                           e.target.value
                         )
                       }
-                      className={getInputClassName(
-                        "new",
-                        "expirationDate",
-                        "mt-1"
-                      )}
+                      className="mt-1"
                       max={getCurrentDate()}
                     />
                   </div>
@@ -711,20 +694,14 @@ export default function Certifications({ userId }: CertificationsProps) {
                         e.target.value
                       )
                     }
-                    className={getInputClassName(
-                      "new",
-                      "credentialUrl",
-                      "mt-1"
-                    )}
+                    className="mt-1"
                     placeholder="https://www.example.com/credential/123"
                   />
-                  {isFieldTouched("new", "credentialUrl") &&
-                    getFieldError("new", "credentialUrl") && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        {getFieldError("new", "credentialUrl")}
-                      </p>
-                    )}
+                  {newCertificationErrors.credentialUrl && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {newCertificationErrors.credentialUrl}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4">
