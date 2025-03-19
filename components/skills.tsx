@@ -64,6 +64,9 @@ export default function Skills({ userId }: SkillsProps) {
   const [validationErrors, setValidationErrors] = useState<{
     [key: string]: z.ZodIssue[] | null;
   }>({});
+  const [newSkillErrors, setNewSkillErrors] = useState<{
+    [key: string]: string | null;
+  }>({});
 
   // Use the form validation hook
   const { validateData, getFieldError, touchField, getInputClassName } =
@@ -218,11 +221,25 @@ export default function Skills({ userId }: SkillsProps) {
   const handleSaveNewSkill = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate using Zod schema
-    if (!validateSkill(newSkill, "new")) {
+    // Validate required fields
+    const errors: { [key: string]: string | null } = {};
+    if (!newSkill.name) {
+      errors.name = "Skill Name is required.";
+    }
+    if (!newSkill.category) {
+      errors.category = "Category is required.";
+    }
+    if (!newSkill.proficiencyLevel) {
+      errors.proficiencyLevel = "Proficiency Level is required.";
+    }
+
+    // Set errors if any
+    if (Object.keys(errors).length > 0) {
+      setNewSkillErrors(errors);
       return;
     }
 
+    // Proceed with saving the new skill if no errors
     try {
       setIsSubmitting(true);
 
@@ -420,28 +437,29 @@ export default function Skills({ userId }: SkillsProps) {
                     }
                     placeholder="e.g. JavaScript"
                     className={`w-full ${
-                      getFieldError("new", "name")
-                        ? "border-red-500 ring-red-500"
-                        : ""
+                      newSkillErrors.name ? "border-red-500 ring-red-500" : ""
                     }`}
                   />
-                  {getFieldError("new", "name") && (
+                  {newSkillErrors.name && (
                     <p className="text-red-500 text-xs mt-1">
-                      {getFieldError("new", "name")}
+                      {newSkillErrors.name}
                     </p>
                   )}
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">
-                    Category
+                    Category*
                   </label>
                   <select
                     value={newSkill.category}
                     onChange={(e) =>
                       handleNewSkillChange("category", e.target.value)
                     }
-                    className="w-full p-2 border rounded"
+                    className={`w-full p-2 border rounded ${
+                      newSkillErrors.category ? "border-red-500" : ""
+                    }`}
                   >
+                    <option value="">Select a category</option>
                     <option value="Frontend">Frontend</option>
                     <option value="Backend">Backend</option>
                     <option value="Database">Database</option>
@@ -449,12 +467,17 @@ export default function Skills({ userId }: SkillsProps) {
                     <option value="Mobile">Mobile</option>
                     <option value="Other">Other</option>
                   </select>
+                  {newSkillErrors.category && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {newSkillErrors.category}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div>
                 <label className="text-sm font-medium mb-1 block">
-                  Proficiency Level
+                  Proficiency Level*
                 </label>
                 <select
                   value={newSkill.proficiencyLevel}
@@ -464,14 +487,22 @@ export default function Skills({ userId }: SkillsProps) {
                       Number(e.target.value)
                     )
                   }
-                  className="w-full p-2 border rounded"
+                  className={`w-full p-2 border rounded ${
+                    newSkillErrors.proficiencyLevel ? "border-red-500" : ""
+                  }`}
                 >
+                  <option value="">Select proficiency level</option>
                   <option value={1}>Beginner</option>
                   <option value={2}>Intermediate</option>
                   <option value={3}>Advanced</option>
                   <option value={4}>Expert</option>
                   <option value={5}>Master</option>
                 </select>
+                {newSkillErrors.proficiencyLevel && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {newSkillErrors.proficiencyLevel}
+                  </p>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
