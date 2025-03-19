@@ -1,7 +1,7 @@
 //Summary
 // This file (certifications/route.ts) is focused on getting all certifications for a user.
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { certificationSchema } from "@/lib/validations";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
@@ -14,15 +14,24 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
+    const { userId } = params;
+
     const certifications = await prisma.certification.findMany({
-      where: { userId: params.userId },
-      orderBy: { issueDate: "desc" },
+      where: {
+        userId,
+      },
+      orderBy: {
+        issueDate: "desc",
+      },
     });
 
-    return successResponse(certifications);
+    // Return a proper response using the helper function
+    return NextResponse.json(successResponse(certifications));
   } catch (error) {
     console.error("Error fetching certifications:", error);
-    return errorResponse(500, "Failed to fetch certifications");
+    return NextResponse.json(errorResponse("Failed to fetch certifications"), {
+      status: 500,
+    });
   }
 }
 
@@ -35,14 +44,14 @@ export async function POST(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session) {
-      return errorResponse(401, "Unauthorized");
+      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
     }
 
     // Verify the user is adding to their own profile or is an admin
     if (params.userId !== session.user.id && !(session.user as any).isAdmin) {
-      return errorResponse(
-        403,
-        "Unauthorized access to this user's certifications"
+      return NextResponse.json(
+        errorResponse("Unauthorized access to this user's certifications"),
+        { status: 403 }
       );
     }
 
@@ -54,7 +63,9 @@ export async function POST(
 
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.format());
-      return errorResponse(400, "Invalid certification data");
+      return NextResponse.json(errorResponse("Invalid certification data"), {
+        status: 400,
+      });
     }
 
     // Create the certification in the database
@@ -65,17 +76,19 @@ export async function POST(
       },
     });
 
-    return successResponse(certification);
+    return NextResponse.json(successResponse(certification));
   } catch (error) {
     console.error("Error creating certification:", error);
 
     if (error instanceof Error) {
-      return errorResponse(
-        500,
-        `Failed to create certification: ${error.message}`
+      return NextResponse.json(
+        errorResponse(`Failed to create certification: ${error.message}`),
+        { status: 500 }
       );
     }
 
-    return errorResponse(500, "Failed to create certification");
+    return NextResponse.json(errorResponse("Failed to create certification"), {
+      status: 500,
+    });
   }
 }

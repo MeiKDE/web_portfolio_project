@@ -1,7 +1,7 @@
 //Summary
 // This file (skills/route.ts) is focused on getting all skills for a user.
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
 import { z } from "zod";
@@ -33,15 +33,20 @@ export const GET = withAuth(
         },
       });
 
-      return successResponse(skills);
+      return NextResponse.json(successResponse(skills));
     } catch (error) {
       console.error("Error fetching skills:", error);
 
       if (error instanceof Error) {
-        return errorResponse(500, `Failed to fetch skills: ${error.message}`);
+        return NextResponse.json(
+          errorResponse(`Failed to fetch skills: ${error.message}`),
+          { status: 500 }
+        );
       }
 
-      return errorResponse(500, "Failed to fetch skills");
+      return NextResponse.json(errorResponse("Failed to fetch skills"), {
+        status: 500,
+      });
     }
   }
 );
@@ -58,7 +63,7 @@ export const POST = withAuth(
 
       // Only allow users to add skills to their own profile
       if (user.id !== userId) {
-        return errorResponse(403, "Forbidden");
+        return NextResponse.json(errorResponse("Forbidden"), { status: 403 });
       }
 
       // Get the skill data from the request
@@ -68,10 +73,12 @@ export const POST = withAuth(
       const validationResult = skillSchema.safeParse(data);
 
       if (!validationResult.success) {
-        return errorResponse(
-          400,
-          "Invalid skill data: " +
-            JSON.stringify(validationResult.error.format())
+        return NextResponse.json(
+          errorResponse(
+            "Invalid skill data: " +
+              JSON.stringify(validationResult.error.format())
+          ),
+          { status: 400 }
         );
       }
 
@@ -85,22 +92,27 @@ export const POST = withAuth(
         },
       });
 
-      return successResponse(skill);
+      return NextResponse.json(successResponse(skill));
     } catch (error) {
       console.error("Error creating skill:", error);
 
       if (error instanceof z.ZodError) {
-        return errorResponse(
-          400,
-          "Validation error: " + JSON.stringify(error.format())
+        return NextResponse.json(
+          errorResponse("Validation error: " + JSON.stringify(error.format())),
+          { status: 400 }
         );
       }
 
       if (error instanceof Error) {
-        return errorResponse(500, `Failed to create skill: ${error.message}`);
+        return NextResponse.json(
+          errorResponse(`Failed to create skill: ${error.message}`),
+          { status: 500 }
+        );
       }
 
-      return errorResponse(500, "Failed to create skill");
+      return NextResponse.json(errorResponse("Failed to create skill"), {
+        status: 500,
+      });
     }
   }
 );

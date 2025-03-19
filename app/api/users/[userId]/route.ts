@@ -1,7 +1,7 @@
 //Summary
 // This file ([id]/route.ts) is focused on managing existing suggestions (getting and updating).
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import {
@@ -39,19 +39,20 @@ export const GET = withAuth(
       });
 
       if (!user) {
-        throw createApiError.notFound("User not found");
+        return NextResponse.json(errorResponse("User not found"), {
+          status: 404,
+        });
       }
 
       // Remove sensitive fields
       const { hashedPassword, salt, ...safeUserData } = user;
 
-      return successResponse(safeUserData);
+      return NextResponse.json(successResponse(safeUserData));
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to fetch user",
-        "GET /api/users/[userId]"
-      );
+      console.error("Error fetching user:", error);
+      return NextResponse.json(errorResponse("Failed to fetch user"), {
+        status: 500,
+      });
     }
   }
 );
@@ -83,13 +84,12 @@ export const PUT = withAuth(
       // Remove sensitive fields
       const { hashedPassword, salt, ...safeUserData } = updatedUser;
 
-      return successResponse(safeUserData);
+      return NextResponse.json(successResponse(safeUserData));
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update user profile",
-        "PUT /api/users/[userId]"
-      );
+      console.error("Error updating user profile:", error);
+      return NextResponse.json(errorResponse("Failed to update user profile"), {
+        status: 500,
+      });
     }
   }
 );

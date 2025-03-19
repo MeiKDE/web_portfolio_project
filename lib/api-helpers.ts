@@ -4,44 +4,41 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createApiError } from "./error-handler";
 import { z } from "zod";
+import { NextResponse } from "next/server";
 
 /**
  * Type for API responses to ensure consistency
  */
-export interface ApiResponse<T = any> {
+export type ApiResponse<T = any> = {
+  success: boolean;
   data?: T;
-  error?: boolean;
   message?: string;
-}
+  errors?: Record<string, string[]>;
+};
 
 /**
  * Creates a standardized success response
  */
-export function successResponse<T>(data: T): Response {
-  return new Response(JSON.stringify({ data }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
+  return {
+    success: true,
+    data,
+    message,
+  };
 }
 
 /**
  * Creates a standardized error response
  */
-export function errorResponse(statusCode: number, message: string): Response {
-  return new Response(
-    JSON.stringify({
-      error: true,
-      message,
-    }),
-    {
-      status: statusCode,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+export function errorResponse(
+  message: string,
+  errors?: Record<string, string[]>
+): ApiResponse {
+  return {
+    success: false,
+    message,
+    errors,
+  };
 }
 
 // Type for route handler functions
@@ -49,11 +46,12 @@ type RouteHandler = (
   request: NextRequest,
   context: { params: any },
   user: any
-) => Promise<Response>;
+) => Promise<Response | ApiResponse>;
 
 // Create a custom error type that includes statusCode
 interface ApiError extends Error {
   statusCode?: number;
+  errors?: Record<string, string[]>;
 }
 
 /**
@@ -118,10 +116,18 @@ export function withAuth(handler: RouteHandler) {
       if (error instanceof Error) {
         // Cast to ApiError to access statusCode property
         const apiError = error as ApiError;
-        return errorResponse(apiError.statusCode || 500, apiError.message);
+        return NextResponse.json(
+          errorResponse(
+            apiError.message || "Authentication failed",
+            apiError.errors
+          ),
+          { status: apiError.statusCode || 401 }
+        );
       }
 
-      return errorResponse(500, "Authentication failed");
+      return NextResponse.json(errorResponse("Authentication failed"), {
+        status: 401,
+      });
     }
   };
 }
@@ -170,12 +176,19 @@ export function withOwnership(
       if (error instanceof Error) {
         // Cast to ApiError to access statusCode property
         const apiError = error as ApiError;
-        return errorResponse(apiError.statusCode || 500, apiError.message);
+        return NextResponse.json(
+          errorResponse(
+            apiError.message ||
+              `Failed to verify ownership of ${String(resourceType)}`,
+            apiError.errors
+          ),
+          { status: apiError.statusCode || 403 }
+        );
       }
 
-      return errorResponse(
-        500,
-        `Failed to verify ownership of ${String(resourceType)}`
+      return NextResponse.json(
+        errorResponse("Failed to verify ownership of resource"),
+        { status: 403 }
       );
     }
   });

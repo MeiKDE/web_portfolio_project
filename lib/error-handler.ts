@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { errorResponse, successResponse } from "./api-helpers";
+import { ZodError } from "zod";
 
 // HTTP Status Code constants for consistent usage
 export const HTTP_STATUS = {
@@ -30,64 +31,28 @@ export function sanitizeErrorMessage(message: string): string {
  * @param defaultMessage Default message to return if error type is unknown
  * @param context Optional context information about where the error occurred
  */
-export function handleApiError(
-  error: unknown,
-  defaultMessage = "An unexpected error occurred",
-  context?: string
-) {
-  // Log the error with context for debugging
-  console.error(`API Error${context ? ` in ${context}` : ""}:`, error);
+export function handleApiError(error: unknown) {
+  console.error("API Error:", error);
 
   // Handle Zod validation errors
-  if (error instanceof z.ZodError) {
-    return errorResponse(
-      400,
-      "Validation error" + HTTP_STATUS.BAD_REQUEST + error.format()
-    );
+  if (error instanceof ZodError) {
+    const formattedErrors: Record<string, string[]> = {};
+
+    error.errors.forEach((err) => {
+      const field = err.path.join(".");
+      if (!formattedErrors[field]) {
+        formattedErrors[field] = [];
+      }
+      formattedErrors[field].push(err.message);
+    });
+
+    return errorResponse("Validation failed", formattedErrors);
   }
 
-  // Handle our custom API errors
-  if (error instanceof ApiError) {
-    return handleApiErrorInstance(error);
-  }
-
-  // Handle standard JS errors
-  if (error instanceof Error) {
-    const safeMessage = sanitizeErrorMessage(error.message);
-    return errorResponse(
-      500,
-      `${defaultMessage}: ${safeMessage}` + HTTP_STATUS.INTERNAL_SERVER_ERROR
-    );
-  }
-
-  // Handle Prisma errors
-  if (error && typeof error === "object" && "code" in error) {
-    // Prisma error codes: https://www.prisma.io/docs/reference/api-reference/error-reference
-    const prismaError = error as { code: string; meta?: any; message?: string };
-
-    // Handle common Prisma errors
-    switch (prismaError.code) {
-      case "P2002": // Unique constraint failed
-        return errorResponse(
-          409,
-          "A record with this information already exists" + HTTP_STATUS.CONFLICT
-        );
-      case "P2025": // Record not found
-        return errorResponse(404, "Record not found" + HTTP_STATUS.NOT_FOUND);
-      default:
-        // For other Prisma errors, return a generic message but log details
-        const safeMessage = prismaError.message
-          ? sanitizeErrorMessage(prismaError.message)
-          : "Database error";
-        return errorResponse(
-          500,
-          safeMessage + HTTP_STATUS.INTERNAL_SERVER_ERROR
-        );
-    }
-  }
-
-  // For unknown error types
-  return errorResponse(500, defaultMessage + HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  // Handle other types of errors
+  const message =
+    error instanceof Error ? error.message : "An unexpected error occurred";
+  return errorResponse(message);
 }
 
 /**

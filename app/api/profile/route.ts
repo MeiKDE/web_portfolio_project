@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId");
 
     if (!session) {
-      return errorResponse(401, "Unauthorized");
+      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
     }
 
     const targetUserId = userId || session.user.id;
@@ -35,16 +35,22 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userProfile) {
-      return errorResponse(404, "User profile not found");
+      return NextResponse.json(errorResponse("User profile not found"), {
+        status: 404,
+      });
     }
 
-    return successResponse({
-      ...userProfile,
-      isGoogleAccount: userProfile.provider === "GOOGLE",
-    });
+    return NextResponse.json(
+      successResponse({
+        ...userProfile,
+        isGoogleAccount: userProfile.provider === "GOOGLE",
+      })
+    );
   } catch (error) {
     console.error("Error handling profile:", error);
-    return errorResponse(500, "Failed to process profile data");
+    return NextResponse.json(errorResponse("Failed to process profile data"), {
+      status: 500,
+    });
   }
 }
 
@@ -52,7 +58,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return errorResponse(401, "Unauthorized");
+      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
     }
 
     const data = await request.json();
@@ -82,9 +88,11 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return successResponse(updatedProfile);
+    return NextResponse.json(successResponse(updatedProfile));
   } catch (error) {
     console.error("Error updating profile:", error);
-    return errorResponse(500, "Failed to update profile");
+    return NextResponse.json(errorResponse("Failed to update profile"), {
+      status: 500,
+    });
   }
 }

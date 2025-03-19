@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
@@ -22,13 +22,15 @@ export async function POST(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return errorResponse(401, "Unauthorized");
+      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
     }
 
     // Get user ID from session
     const userId = session.user.id;
     if (!userId) {
-      return errorResponse(400, "User ID not found in session");
+      return NextResponse.json(errorResponse("User ID not found in session"), {
+        status: 400,
+      });
     }
 
     console.log("Processing resume for user ID:", userId);
@@ -41,14 +43,16 @@ export async function POST(request: NextRequest) {
       });
 
       if (!user) {
-        return errorResponse(
-          404,
-          `User with ID ${userId} not found in database`
+        return NextResponse.json(
+          errorResponse(`User with ID ${userId} not found in database`),
+          { status: 404 }
         );
       }
     } catch (userError) {
       console.error("Error checking user:", userError);
-      return errorResponse(500, "Failed to verify user account");
+      return NextResponse.json(errorResponse("Failed to verify user account"), {
+        status: 500,
+      });
     }
 
     // Parse form data
@@ -56,12 +60,16 @@ export async function POST(request: NextRequest) {
     const file = formData.get("resume");
 
     if (!file || !(file instanceof File)) {
-      return errorResponse(400, "No resume file provided");
+      return NextResponse.json(errorResponse("No resume file provided"), {
+        status: 400,
+      });
     }
 
     // Check file type
     if (!file.type.includes("pdf")) {
-      return errorResponse(400, "Only PDF files are supported");
+      return NextResponse.json(errorResponse("Only PDF files are supported"), {
+        status: 400,
+      });
     }
 
     console.log("Processing resume file:", file.name, "Size:", file.size);
@@ -77,9 +85,11 @@ export async function POST(request: NextRequest) {
       console.log("ln67 check resumeData from openai", resumeData);
 
       if (!resumeData) {
-        return errorResponse(
-          400,
-          "Failed to parse resume - could not extract structured data"
+        return NextResponse.json(
+          errorResponse(
+            "Failed to parse resume - could not extract structured data"
+          ),
+          { status: 400 }
         );
       }
 
@@ -101,24 +111,30 @@ export async function POST(request: NextRequest) {
       });
       console.log("User profile updated successfully");
 
-      return successResponse({
-        message: "Resume uploaded and parsed successfully",
-        data: { resumeData },
-      });
+      return NextResponse.json(
+        successResponse({
+          message: "Resume uploaded and parsed successfully",
+          data: { resumeData },
+        })
+      );
     } catch (extractError) {
       console.error("PDF processing error:", extractError);
-      return errorResponse(
-        500,
-        extractError instanceof Error
-          ? `PDF processing error: ${extractError.message}`
-          : "Failed to process PDF file"
+      return NextResponse.json(
+        errorResponse(
+          extractError instanceof Error
+            ? `PDF processing error: ${extractError.message}`
+            : "Failed to process PDF file"
+        ),
+        { status: 500 }
       );
     }
   } catch (error) {
     console.error("Resume upload error:", error);
-    return errorResponse(
-      500,
-      error instanceof Error ? error.message : "Failed to process resume"
+    return NextResponse.json(
+      errorResponse(
+        error instanceof Error ? error.message : "Failed to process resume"
+      ),
+      { status: 500 }
     );
   }
 }

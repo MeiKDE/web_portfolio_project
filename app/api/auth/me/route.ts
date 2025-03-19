@@ -1,15 +1,16 @@
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { successResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse } from "@/lib/api-helpers";
 import { handleApiError, createApiError } from "@/lib/error-handler";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
-      throw createApiError.unauthorized("Not authenticated");
+    if (!session || !session.user?.email) {
+      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
     }
 
     // Get additional user data from database
@@ -28,11 +29,16 @@ export async function GET() {
     });
 
     if (!user) {
-      throw createApiError.notFound("User not found");
+      return NextResponse.json(errorResponse("User not found"), {
+        status: 404,
+      });
     }
 
-    return successResponse(user);
+    return NextResponse.json(successResponse(user));
   } catch (error) {
-    return handleApiError(error, "Error in /me route", "GET /auth/me");
+    console.error("Error fetching current user:", error);
+    return NextResponse.json(errorResponse("Failed to fetch current user"), {
+      status: 500,
+    });
   }
 }

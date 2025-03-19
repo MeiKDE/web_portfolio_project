@@ -1,9 +1,9 @@
 //Summary
 // This file (education/route.ts) is focused on getting all education entries for a user.
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { withAuth, successResponse } from "@/lib/api-helpers";
+import { withAuth, successResponse, errorResponse } from "@/lib/api-helpers";
 import { handleApiError } from "@/lib/error-handler";
 
 // GET all education entries for a specific user
@@ -16,13 +16,12 @@ export const GET = withAuth(
       });
 
       // No need to transform data anymore
-      return successResponse(educations);
+      return NextResponse.json(successResponse(educations));
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to retrieve education entries",
-        "GET /users/[userId]/education"
-      );
+      console.error("Error fetching education:", error);
+      return NextResponse.json(errorResponse("Failed to fetch education"), {
+        status: 500,
+      });
     }
   }
 );
@@ -41,12 +40,12 @@ export const POST = withAuth(
         },
       });
 
-      return successResponse(education);
+      return NextResponse.json(successResponse(education));
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to create education entry",
-        "POST /users/[userId]/education"
+      console.error("Error creating education:", error);
+      return NextResponse.json(
+        errorResponse("Failed to create education entry"),
+        { status: 500 }
       );
     }
   }
