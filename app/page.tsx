@@ -27,10 +27,10 @@ export default async function Home() {
       return <ResumeUpload />;
     }
 
-    // For returning users (completed profile setup), redirect to profile page
+    // For returning users (completed profile setup), redirect to home/profile page
     redirect("/profile");
   } else {
-    // For non-logged in users, also redirect to profile page
+    // For non-logged in users, also redirect to home/profile page
     redirect("/profile");
   }
 }
