@@ -11,6 +11,7 @@ import { useFormValidation } from "@/lib/form-validation";
 import { userProfileSchema } from "@/lib/validations";
 import ProfileImage from "@/components/ProfileImage";
 import PhoneInput from "@/components/PhoneInput";
+import { AIAssistantButton } from "./ai/ai-assistant-button";
 
 interface UserProps {
   userId: string;
@@ -427,14 +428,18 @@ export default function User({ userId }: UserProps) {
                     </Button>
                   </div>
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEditToggle}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Button>
+                  <div>
+                    <AIAssistantButton />
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditToggle}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  </div>
                 )}
               </div>
 
