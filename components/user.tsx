@@ -4,10 +4,8 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
 import { userProfileSchema } from "@/lib/validations";
@@ -149,16 +147,46 @@ export default function User({ userId }: UserProps) {
   };
 
   const saveChanges = async () => {
-    if (!editedUser || !user) return;
+    console.log("saveChanges function called");
+    if (!editedUser || !user) {
+      console.log("editedUser or user is null, exiting");
+      return;
+    }
 
     try {
+      // Create a copy of editedUser for validation purposes
+      const validationUser = { ...editedUser };
+
+      // If image field is present but empty or not a valid URL, remove it for validation
+      if (validationUser.image !== undefined) {
+        if (validationUser.image === "" || validationUser.image === null) {
+          // If empty, remove from validation since it's optional
+          console.log("Image is empty, removing for validation");
+          delete validationUser.image;
+        } else {
+          // If not empty, check if it's a valid URL
+          try {
+            new URL(validationUser.image); // This will throw if not a valid URL
+          } catch (e) {
+            console.log(
+              "Image URL is invalid, removing for validation:",
+              validationUser.image
+            );
+            // Remove image from validation copy only, not the actual data
+            delete validationUser.image;
+          }
+        }
+      }
+
       // Validate all fields and mark them as touched
       Object.keys(editedUser).forEach((field) => {
         touchField("user", field);
+        console.log("valid error", field, getFieldError("user", field));
       });
 
-      // Validate the entire form
-      const isValid = validateData(editedUser, "user");
+      // Validate the entire form with the modified validation object
+      const isValid = validateData(validationUser, "user");
+      console.log("check isValid", isValid);
 
       // Check for phone error as well
       if (!isValid || phoneError) {
@@ -173,6 +201,7 @@ export default function User({ userId }: UserProps) {
         return;
       }
 
+      console.log("Proceeding with API call");
       setIsSubmitting(true);
       setError(null);
 
@@ -189,30 +218,67 @@ export default function User({ userId }: UserProps) {
         delete sanitizedUserData.image;
       }
 
+      // Log the data being sent (for debugging)
+      console.log("Sending data to API:", sanitizedUserData);
+
       const response = await fetch(`/api/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(sanitizedUserData),
+        cache: "no-store", // Next.js convention to avoid caching
       });
 
+      console.log("ln233: response", response);
+
+      // Check response and handle potential empty response
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Response:", errorData);
-        throw new Error(errorData.message || "Failed to update profile");
+        let errorMessage = "Failed to update profile";
+
+        try {
+          // Only try to parse JSON if we have a content-type that indicates JSON
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } else {
+            // If not JSON, get text instead
+            errorMessage = (await response.text()) || errorMessage;
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+          // Use status text as fallback error message
+          errorMessage = response.statusText || errorMessage;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      const updatedUser = await response.json();
-      setUser(updatedUser.data);
-      setEditedUser(JSON.parse(JSON.stringify(updatedUser.data)));
-      setIsEditing(false);
-      setSaveSuccess(true);
+      // Parse successful response
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        console.error("Error parsing success response:", parseError);
+        throw new Error("Invalid response from server");
+      }
 
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
+      // Handle successful response based on API helper format
+      if (responseData.success && responseData.data) {
+        console.log("Profile updated successfully:", responseData.data);
+        setUser(responseData.data);
+        setEditedUser(JSON.parse(JSON.stringify(responseData.data)));
+        setIsEditing(false);
+        setSaveSuccess(true);
+
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error("Invalid response structure from API");
+      }
     } catch (error) {
       console.error("Error saving profile:", error);
       setError(
@@ -349,7 +415,10 @@ export default function User({ userId }: UserProps) {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={saveChanges}
+                      onClick={() => {
+                        console.log("Save button clicked");
+                        saveChanges();
+                      }}
                       disabled={isSubmitting}
                       className="w-full sm:w-auto"
                     >

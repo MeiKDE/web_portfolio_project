@@ -15,13 +15,10 @@ export const GET = withAuth(
         orderBy: { startYear: "desc" },
       });
 
-      // No need to transform data anymore
-      return NextResponse.json(successResponse(educations));
+      return successResponse(educations);
     } catch (error) {
       console.error("Error fetching education:", error);
-      return NextResponse.json(errorResponse("Failed to fetch education"), {
-        status: 500,
-      });
+      return errorResponse("Failed to fetch education", 500);
     }
   }
 );
@@ -40,13 +37,10 @@ export const POST = withAuth(
         },
       });
 
-      return NextResponse.json(successResponse(education));
+      return successResponse(education);
     } catch (error) {
       console.error("Error creating education:", error);
-      return NextResponse.json(
-        errorResponse("Failed to create education entry"),
-        { status: 500 }
-      );
+      return errorResponse("Failed to create education entry", 500);
     }
   }
 );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
@@ -36,18 +36,35 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showResumeMessage, setShowResumeMessage] = useState(true);
   const [showResumeUpload, setShowResumeUpload] = useState(false);
-  const [fetchAttempted, setFetchAttempted] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Add a ref to track if we've already attempted a fetch in this session
+  const hasFetchAttempted = useRef(false);
 
   // Memoize the fetchUserProfile function to prevent recreating on each render
   const fetchUserProfile = useCallback(
     async (userId: string) => {
       try {
+        // If we've already attempted a fetch, don't try again
+        if (hasFetchAttempted.current) return;
+
+        hasFetchAttempted.current = true;
         setIsLoading(true);
+        setFetchError(null);
+
         const response = await fetch(`/api/profile?userId=${userId}`);
 
-        if (!response.ok) throw new Error("Failed to fetch profile");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch profile");
+        }
 
         const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.message || "Failed to fetch profile data");
+        }
+
         setUserProfile(data.data);
 
         // If user hasn't completed profile setup, redirect to homepage
@@ -56,9 +73,16 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error("Error fetching user profile:", error);
+        setFetchError(
+          error instanceof Error ? error.message : "Failed to fetch profile"
+        );
+
+        // Reset the fetch attempt flag after some delay to allow retry
+        setTimeout(() => {
+          hasFetchAttempted.current = false;
+        }, 5000); // 5 second cooldown before allowing another fetch attempt
       } finally {
         setIsLoading(false);
-        setFetchAttempted(true);
       }
     },
     [router]
@@ -71,11 +95,15 @@ export default function ProfilePage() {
       return;
     }
 
-    // Only fetch if authenticated and we have a user ID and haven't already fetched
-    if (status === "authenticated" && session?.user?.id && !fetchAttempted) {
+    // Only fetch if authenticated and we have a user ID
+    if (
+      status === "authenticated" &&
+      session?.user?.id &&
+      !hasFetchAttempted.current
+    ) {
       fetchUserProfile(session.user.id);
     }
-  }, [status, session, router, fetchUserProfile, fetchAttempted]);
+  }, [status, session, router, fetchUserProfile]);
 
   // Add new useEffect for auto-dismissing message with stable dependencies
   useEffect(() => {
@@ -89,7 +117,7 @@ export default function ProfilePage() {
   }, [userProfile?.isUploadResumeForProfile, showResumeMessage]);
 
   // Show loading spinner while checking auth status or fetching profile
-  if (status === "loading" || (isLoading && !fetchAttempted)) {
+  if (status === "loading" || (isLoading && !hasFetchAttempted.current)) {
     return <LoadingSpinner fullPage text="Loading your profile..." />;
   }
 
@@ -110,7 +138,7 @@ export default function ProfilePage() {
   }
 
   // Wait for profile data before rendering
-  if (!userProfile && fetchAttempted) {
+  if (!userProfile && !hasFetchAttempted.current) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h2 className="text-2xl font-semibold">Profile not found</h2>
@@ -121,7 +149,7 @@ export default function ProfilePage() {
           className="mt-4"
           onClick={() => {
             if (session?.user?.id) {
-              setFetchAttempted(false);
+              hasFetchAttempted.current = false;
               fetchUserProfile(session.user.id);
             }
           }}

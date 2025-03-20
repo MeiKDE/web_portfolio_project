@@ -1,10 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createApiError } from "./error-handler";
 import { z } from "zod";
-import { NextResponse } from "next/server";
 
 /**
  * Type for API responses to ensure consistency
@@ -13,18 +12,25 @@ export type ApiResponse<T = any> = {
   success: boolean;
   data?: T;
   message?: string;
-  errors?: Record<string, string[]>;
+  errors?: Record<string, string[]> | any;
 };
 
 /**
  * Creates a standardized success response
  */
-export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
-  return {
-    success: true,
-    data,
-    message,
-  };
+export function successResponse<T>(
+  data: T,
+  message?: string,
+  status: number = 200
+): Response {
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      message,
+    },
+    { status }
+  );
 }
 
 /**
@@ -32,13 +38,17 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
  */
 export function errorResponse(
   message: string,
-  errors?: Record<string, string[]>
-): ApiResponse {
-  return {
-    success: false,
-    message,
-    errors,
-  };
+  status: number = 400,
+  errors?: Record<string, string[]> | any
+): Response {
+  return NextResponse.json(
+    {
+      success: false,
+      message,
+      errors,
+    },
+    { status }
+  );
 }
 
 // Type for route handler functions
@@ -46,7 +56,7 @@ type RouteHandler = (
   request: NextRequest,
   context: { params: any },
   user: any
-) => Promise<Response | ApiResponse>;
+) => Promise<Response>;
 
 // Create a custom error type that includes statusCode
 interface ApiError extends Error {
@@ -97,7 +107,7 @@ export function withAuth(handler: RouteHandler) {
       const session = await getServerSession(authOptions);
 
       if (!session?.user) {
-        throw createApiError.unauthorized("Not authenticated");
+        return errorResponse("Not authenticated", 401);
       }
 
       // Get the user from the database
@@ -106,7 +116,7 @@ export function withAuth(handler: RouteHandler) {
       });
 
       if (!user) {
-        throw createApiError.unauthorized("User not found");
+        return errorResponse("User not found", 401);
       }
 
       return await handler(request, context, user);
@@ -116,18 +126,14 @@ export function withAuth(handler: RouteHandler) {
       if (error instanceof Error) {
         // Cast to ApiError to access statusCode property
         const apiError = error as ApiError;
-        return NextResponse.json(
-          errorResponse(
-            apiError.message || "Authentication failed",
-            apiError.errors
-          ),
-          { status: apiError.statusCode || 401 }
+        return errorResponse(
+          apiError.message || "Authentication failed",
+          apiError.statusCode || 401,
+          apiError.errors
         );
       }
 
-      return NextResponse.json(errorResponse("Authentication failed"), {
-        status: 401,
-      });
+      return errorResponse("Authentication failed", 401);
     }
   };
 }
@@ -156,13 +162,14 @@ export function withOwnership(
       });
 
       if (!resource) {
-        throw createApiError.notFound(`${resourceTypeStr} not found`);
+        return errorResponse(`${resourceTypeStr} not found`, 404);
       }
 
       // Check if the resource belongs to the user
       if (resource.userId !== user.id) {
-        throw createApiError.forbidden(
-          `Not authorized to access this ${resourceTypeStr}`
+        return errorResponse(
+          `Not authorized to access this ${resourceTypeStr}`,
+          403
         );
       }
 
@@ -176,20 +183,15 @@ export function withOwnership(
       if (error instanceof Error) {
         // Cast to ApiError to access statusCode property
         const apiError = error as ApiError;
-        return NextResponse.json(
-          errorResponse(
-            apiError.message ||
-              `Failed to verify ownership of ${String(resourceType)}`,
-            apiError.errors
-          ),
-          { status: apiError.statusCode || 403 }
+        return errorResponse(
+          apiError.message ||
+            `Failed to verify ownership of ${String(resourceType)}`,
+          apiError.statusCode || 403,
+          apiError.errors
         );
       }
 
-      return NextResponse.json(
-        errorResponse("Failed to verify ownership of resource"),
-        { status: 403 }
-      );
+      return errorResponse("Failed to verify ownership of resource", 403);
     }
   });
 }

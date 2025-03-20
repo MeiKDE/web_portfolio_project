@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { certificationSchema } from "@/lib/validations";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -25,13 +25,11 @@ export async function GET(
       },
     });
 
-    // Return a proper response using the helper function
-    return NextResponse.json(successResponse(certifications));
+    // Return a proper response using the helper function directly
+    return successResponse(certifications);
   } catch (error) {
     console.error("Error fetching certifications:", error);
-    return NextResponse.json(errorResponse("Failed to fetch certifications"), {
-      status: 500,
-    });
+    return errorResponse("Failed to fetch certifications", 500);
   }
 }
 
@@ -44,14 +42,14 @@ export async function POST(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
+      return errorResponse("Unauthorized", 401);
     }
 
     // Verify the user is adding to their own profile or is an admin
     if (params.userId !== session.user.id && !(session.user as any).isAdmin) {
-      return NextResponse.json(
-        errorResponse("Unauthorized access to this user's certifications"),
-        { status: 403 }
+      return errorResponse(
+        "Unauthorized access to this user's certifications",
+        403
       );
     }
 
@@ -63,9 +61,7 @@ export async function POST(
 
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error.format());
-      return NextResponse.json(errorResponse("Invalid certification data"), {
-        status: 400,
-      });
+      return errorResponse("Invalid certification data", 400);
     }
 
     // Create the certification in the database
@@ -76,19 +72,17 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(successResponse(certification));
+    return successResponse(certification);
   } catch (error) {
     console.error("Error creating certification:", error);
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        errorResponse(`Failed to create certification: ${error.message}`),
-        { status: 500 }
+      return errorResponse(
+        `Failed to create certification: ${error.message}`,
+        500
       );
     }
 
-    return NextResponse.json(errorResponse("Failed to create certification"), {
-      status: 500,
-    });
+    return errorResponse("Failed to create certification", 500);
   }
 }

@@ -1,20 +1,15 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
-    if (!session) {
-      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
-    }
-
-    const targetUserId = userId || session.user.id;
+    const targetUserId = userId || user.id;
 
     const userProfile = await prisma.user.findUnique({
       where: { id: targetUserId },
@@ -35,42 +30,31 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userProfile) {
-      return NextResponse.json(errorResponse("User profile not found"), {
-        status: 404,
-      });
+      return errorResponse("User profile not found", 404);
     }
 
-    return NextResponse.json(
-      successResponse({
-        ...userProfile,
-        isGoogleAccount: userProfile.provider === "GOOGLE",
-      })
-    );
+    return successResponse({
+      ...userProfile,
+      isGoogleAccount: userProfile.provider === "GOOGLE",
+    });
   } catch (error) {
     console.error("Error handling profile:", error);
-    return NextResponse.json(errorResponse("Failed to process profile data"), {
-      status: 500,
-    });
+    return errorResponse("Failed to process profile data", 500);
   }
-}
+});
 
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
-    }
-
     const data = await request.json();
 
     const updatedProfile = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         ...data,
         // Only update email if it's not a Google account
-        email: session.provider === "google" ? session.user.email : data.email,
+        email: user.provider === "GOOGLE" ? user.email : data.email,
         // Preserve the authentication provider
-        provider: session.provider || "credentials",
+        provider: user.provider || "credentials",
       },
       select: {
         id: true,
@@ -88,11 +72,9 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(successResponse(updatedProfile));
+    return successResponse(updatedProfile);
   } catch (error) {
     console.error("Error updating profile:", error);
-    return NextResponse.json(errorResponse("Failed to update profile"), {
-      status: 500,
-    });
+    return errorResponse("Failed to update profile", 500);
   }
-}
+});

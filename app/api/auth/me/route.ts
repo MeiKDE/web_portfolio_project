@@ -2,43 +2,26 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { handleApiError, createApiError } from "@/lib/error-handler";
+import { NextRequest } from "next/server";
 
-export async function GET() {
+export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.email) {
-      return NextResponse.json(errorResponse("Unauthorized"), { status: 401 });
-    }
-
-    // Get additional user data from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        title: true,
-        location: true,
-        phone: true,
-        bio: true,
-      },
+    // Additional user data is already available in the 'user' parameter
+    // provided by withAuth HOC
+    return successResponse({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      title: user.title,
+      location: user.location,
+      phone: user.phone,
+      bio: user.bio,
     });
-
-    if (!user) {
-      return NextResponse.json(errorResponse("User not found"), {
-        status: 404,
-      });
-    }
-
-    return NextResponse.json(successResponse(user));
   } catch (error) {
     console.error("Error fetching current user:", error);
-    return NextResponse.json(errorResponse("Failed to fetch current user"), {
-      status: 500,
-    });
+    return errorResponse("Failed to fetch current user", 500);
   }
-}
+});

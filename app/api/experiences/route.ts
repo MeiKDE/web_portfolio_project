@@ -1,22 +1,16 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { experienceSchema } from "@/lib/validations";
 
 // GET all experiences for the current user
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return errorResponse(401, "Not authenticated");
-    }
-
     const experiences = await prisma.experience.findMany({
       where: {
-        userId: session.user.id,
+        userId: user.id,
       },
       orderBy: {
         startDate: "desc",
@@ -26,19 +20,13 @@ export async function GET(request: NextRequest) {
     return successResponse(experiences);
   } catch (error) {
     console.error("Error fetching experiences:", error);
-    return errorResponse(500, "Failed to fetch experiences");
+    return errorResponse("Failed to fetch experiences", 500);
   }
-}
+});
 
 // POST new experience
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return errorResponse(401, "Not authenticated");
-    }
-
     const body = await request.json();
 
     // Convert date strings to Date objects
@@ -53,22 +41,22 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return errorResponse(
-        400,
         "Invalid experience data: " +
-          JSON.stringify(validationResult.error.format())
+          JSON.stringify(validationResult.error.format()),
+        400
       );
     }
 
     const newExperience = await prisma.experience.create({
       data: {
         ...validationResult.data,
-        userId: session.user.id,
+        userId: user.id,
       },
     });
 
     return successResponse(newExperience);
   } catch (error) {
     console.error("Error creating experience:", error);
-    return errorResponse(500, "Failed to create experience");
+    return errorResponse("Failed to create experience", 500);
   }
-}
+});

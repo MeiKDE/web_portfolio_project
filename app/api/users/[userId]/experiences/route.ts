@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { experienceSchema } from "@/lib/validations";
@@ -18,18 +18,13 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json(errorResponse("Not authenticated"), {
-        status: 401,
-      });
+      return errorResponse("Not authenticated", 401);
     }
 
     // For security, only allow users to see their own experiences
     // or implement admin check here if needed
     if (session.user.id !== params.userId) {
-      return NextResponse.json(
-        errorResponse("Not authorized to view these experiences"),
-        { status: 403 }
-      );
+      return errorResponse("Not authorized to view these experiences", 403);
     }
 
     const experiences = await prisma.experience.findMany({
@@ -41,12 +36,10 @@ export async function GET(
       },
     });
 
-    return NextResponse.json(successResponse(experiences));
+    return successResponse(experiences);
   } catch (error) {
     console.error("Error fetching experiences:", error);
-    return NextResponse.json(errorResponse("Failed to fetch experiences"), {
-      status: 500,
-    });
+    return errorResponse("Failed to fetch experiences", 500);
   }
 }
 
@@ -63,16 +56,14 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json(errorResponse("Not authenticated"), {
-        status: 401,
-      });
+      return errorResponse("Not authenticated", 401);
     }
 
     // For security, only allow users to add experiences to their own profile
     if (session.user.id !== params.userId) {
-      return NextResponse.json(
-        errorResponse("Not authorized to add experiences for this user"),
-        { status: 403 }
+      return errorResponse(
+        "Not authorized to add experiences for this user",
+        403
       );
     }
 
@@ -89,9 +80,7 @@ export async function POST(
     const validationResult = experienceSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return NextResponse.json(errorResponse("Invalid experience data"), {
-        status: 400,
-      });
+      return errorResponse("Invalid experience data", 400);
     }
 
     const newExperience = await prisma.experience.create({
@@ -101,11 +90,9 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(successResponse(newExperience));
+    return successResponse(newExperience);
   } catch (error) {
     console.error("Error creating experience:", error);
-    return NextResponse.json(errorResponse("Failed to create experience"), {
-      status: 500,
-    });
+    return errorResponse("Failed to create experience", 500);
   }
 }
