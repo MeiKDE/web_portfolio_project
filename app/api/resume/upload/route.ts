@@ -73,7 +73,7 @@ export const POST = withAuth(async (request: NextRequest, context, user) => {
 
       return successResponse({
         message: "Resume uploaded and parsed successfully",
-        data: { resumeData },
+        resumeData,
       });
     } catch (extractError) {
       console.error("PDF processing error:", extractError);

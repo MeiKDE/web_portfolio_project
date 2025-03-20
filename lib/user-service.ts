@@ -43,7 +43,10 @@ export async function getUserProfile(userId: string) {
  */
 export async function updateUserProfile(userId: string, resumeData: any) {
   try {
-    console.log("Resume data received:", JSON.stringify(resumeData, null, 2));
+    console.log(
+      "ln46: Resume data received:",
+      JSON.stringify(resumeData, null, 2)
+    );
 
     // First check if user exists
     const existingUser = await prisma.user.findUnique({

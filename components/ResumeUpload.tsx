@@ -72,6 +72,7 @@ export default function ResumeUpload({
   };
 
   const handleUpload = async (file: File) => {
+    console.log("ln75: Starting upload...");
     try {
       setIsUploading(true);
       setError("");
@@ -85,10 +86,10 @@ export default function ResumeUpload({
         method: "POST",
         body: formData,
       });
-      console.log("Upload response status:", response.status);
+      console.log("ln89: Upload response status:", response.status);
 
       const data = await response.json();
-      console.log("Upload response data:", data);
+      console.log("ln92: Upload response data:", data);
 
       if (!response.ok) {
         console.error("Upload error details:", data);
@@ -102,25 +103,17 @@ export default function ResumeUpload({
 
       // Store the profile data for display
       if (data.data && data.data.resumeData) {
-        console.log("Setting profile data:", data.data.resumeData);
+        console.log("ln105: Setting profile data:", data.data.resumeData);
         setProfileData(data.data.resumeData);
 
         // Automatically save the profile data without requiring user confirmation
         if (fromProfile) {
+          console.log("ln115: Automatically saving profile data...");
           const saved = await saveProfileData(data.data.resumeData);
-          if (saved) {
-            // Use onClose if coming from profile page
-            if (onClose) {
-              onClose();
-            } else {
-              // If no onClose provided, use a special query parameter to trigger a refresh
-              router.push("/profile?updated=true");
-            }
-          }
           return;
         }
       } else {
-        console.log("No resume data found in response");
+        console.log("ln123 No resume data found in response");
         // If no profile data, redirect to profile page
         if (fromProfile) {
           if (onClose) {
@@ -142,7 +135,7 @@ export default function ResumeUpload({
 
   const saveProfileData = async (profileData: ResumeData) => {
     try {
-      console.log("Automatically saving profile data...");
+      console.log("ln149: Automatically saving profile data...");
       const response = await fetch("/api/profile/save", {
         method: "POST",
         headers: {
@@ -177,8 +170,9 @@ export default function ResumeUpload({
   };
 
   const renderProfilePreview = () => {
+    console.log("ln184: Rendering profile preview...");
+    console.log("ln185: Profile data:", profileData);
     if (!profileData) return null;
-
     return (
       <div className="bg-white p-6 rounded-lg shadow-md mt-6">
         <h3 className="text-xl font-bold mb-4">Profile Preview</h3>
@@ -301,15 +295,18 @@ export default function ResumeUpload({
 
   const saveProfileAndRedirect = async () => {
     try {
-      console.log("Saving profile data...");
+      console.log("ln308: Saving profile data...");
       const saved = await saveProfileData(profileData!);
 
       if (saved) {
+        console.log("ln312: Profile data saved successfully");
         // Use onClose if coming from profile page, otherwise redirect
         if (fromProfile && onClose) {
+          console.log("ln314: Calling onClose...");
           onClose();
         } else {
           // Add a query parameter to force a refresh of the profile page
+          console.log("ln318: Pushing to profile page with updated=true");
           router.push("/profile?updated=true");
         }
       }
@@ -319,6 +316,7 @@ export default function ResumeUpload({
       if (fromProfile && onClose) {
         onClose();
       } else {
+        console.log("ln329: Pushing to profile page with updated=true");
         router.push("/profile?updated=true");
       }
     }
@@ -379,7 +377,7 @@ export default function ResumeUpload({
       </div>
     );
   }
-
+  console.log("ln391: Check success && profileData", success, profileData);
   return (
     <div className="max-w-4xl mx-auto mt-10">
       {/* Only show upload section if we haven't successfully uploaded */}
