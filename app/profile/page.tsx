@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import Link from "next/link";
 
 // Import UI components
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +21,9 @@ import SocialLinks from "@/components/SocialLinks";
 import ResumeUpload from "@/components/ResumeUpload";
 
 // Add this near the top of the file
+// we need below interface to be able to use the user profile data in the profile page
+// the ... is used to extend the type with the additional properties
+
 interface UserProfileType {
   id: string;
   hasCompletedProfileSetup?: boolean;
@@ -38,17 +40,22 @@ export default function ProfilePage() {
   const [showResumeUpload, setShowResumeUpload] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Add a ref to track if we've already attempted a fetch in this session
+  // useRef code means that the hasFetchAttempted is a ref that is initialized to false
+  // we can use this ref to track if we've already attempted a fetch in this session
+  // what's the point of using useRef here?
+  // useRef is used to store a value that is not needed for rendering, to be cached in the browser
   const hasFetchAttempted = useRef(false);
 
-  // Memoize the fetchUserProfile function to prevent recreating on each render
+  // fetchUserProfile is a function that fetches the user profile
+  // it is a useCallback function which is cached in the browser and not recreated on each render
   const fetchUserProfile = useCallback(
     async (userId: string) => {
       try {
         // If we've already attempted a fetch, don't try again
+        // hasFetchAttempted.current equals false, so we don't try again
         if (hasFetchAttempted.current) return;
 
-        hasFetchAttempted.current = true;
+        hasFetchAttempted.current = true; // set to true
         setIsLoading(true);
         setFetchError(null);
 
@@ -59,15 +66,16 @@ export default function ProfilePage() {
           throw new Error(errorData.message || "Failed to fetch profile");
         }
 
-        const data = await response.json();
+        const data = await response.json(); // this means that the data is a json object
 
         if (!data.success) {
           throw new Error(data.message || "Failed to fetch profile data");
         }
 
-        setUserProfile(data.data);
+        setUserProfile(data.data); // this means that the userProfile is set to the data.data
 
         // If user hasn't completed profile setup, redirect to homepage
+        // hasCompletedProfileSetup value is false, so we redirect to the homepage
         if (!data.data?.hasCompletedProfileSetup) {
           router.push("/");
         }
@@ -79,13 +87,13 @@ export default function ProfilePage() {
 
         // Reset the fetch attempt flag after some delay to allow retry
         setTimeout(() => {
-          hasFetchAttempted.current = false;
-        }, 5000); // 5 second cooldown before allowing another fetch attempt
+          hasFetchAttempted.current = false; // set to false
+        }, 5000); // 5 second cool down before allowing another fetch attempt
       } finally {
         setIsLoading(false);
       }
     },
-    [router]
+    [router] // this means that the fetchUserProfile function is a dependency of the useEffect hook
   );
 
   useEffect(() => {
@@ -103,9 +111,9 @@ export default function ProfilePage() {
     ) {
       fetchUserProfile(session.user.id);
     }
-  }, [status, session, router, fetchUserProfile]);
+  }, [status, session, router, fetchUserProfile]); // this means that the useEffect hook is a dependency of the fetchUserProfile function
 
-  // Add new useEffect for auto-dismissing message with stable dependencies
+  // this useEffect is used to auto-dismiss the message after 5 seconds
   useEffect(() => {
     if (userProfile?.isUploadResumeForProfile && showResumeMessage) {
       const timer = setTimeout(() => {

@@ -1,3 +1,7 @@
+// this is the middleware file for the application
+// it is used to check if the user is authenticated and redirect them to the login page if they are not
+// it is also used to redirect the user to the profile page if they are already authenticated and trying to access the login/register page
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
@@ -15,7 +19,6 @@ export async function middleware(request: NextRequest) {
 
   // Define paths that require authentication
   const authRequiredPaths = [
-    "/dashboard",
     "/profile",
     "/job-applications",
     "/portfolio",

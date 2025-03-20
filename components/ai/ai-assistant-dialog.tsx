@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AIBioGenerator } from "./ai-bio-generator";
 import { AIPreferences } from "./ai-preferences";
-//import { getUserData } from "@/lib/user-data"
+import { getUserData } from "@/lib/user-data";
 
 interface AIAssistantDialogProps {
   isOpen: boolean;
@@ -31,16 +31,16 @@ export function AIAssistantDialog({ isOpen, onClose }: AIAssistantDialogProps) {
   const [generatedBio, setGeneratedBio] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const data = await getUserData()
-  //     setUserData(data)
-  //   }
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getUserData();
+      setUserData(data);
+    };
 
-  //   if (isOpen) {
-  //     fetchData()
-  //   }
-  // }, [isOpen])
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
 
   const handleGenerate = async () => {
     if (!userData) return;

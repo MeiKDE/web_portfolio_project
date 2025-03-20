@@ -1,25 +1,31 @@
-"use client"
+"use client";
 
-// Completely replace the AIPreferences component to include examples directly in the preferences tab
-// and use color coding for different categories
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface AIPreferencesProps {
   preferences: {
-    careerGoals: string
-    personalityTraits: string
-    workStyle: string
-  }
-  setPreferences: (preferences: any) => void
-  onNext: () => void
+    careerGoals: string;
+    personalityTraits: string;
+    workStyle: string;
+  };
+  setPreferences: (preferences: any) => void;
+  onNext: () => void;
 }
 
-export function AIPreferences({ preferences, setPreferences, onNext }: AIPreferencesProps) {
-  const [expandedSections, setExpandedSections] = useState<string[]>([])
+export function AIPreferences({
+  preferences,
+  setPreferences,
+  onNext,
+}: AIPreferencesProps) {
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
   const examples = {
     careerGoals: [
@@ -37,13 +43,13 @@ export function AIPreferences({ preferences, setPreferences, onNext }: AIPrefere
       "I excel in fast-paced settings that require quick pivots and strategic thinking, always maintaining a focus on delivering actionable insights.",
       "I prefer a balanced approach that combines methodical analysis with agile execution, ensuring both accuracy and timely delivery of results.",
     ],
-  }
+  };
 
   const categoryColors = {
     careerGoals: "bg-blue-50 border-blue-200",
     personalityTraits: "bg-purple-50 border-purple-200",
     workStyle: "bg-emerald-50 border-emerald-200",
-  }
+  };
 
   const categoryIcons = {
     careerGoals: (
@@ -100,48 +106,70 @@ export function AIPreferences({ preferences, setPreferences, onNext }: AIPrefere
         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
       </svg>
     ),
-  }
+  };
 
   const categoryTitles = {
     careerGoals: "Career Goals",
     personalityTraits: "Personality Traits",
     workStyle: "Work Style",
-  }
+  };
 
   const toggleSection = (section: string) => {
-    setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]))
-  }
+    setExpandedSections((prev) =>
+      prev.includes(section)
+        ? prev.filter((s) => s !== section)
+        : [...prev, section]
+    );
+  };
 
   const handleSelectExample = (category: string, example: string) => {
     setPreferences({
       ...preferences,
       [category]: example,
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
       {Object.entries(examples).map(([category, categoryExamples]) => (
-        <Card key={category} className={`${categoryColors[category as keyof typeof categoryColors]} border`}>
+        <Card
+          key={category}
+          className={`${
+            categoryColors[category as keyof typeof categoryColors]
+          } border`}
+        >
           <CardHeader className="p-4 pb-0">
             <div className="flex items-center gap-2">
               {categoryIcons[category as keyof typeof categoryIcons]}
-              <h3 className="text-lg font-medium">{categoryTitles[category as keyof typeof categoryTitles]}</h3>
+              <h3 className="text-lg font-medium">
+                {categoryTitles[category as keyof typeof categoryTitles]}
+              </h3>
             </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="mb-3">
               <textarea
                 className="w-full p-3 border rounded-md h-20 resize-none bg-white"
-                placeholder={`Enter your ${categoryTitles[category as keyof typeof categoryTitles].toLowerCase()}...`}
+                placeholder={`Enter your ${categoryTitles[
+                  category as keyof typeof categoryTitles
+                ].toLowerCase()}...`}
                 value={preferences[category as keyof typeof preferences]}
-                onChange={(e) => setPreferences({ ...preferences, [category]: e.target.value })}
+                onChange={(e) =>
+                  setPreferences({ ...preferences, [category]: e.target.value })
+                }
               />
             </div>
 
-            <Accordion type="multiple" value={expandedSections} className="border rounded-md bg-white">
+            <Accordion
+              type="multiple"
+              value={expandedSections}
+              className="border rounded-md bg-white"
+            >
               <AccordionItem value={category}>
-                <AccordionTrigger onClick={() => toggleSection(category)} className="px-4">
+                <AccordionTrigger
+                  onClick={() => toggleSection(category)}
+                  className="px-4"
+                >
                   See examples
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pt-2 pb-3 space-y-2">
@@ -149,7 +177,8 @@ export function AIPreferences({ preferences, setPreferences, onNext }: AIPrefere
                     <div
                       key={index}
                       className={`p-3 border rounded-md cursor-pointer hover:border-primary transition-colors ${
-                        preferences[category as keyof typeof preferences] === example
+                        preferences[category as keyof typeof preferences] ===
+                        example
                           ? "border-primary bg-primary/5"
                           : "border-gray-200"
                       }`}
@@ -189,6 +218,5 @@ export function AIPreferences({ preferences, setPreferences, onNext }: AIPrefere
         </Button>
       </div>
     </div>
-  )
+  );
 }
-

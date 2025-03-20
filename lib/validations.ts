@@ -1,3 +1,6 @@
+//zod is use for form validation in the app
+// we can use this schema to validate the data before saving it to the database, client, ai or user
+
 import { z } from "zod";
 
 // Experience validation schema
@@ -19,8 +22,6 @@ export const certificationSchema = z.object({
   expirationDate: z.string().nullable().optional(),
   credentialUrl: z.string().url("Invalid URL format").nullable().optional(),
 });
-
-// Add other validation schemas as needed
 
 // Education validation schema
 export const educationSchema = z.object({
@@ -92,4 +93,14 @@ export const userProfileSchema = z.object({
   isAvailable: z.boolean().optional(),
 });
 
+// export type UserProfileData is a type that is used to define the type of the user profile data
+// we can use this type to validate the data before saving it to the database, client, ai or user
+// for example: const userProfileData:
+// UserProfileData = {
+//   name: "John Doe",
+//   email: "john.doe@example.com",
+//   phone: "+1234567890",
+//   bio: "I am a software engineer",
+//   isAvailable: true,
+// };
 export type UserProfileData = z.infer<typeof userProfileSchema>;
