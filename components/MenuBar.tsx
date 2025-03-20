@@ -19,7 +19,7 @@ import Image from "next/image";
 
 const menuItems = [
   { name: "Profile", href: "/", icon: User },
-  { name: "Resume", href: "/resume-builder", icon: FileText },
+  { name: "Job Applications", href: "/job-applications", icon: FileText },
   { name: "Portfolio", href: "/portfolio", icon: Briefcase },
   { name: "Contact", href: "/contact", icon: Mail },
 ];

@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
   const authRequiredPaths = [
     "/dashboard",
     "/profile",
-    "/resume-builder",
+    "/job-applications",
     "/portfolio",
     "/", // Add root path to protected routes
   ];
