@@ -44,7 +44,6 @@ export const PUT = withOwnership(
 
       if (!validationResult.success) {
         return errorResponse(
-          400,
           "Invalid experience data: " +
             JSON.stringify(validationResult.error.format())
         );
@@ -59,7 +58,7 @@ export const PUT = withOwnership(
       });
 
       if (!existingExperience) {
-        return errorResponse(404, "Experience not found");
+        return errorResponse("Experience not found");
       }
 
       // Update the experience
@@ -80,7 +79,7 @@ export const PUT = withOwnership(
       return successResponse(updatedExperience);
     } catch (error) {
       console.error("Error updating experience:", error);
-      return errorResponse(500, "Failed to update experience");
+      return errorResponse("Failed to update experience");
     }
   },
   "experience"
@@ -101,7 +100,7 @@ export const DELETE = withOwnership(
       return successResponse({ message: "Experience deleted successfully" });
     } catch (error) {
       console.error("Error deleting experience:", error);
-      return errorResponse(500, "Failed to delete experience");
+      return errorResponse("Failed to delete experience");
     }
   },
   "experience"

@@ -47,7 +47,7 @@ export async function POST(
       },
     });
 
-    return successResponse(aiSuggestion, 201);
+    return successResponse(201);
   } catch (error) {
     console.error("Error generating AI suggestion:", error);
     return errorResponse("Failed to generate AI suggestion");

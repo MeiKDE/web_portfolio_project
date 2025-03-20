@@ -2,11 +2,6 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
-import {
-  handleApiError,
-  createApiError,
-  HTTP_STATUS,
-} from "@/lib/error-handler";
 import { hashPassword } from "@/lib/auth";
 import { generateVerificationToken } from "@/lib/verification";
 import { sendVerificationEmail } from "@/lib/email";
@@ -50,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     // Basic validation
     if (!email || !password || !name) {
-      return errorResponse(400, "Missing required fields");
+      return errorResponse("Missing required fields");
     }
 
     // Find existing user by email
@@ -64,7 +59,7 @@ export async function POST(req: NextRequest) {
       const hasCredentials = existingUser.hashedPassword && existingUser.salt;
 
       if (hasCredentials) {
-        return errorResponse(400, "Credentials already exist for this email");
+        return errorResponse("Credentials already exist for this email");
       }
 
       // Hash the password
@@ -130,6 +125,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     // Add logging here to catch any email sending errors
     console.error("Registration error:", error);
-    return errorResponse(500, "Error creating user");
+    return errorResponse("Error creating user");
   }
 }

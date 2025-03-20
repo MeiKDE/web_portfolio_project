@@ -42,7 +42,7 @@ export async function POST(
       },
     });
 
-    return successResponse(aiSuggestion, 201);
+    return successResponse(201);
   } catch (error) {
     console.error("Error creating AI suggestion:", error);
     return errorResponse("Failed to create AI suggestion");

@@ -9,9 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/lib/form-validation";
 import { userProfileSchema } from "@/lib/validations";
-import ProfileImage from "@/components/ProfileImage";
+import ProfileImage from "@/app/profile/components/ProfileImageUpload";
 import PhoneInput from "@/components/PhoneInput";
-import { AIAssistantButton } from "./ai/ai-assistant-button";
+import { AIAssistantButton } from "@/app/ai/components/AIAssistantButton";
 
 interface UserProps {
   userId: string;

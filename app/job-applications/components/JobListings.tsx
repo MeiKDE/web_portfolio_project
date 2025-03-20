@@ -1,32 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { DocumentGeneratorDialog } from "./document-generator-dialog"
-import { formatDistanceToNow } from "date-fns"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { DocumentGeneratorDialog } from "@/app/job-applications/components/DocumentGeneratorDialog";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface JobListingsProps {
-  jobListings: any[]
-  updateJobStatus: (jobId: string, status: string) => void
-  userData: any
-  updateJobDocuments?: (jobId: string, documents: any) => void
+  jobListings: any[];
+  updateJobStatus: (jobId: string, status: string) => void;
+  userData: any;
+  updateJobDocuments?: (jobId: string, documents: any) => void;
 }
 
-export function JobListings({ jobListings, updateJobStatus, userData, updateJobDocuments }: JobListingsProps) {
-  const [selectedJob, setSelectedJob] = useState<any>(null)
-  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false)
-  const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false)
-  const [activeDocument, setActiveDocument] = useState<"resume" | "coverLetter">("resume")
+export function JobListings({
+  jobListings,
+  updateJobStatus,
+  userData,
+  updateJobDocuments,
+}: JobListingsProps) {
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [isDocumentViewOpen, setIsDocumentViewOpen] = useState(false);
+  const [activeDocument, setActiveDocument] = useState<
+    "resume" | "coverLetter"
+  >("resume");
   // Update the document viewing dialog to include editing capabilities
 
   // First, add a new state for editing mode
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedDocument, setEditedDocument] = useState<any>(null)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedDocument, setEditedDocument] = useState<any>(null);
 
   const statusColors: Record<string, string> = {
     saved: "bg-gray-100 text-gray-800",
@@ -36,7 +60,7 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
     "offer-received": "bg-emerald-100 text-emerald-800",
     accepted: "bg-green-100 text-green-800",
     rejected: "bg-red-100 text-red-800",
-  }
+  };
 
   const statusLabels: Record<string, string> = {
     saved: "Saved",
@@ -46,29 +70,34 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
     "offer-received": "Offer Received",
     accepted: "Accepted",
     rejected: "Rejected",
-  }
+  };
 
   const handleGenerateDocuments = (job: any) => {
-    setSelectedJob(job)
-    setIsGeneratorOpen(true)
-  }
+    setSelectedJob(job);
+    setIsGeneratorOpen(true);
+  };
 
   // Update the handleViewDocuments function to initialize the document for editing
-  const handleViewDocuments = (job: any, documentType: "resume" | "coverLetter") => {
-    setSelectedJob(job)
-    setActiveDocument(documentType)
-    setIsDocumentViewOpen(true)
-    setIsEditing(false)
-    setEditedDocument(null)
-  }
+  const handleViewDocuments = (
+    job: any,
+    documentType: "resume" | "coverLetter"
+  ) => {
+    setSelectedJob(job);
+    setActiveDocument(documentType);
+    setIsDocumentViewOpen(true);
+    setIsEditing(false);
+    setEditedDocument(null);
+  };
 
   // Add a function to handle starting the edit mode
   const handleEditDocument = () => {
     if (selectedJob && activeDocument) {
-      setIsEditing(true)
-      setEditedDocument(JSON.parse(JSON.stringify(selectedJob.documents[activeDocument])))
+      setIsEditing(true);
+      setEditedDocument(
+        JSON.parse(JSON.stringify(selectedJob.documents[activeDocument]))
+      );
     }
-  }
+  };
 
   // Add a function to save the edited document
   const handleSaveEditedDocument = () => {
@@ -76,19 +105,23 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
       const updatedDocuments = {
         ...selectedJob.documents,
         [activeDocument]: editedDocument,
-      }
-      updateJobDocuments(selectedJob.id, updatedDocuments)
-      setIsEditing(false)
-      alert("Document updated successfully!")
+      };
+      updateJobDocuments(selectedJob.id, updatedDocuments);
+      setIsEditing(false);
+      alert("Document updated successfully!");
     }
-  }
+  };
 
   return (
     <div>
       {jobListings.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No job listings yet</h3>
-          <p className="mt-1 text-sm text-gray-500">Add your first job listing to get started</p>
+          <h3 className="text-lg font-medium text-gray-900">
+            No job listings yet
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Add your first job listing to get started
+          </p>
         </div>
       ) : (
         <div className="rounded-md border">
@@ -111,9 +144,15 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                   <TableCell>{job.company}</TableCell>
                   <TableCell>{job.location}</TableCell>
                   <TableCell>
-                    <Badge className={statusColors[job.status]}>{statusLabels[job.status]}</Badge>
+                    <Badge className={statusColors[job.status]}>
+                      {statusLabels[job.status]}
+                    </Badge>
                   </TableCell>
-                  <TableCell>{formatDistanceToNow(new Date(job.dateAdded), { addSuffix: true })}</TableCell>
+                  <TableCell>
+                    {formatDistanceToNow(new Date(job.dateAdded), {
+                      addSuffix: true,
+                    })}
+                  </TableCell>
                   <TableCell>
                     <div className="flex space-x-1">
                       {job.documents?.resume && (
@@ -124,7 +163,9 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => handleViewDocuments(job, "resume")}
+                                onClick={() =>
+                                  handleViewDocuments(job, "resume")
+                                }
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -160,7 +201,9 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => handleViewDocuments(job, "coverLetter")}
+                                onClick={() =>
+                                  handleViewDocuments(job, "coverLetter")
+                                }
                               >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +237,12 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button onClick={() => handleGenerateDocuments(job)} variant="outline" size="sm" className="h-8">
+                      <Button
+                        onClick={() => handleGenerateDocuments(job)}
+                        variant="outline"
+                        size="sm"
+                        className="h-8"
+                      >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="14"
@@ -216,7 +264,11 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                         Generate
                       </Button>
                       {job.status === "saved" && (
-                        <Button onClick={() => updateJobStatus(job.id, "applied")} size="sm" className="h-8">
+                        <Button
+                          onClick={() => updateJobStatus(job.id, "applied")}
+                          size="sm"
+                          className="h-8"
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="14"
@@ -251,7 +303,7 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
         userData={userData}
         onSaveDocuments={(documents) => {
           if (selectedJob && updateJobDocuments) {
-            updateJobDocuments(selectedJob.id, documents)
+            updateJobDocuments(selectedJob.id, documents);
           }
         }}
       />
@@ -262,8 +314,8 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
           <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {activeDocument === "resume" ? "Resume" : "Cover Letter"} for {selectedJob.title} at{" "}
-                {selectedJob.company}
+                {activeDocument === "resume" ? "Resume" : "Cover Letter"} for{" "}
+                {selectedJob.title} at {selectedJob.company}
                 {isEditing && " (Editing)"}
               </DialogTitle>
             </DialogHeader>
@@ -275,42 +327,66 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                   <div className="space-y-4">
                     {/* Summary Editor */}
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Professional Summary</h3>
+                      <h3 className="text-sm font-medium mb-2">
+                        Professional Summary
+                      </h3>
                       <textarea
                         className="w-full p-3 border rounded-md min-h-[100px]"
                         value={editedDocument.summary}
-                        onChange={(e) => setEditedDocument({ ...editedDocument, summary: e.target.value })}
+                        onChange={(e) =>
+                          setEditedDocument({
+                            ...editedDocument,
+                            summary: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
                     {/* Experience Editor */}
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Experience Highlights</h3>
-                      {editedDocument.experience.map((exp: any, expIndex: number) => (
-                        <div key={expIndex} className="mb-4 p-3 border rounded-md">
-                          <p className="font-medium">
-                            {exp.company} - {exp.title}
-                          </p>
-                          {exp.highlights.map((highlight: string, hIndex: number) => (
-                            <div key={hIndex} className="mt-2">
-                              <textarea
-                                className="w-full p-2 border rounded-md"
-                                value={highlight}
-                                onChange={(e) => {
-                                  const newExp = [...editedDocument.experience]
-                                  newExp[expIndex].highlights[hIndex] = e.target.value
-                                  setEditedDocument({ ...editedDocument, experience: newExp })
-                                }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      ))}
+                      <h3 className="text-sm font-medium mb-2">
+                        Experience Highlights
+                      </h3>
+                      {editedDocument.experience.map(
+                        (exp: any, expIndex: number) => (
+                          <div
+                            key={expIndex}
+                            className="mb-4 p-3 border rounded-md"
+                          >
+                            <p className="font-medium">
+                              {exp.company} - {exp.title}
+                            </p>
+                            {exp.highlights.map(
+                              (highlight: string, hIndex: number) => (
+                                <div key={hIndex} className="mt-2">
+                                  <textarea
+                                    className="w-full p-2 border rounded-md"
+                                    value={highlight}
+                                    onChange={(e) => {
+                                      const newExp = [
+                                        ...editedDocument.experience,
+                                      ];
+                                      newExp[expIndex].highlights[hIndex] =
+                                        e.target.value;
+                                      setEditedDocument({
+                                        ...editedDocument,
+                                        experience: newExp,
+                                      });
+                                    }}
+                                  />
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )
+                      )}
                     </div>
 
                     {/* Skills Editor */}
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Skills (comma separated)</h3>
+                      <h3 className="text-sm font-medium mb-2">
+                        Skills (comma separated)
+                      </h3>
                       <textarea
                         className="w-full p-3 border rounded-md"
                         value={editedDocument.skills.join(", ")}
@@ -318,8 +394,8 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                           const skills = e.target.value
                             .split(",")
                             .map((skill) => skill.trim())
-                            .filter((skill) => skill)
-                          setEditedDocument({ ...editedDocument, skills })
+                            .filter((skill) => skill);
+                          setEditedDocument({ ...editedDocument, skills });
                         }}
                       />
                     </div>
@@ -330,77 +406,122 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                       <div className="space-y-6">
                         {/* Header */}
                         <div className="text-center border-b pb-4">
-                          <h1 className="text-2xl font-bold">{selectedJob.documents.resume.name}</h1>
-                          <p className="text-gray-600">{selectedJob.documents.resume.title}</p>
+                          <h1 className="text-2xl font-bold">
+                            {selectedJob.documents.resume.name}
+                          </h1>
+                          <p className="text-gray-600">
+                            {selectedJob.documents.resume.title}
+                          </p>
                           <div className="flex justify-center gap-4 mt-2 text-sm text-gray-500">
-                            <span>{selectedJob.documents.resume.contact.email}</span>
-                            <span>{selectedJob.documents.resume.contact.phone}</span>
-                            <span>{selectedJob.documents.resume.contact.location}</span>
+                            <span>
+                              {selectedJob.documents.resume.contact.email}
+                            </span>
+                            <span>
+                              {selectedJob.documents.resume.contact.phone}
+                            </span>
+                            <span>
+                              {selectedJob.documents.resume.contact.location}
+                            </span>
                           </div>
                         </div>
 
                         {/* Summary */}
                         <div>
-                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">Professional Summary</h2>
-                          <p className="text-sm">{selectedJob.documents.resume.summary}</p>
+                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">
+                            Professional Summary
+                          </h2>
+                          <p className="text-sm">
+                            {selectedJob.documents.resume.summary}
+                          </p>
                         </div>
 
                         {/* Experience */}
                         <div>
-                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">Work Experience</h2>
+                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">
+                            Work Experience
+                          </h2>
                           <div className="space-y-4">
-                            {selectedJob.documents.resume.experience.map((exp: any, index: number) => (
-                              <div key={index}>
-                                <div className="flex justify-between items-baseline">
-                                  <h3 className="font-medium">{exp.company}</h3>
-                                  <span className="text-sm text-gray-500">{exp.years}</span>
+                            {selectedJob.documents.resume.experience.map(
+                              (exp: any, index: number) => (
+                                <div key={index}>
+                                  <div className="flex justify-between items-baseline">
+                                    <h3 className="font-medium">
+                                      {exp.company}
+                                    </h3>
+                                    <span className="text-sm text-gray-500">
+                                      {exp.years}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium">
+                                    {exp.title}
+                                  </p>
+                                  <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
+                                    {exp.highlights.map(
+                                      (highlight: string, i: number) => (
+                                        <li key={i}>{highlight}</li>
+                                      )
+                                    )}
+                                  </ul>
                                 </div>
-                                <p className="text-sm font-medium">{exp.title}</p>
-                                <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
-                                  {exp.highlights.map((highlight: string, i: number) => (
-                                    <li key={i}>{highlight}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ))}
+                              )
+                            )}
                           </div>
                         </div>
 
                         {/* Skills */}
                         <div>
-                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">Skills</h2>
+                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">
+                            Skills
+                          </h2>
                           <div className="flex flex-wrap gap-2">
-                            {selectedJob.documents.resume.skills.map((skill: string, index: number) => (
-                              <span key={index} className="px-2 py-1 bg-gray-100 text-sm rounded-md">
-                                {skill}
-                              </span>
-                            ))}
+                            {selectedJob.documents.resume.skills.map(
+                              (skill: string, index: number) => (
+                                <span
+                                  key={index}
+                                  className="px-2 py-1 bg-gray-100 text-sm rounded-md"
+                                >
+                                  {skill}
+                                </span>
+                              )
+                            )}
                           </div>
                         </div>
 
                         {/* Education */}
                         <div>
-                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">Education</h2>
+                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">
+                            Education
+                          </h2>
                           <div className="space-y-2">
-                            {selectedJob.documents.resume.education.map((edu: any, index: number) => (
-                              <div key={index}>
-                                <div className="flex justify-between items-baseline">
-                                  <h3 className="font-medium">{edu.institution}</h3>
-                                  <span className="text-sm text-gray-500">{edu.year}</span>
+                            {selectedJob.documents.resume.education.map(
+                              (edu: any, index: number) => (
+                                <div key={index}>
+                                  <div className="flex justify-between items-baseline">
+                                    <h3 className="font-medium">
+                                      {edu.institution}
+                                    </h3>
+                                    <span className="text-sm text-gray-500">
+                                      {edu.year}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm">{edu.degree}</p>
                                 </div>
-                                <p className="text-sm">{edu.degree}</p>
-                              </div>
-                            ))}
+                              )
+                            )}
                           </div>
                         </div>
 
                         {/* Certifications */}
                         <div>
-                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">Certifications</h2>
+                          <h2 className="text-lg font-semibold border-b pb-1 mb-2">
+                            Certifications
+                          </h2>
                           <ul className="list-disc pl-5 text-sm">
-                            {selectedJob.documents.resume.certifications.map((cert: string, index: number) => (
-                              <li key={index}>{cert}</li>
-                            ))}
+                            {selectedJob.documents.resume.certifications.map(
+                              (cert: string, index: number) => (
+                                <li key={index}>{cert}</li>
+                              )
+                            )}
                           </ul>
                         </div>
                       </div>
@@ -412,11 +533,18 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                 selectedJob.documents?.coverLetter &&
                 (isEditing ? (
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium mb-2">Cover Letter Content</h3>
+                    <h3 className="text-sm font-medium mb-2">
+                      Cover Letter Content
+                    </h3>
                     <textarea
                       className="w-full p-3 border rounded-md min-h-[400px]"
                       value={editedDocument.content}
-                      onChange={(e) => setEditedDocument({ ...editedDocument, content: e.target.value })}
+                      onChange={(e) =>
+                        setEditedDocument({
+                          ...editedDocument,
+                          content: e.target.value,
+                        })
+                      }
                     />
                   </div>
                 ) : (
@@ -425,24 +553,49 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                       <div className="space-y-6">
                         {/* Letterhead */}
                         <div className="text-center border-b pb-4">
-                          <h1 className="text-2xl font-bold">{selectedJob.documents.coverLetter.letterhead.name}</h1>
-                          <p className="text-gray-600">{selectedJob.documents.coverLetter.letterhead.title}</p>
+                          <h1 className="text-2xl font-bold">
+                            {selectedJob.documents.coverLetter.letterhead.name}
+                          </h1>
+                          <p className="text-gray-600">
+                            {selectedJob.documents.coverLetter.letterhead.title}
+                          </p>
                           <div className="flex justify-center gap-4 mt-2 text-sm text-gray-500">
-                            <span>{selectedJob.documents.coverLetter.letterhead.contact.email}</span>
-                            <span>{selectedJob.documents.coverLetter.letterhead.contact.phone}</span>
-                            <span>{selectedJob.documents.coverLetter.letterhead.contact.location}</span>
+                            <span>
+                              {
+                                selectedJob.documents.coverLetter.letterhead
+                                  .contact.email
+                              }
+                            </span>
+                            <span>
+                              {
+                                selectedJob.documents.coverLetter.letterhead
+                                  .contact.phone
+                              }
+                            </span>
+                            <span>
+                              {
+                                selectedJob.documents.coverLetter.letterhead
+                                  .contact.location
+                              }
+                            </span>
                           </div>
                         </div>
 
                         {/* Date */}
                         <div>
                           <p>
-                            {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                            {new Date().toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </p>
                         </div>
 
                         {/* Content */}
-                        <div className="whitespace-pre-line text-sm">{selectedJob.documents.coverLetter.content}</div>
+                        <div className="whitespace-pre-line text-sm">
+                          {selectedJob.documents.coverLetter.content}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -454,11 +607,11 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                   onClick={() => {
                     if (isEditing) {
                       if (confirm("Discard changes?")) {
-                        setIsEditing(false)
-                        setEditedDocument(null)
+                        setIsEditing(false);
+                        setEditedDocument(null);
                       }
                     } else {
-                      setIsDocumentViewOpen(false)
+                      setIsDocumentViewOpen(false);
                     }
                   }}
                 >
@@ -466,7 +619,9 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
                 </Button>
 
                 {isEditing ? (
-                  <Button onClick={handleSaveEditedDocument}>Save Changes</Button>
+                  <Button onClick={handleSaveEditedDocument}>
+                    Save Changes
+                  </Button>
                 ) : (
                   <Button onClick={handleEditDocument}>
                     <svg
@@ -492,6 +647,5 @@ export function JobListings({ jobListings, updateJobStatus, userData, updateJobD
         </Dialog>
       )}
     </div>
-  )
+  );
 }
-

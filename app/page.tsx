@@ -1,17 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Lightbulb, CheckCircle, X } from "lucide-react";
-import Educations from "@/components/Educations";
-import Experiences from "@/components/Experiences";
-import Skills from "@/components/Skills";
-import Certifications from "@/components/Certifications";
-import User from "@/components/User";
-import SocialLinks from "@/components/SocialLinks";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import ResumeUpload from "@/components/ResumeUpload";
+import ResumeUpload from "@/components/common/ResumeUpload";
 import { redirect } from "next/navigation";
 import { getUserProfile } from "@/lib/user-service";
 

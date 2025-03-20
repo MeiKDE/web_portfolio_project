@@ -11,14 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Edit, Lightbulb, CheckCircle, X, Upload } from "lucide-react";
 
-// Import profile components
-import UserProfile from "@/components/User";
-import Experiences from "@/components/Experiences";
-import Educations from "@/components/Educations";
-import Skills from "@/components/Skills";
-import Certifications from "@/components/Certifications";
-import SocialLinks from "@/components/SocialLinks";
-import ResumeUpload from "@/components/ResumeUpload";
+// Import profile components - UPDATED PATHS
+import ProfileHeader from "@/app/profile/components/ProfileHeader";
+import ExperienceSection from "@/app/profile/components/ExperienceSection";
+import EducationSection from "@/app/profile/components/EducationSection";
+import SkillsSection from "@/app/profile/components/SkillsSection";
+import CertificationsSection from "@/app/profile/components/CertificationsSection";
+import SocialLinksSection from "@/app/profile/components/SocialLinksSection";
+import ResumeUpload from "@/components/common/ResumeUpload"; // Keep shared version
 
 // Add this near the top of the file
 // we need below interface to be able to use the user profile data in the profile page
@@ -197,23 +197,25 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Header */}
-      {session?.user?.id && <UserProfile userId={session.user.id} />}
+      {session?.user?.id && <ProfileHeader userId={session.user.id} />}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          {session?.user?.id && <Experiences userId={session.user.id} />}
+          {session?.user?.id && <ExperienceSection userId={session.user.id} />}
 
           {/* Education Section */}
-          {session?.user?.id && <Educations userId={session.user.id} />}
+          {session?.user?.id && <EducationSection userId={session.user.id} />}
 
           {/* Skills Section */}
-          {session?.user?.id && <Skills userId={session.user.id} />}
+          {session?.user?.id && <SkillsSection userId={session.user.id} />}
 
           {/* Certifications Section */}
-          {session?.user?.id && <Certifications userId={session.user.id} />}
+          {session?.user?.id && (
+            <CertificationsSection userId={session.user.id} />
+          )}
         </div>
 
         {/* Right Column - Portfolio, Cover Letter, Contact */}
@@ -359,7 +361,7 @@ export default function ProfilePage() {
           {/* Contact & Social Links */}
           <Card>
             <CardContent className="p-6">
-              <SocialLinks />
+              <SocialLinksSection />
             </CardContent>
           </Card>
         </div>

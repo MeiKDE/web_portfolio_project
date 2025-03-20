@@ -58,11 +58,7 @@ export const PUT = withAuth(
 
       return successResponse(aiSuggestion);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update AI suggestion",
-        "PUT /ai-suggestions/[id]"
-      );
+      return handleApiError(error);
     }
   }
 );
@@ -127,11 +123,7 @@ export const DELETE = withAuth(
 
       return successResponse({ message: "AI suggestion deleted successfully" });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete AI suggestion",
-        "DELETE /ai-suggestions/[id]"
-      );
+      return handleApiError(error);
     }
   }
 );

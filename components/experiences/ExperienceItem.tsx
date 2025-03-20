@@ -9,9 +9,19 @@ import {
   formatDateForDisplay,
   formatDateForInput,
   calculateDuration,
+  getCurrentDate,
 } from "@/lib/date-utils";
-import { Experience } from "@/types/experience";
-import { getCurrentDate } from "@/lib/date-utils";
+
+interface Experience {
+  id: string;
+  position: string;
+  company: string;
+  location?: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrentPosition?: boolean;
+  description?: string;
+}
 
 interface ExperienceItemProps {
   experience: Experience;

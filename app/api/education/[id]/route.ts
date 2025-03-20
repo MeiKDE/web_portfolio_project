@@ -19,20 +19,12 @@ export const GET = withOwnership(
       });
 
       if (!education) {
-        return handleApiError(
-          new Error("Education entry not found"),
-          "Education entry not found",
-          "GET /education/[id]"
-        );
+        return handleApiError(new Error("Education entry not found"));
       }
 
       return successResponse(education);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to retrieve education",
-        "GET /education/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "education"
@@ -55,11 +47,7 @@ export const PUT = withOwnership(
 
       return successResponse(education);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update education",
-        "PUT /education/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "education"
@@ -81,11 +69,7 @@ export const DELETE = withOwnership(
         message: "Education entry deleted successfully",
       });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete education",
-        "DELETE /education/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "education"

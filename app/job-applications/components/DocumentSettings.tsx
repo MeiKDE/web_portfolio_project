@@ -1,28 +1,34 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
+"use client";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface DocumentSettingsProps {
   settings: {
-    tone: string
-    focusAreas: string[]
-    includePersonalProjects: boolean
-    highlightKeywords: boolean
-  }
-  setSettings: (settings: any) => void
-  onGenerate: () => void
-  isGenerating: boolean
-  job: any
+    tone: string;
+    focusAreas: string[];
+    includePersonalProjects: boolean;
+    highlightKeywords: boolean;
+  };
+  setSettings: (settings: any) => void;
+  onGenerate: () => void;
+  isGenerating: boolean;
+  job: any;
 }
 
-export function DocumentSettings({ settings, setSettings, onGenerate, isGenerating, job }: DocumentSettingsProps) {
+export function DocumentSettings({
+  settings,
+  setSettings,
+  onGenerate,
+  isGenerating,
+  job,
+}: DocumentSettingsProps) {
   const handleToneChange = (value: string) => {
-    setSettings({ ...settings, tone: value })
-  }
+    setSettings({ ...settings, tone: value });
+  };
 
   const handleFocusAreaToggle = (value: string) => {
     setSettings({
@@ -30,12 +36,12 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
       focusAreas: settings.focusAreas.includes(value)
         ? settings.focusAreas.filter((area) => area !== value)
         : [...settings.focusAreas, value],
-    })
-  }
+    });
+  };
 
   const handleToggleChange = (field: string, value: boolean) => {
-    setSettings({ ...settings, [field]: value })
-  }
+    setSettings({ ...settings, [field]: value });
+  };
 
   return (
     <Card>
@@ -45,7 +51,11 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
       <CardContent className="space-y-6">
         <div className="space-y-3">
           <Label>Tone</Label>
-          <RadioGroup value={settings.tone} onValueChange={handleToneChange} className="flex flex-col space-y-1">
+          <RadioGroup
+            value={settings.tone}
+            onValueChange={handleToneChange}
+            className="flex flex-col space-y-1"
+          >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="professional" id="professional" />
               <Label htmlFor="professional" className="cursor-pointer">
@@ -74,7 +84,9 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
               <Checkbox
                 id="technical-skills"
                 checked={settings.focusAreas.includes("technical-skills")}
-                onCheckedChange={() => handleFocusAreaToggle("technical-skills")}
+                onCheckedChange={() =>
+                  handleFocusAreaToggle("technical-skills")
+                }
               />
               <Label htmlFor="technical-skills" className="cursor-pointer">
                 Technical Skills
@@ -120,7 +132,12 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
               <Checkbox
                 id="include-projects"
                 checked={settings.includePersonalProjects}
-                onCheckedChange={(checked) => handleToggleChange("includePersonalProjects", checked as boolean)}
+                onCheckedChange={(checked) =>
+                  handleToggleChange(
+                    "includePersonalProjects",
+                    checked as boolean
+                  )
+                }
               />
               <Label htmlFor="include-projects" className="cursor-pointer">
                 Include Personal Projects
@@ -130,7 +147,9 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
               <Checkbox
                 id="highlight-keywords"
                 checked={settings.highlightKeywords}
-                onCheckedChange={(checked) => handleToggleChange("highlightKeywords", checked as boolean)}
+                onCheckedChange={(checked) =>
+                  handleToggleChange("highlightKeywords", checked as boolean)
+                }
               />
               <Label htmlFor="highlight-keywords" className="cursor-pointer">
                 Highlight Job Keywords
@@ -140,7 +159,11 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
         </div>
 
         <div className="pt-2">
-          <Button onClick={onGenerate} disabled={isGenerating} className="w-full">
+          <Button
+            onClick={onGenerate}
+            disabled={isGenerating}
+            className="w-full"
+          >
             {isGenerating ? (
               <>
                 <svg
@@ -149,7 +172,14 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
                   <path
                     className="opacity-75"
                     fill="currentColor"
@@ -185,6 +215,5 @@ export function DocumentSettings({ settings, setSettings, onGenerate, isGenerati
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
-

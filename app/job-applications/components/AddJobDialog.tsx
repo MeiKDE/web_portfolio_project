@@ -1,18 +1,23 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import type React from "react";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AddJobDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onAddJob: (job: any) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onAddJob: (job: any) => void;
 }
 
 export function AddJobDialog({ isOpen, onClose, onAddJob }: AddJobDialogProps) {
@@ -24,26 +29,28 @@ export function AddJobDialog({ isOpen, onClose, onAddJob }: AddJobDialogProps) {
     description: "",
     keySkills: "",
     deadline: "",
-  })
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setJobData((prev) => ({ ...prev, [name]: value }))
-  }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setJobData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Process key skills into an array
     const keySkills = jobData.keySkills
       .split(",")
       .map((skill) => skill.trim())
-      .filter((skill) => skill.length > 0)
+      .filter((skill) => skill.length > 0);
 
     onAddJob({
       ...jobData,
       keySkills,
-    })
+    });
 
     // Reset form and close dialog
     setJobData({
@@ -54,9 +61,9 @@ export function AddJobDialog({ isOpen, onClose, onAddJob }: AddJobDialogProps) {
       description: "",
       keySkills: "",
       deadline: "",
-    })
-    onClose()
-  }
+    });
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -140,7 +147,13 @@ export function AddJobDialog({ isOpen, onClose, onAddJob }: AddJobDialogProps) {
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Application Deadline (optional)</Label>
-              <Input id="deadline" name="deadline" type="date" value={jobData.deadline} onChange={handleChange} />
+              <Input
+                id="deadline"
+                name="deadline"
+                type="date"
+                value={jobData.deadline}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
@@ -153,6 +166,5 @@ export function AddJobDialog({ isOpen, onClose, onAddJob }: AddJobDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

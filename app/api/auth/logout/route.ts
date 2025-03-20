@@ -11,6 +11,6 @@ export async function POST(request: NextRequest) {
       message: "Logout successful",
     });
   } catch (error) {
-    return handleApiError(error, "Logout failed", "POST /auth/logout");
+    return handleApiError("Logout failed");
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AIAssistantDialog } from "@/components/ai/ai-assistant-dialog";
+import { AIAssistantDialog } from "@/app/ai/components/AIAssistantDialog";
 
 export function AIAssistantButton() {
   const [isOpen, setIsOpen] = useState(false);

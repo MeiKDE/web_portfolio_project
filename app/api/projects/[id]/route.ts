@@ -23,11 +23,7 @@ export const PUT = withOwnership(
 
       return successResponse(updatedProject);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update project",
-        "PUT /projects/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "project"
@@ -47,11 +43,7 @@ export const DELETE = withOwnership(
 
       return successResponse({ message: "Project deleted successfully" });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete project",
-        "DELETE /projects/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "project"

@@ -1,9 +1,4 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
 import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
 import { NextRequest } from "next/server";
 
 export const GET = withAuth(async (request: NextRequest, context, user) => {

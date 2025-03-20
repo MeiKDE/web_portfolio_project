@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,20 +8,20 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { ResumePreview } from "./resume-preview"
-import { CoverLetterPreview } from "./cover-letter-preview"
-import { DocumentSettings } from "./document-settings"
-import React from "react"
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ResumePreview } from "@/app/job-applications/components/ResumePreview";
+import { CoverLetterPreview } from "@/app/job-applications/components/CoverLetterPreview";
+import { DocumentSettings } from "@/app/job-applications/components/DocumentSettings";
+import React from "react";
 
 interface DocumentGeneratorDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  job: any
-  userData: any
-  onSaveDocuments?: (documents: any) => void
+  isOpen: boolean;
+  onClose: () => void;
+  job: any;
+  userData: any;
+  onSaveDocuments?: (documents: any) => void;
 }
 
 export function DocumentGeneratorDialog({
@@ -31,52 +31,53 @@ export function DocumentGeneratorDialog({
   userData,
   onSaveDocuments,
 }: DocumentGeneratorDialogProps) {
-  const [activeTab, setActiveTab] = useState("resume")
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [resumeData, setResumeData] = useState<any>(null)
-  const [coverLetterData, setCoverLetterData] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState("resume");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [resumeData, setResumeData] = useState<any>(null);
+  const [coverLetterData, setCoverLetterData] = useState<any>(null);
   const [settings, setSettings] = useState({
     tone: "professional",
     focusAreas: ["technical-skills", "experience", "education"],
     includePersonalProjects: true,
     highlightKeywords: true,
-  })
+  });
 
   // Add a state to track if we're loading existing documents
-  const [isLoadingExistingDocuments, setIsLoadingExistingDocuments] = useState(false)
+  const [isLoadingExistingDocuments, setIsLoadingExistingDocuments] =
+    useState(false);
 
   // Add this useEffect after the existing state declarations
   React.useEffect(() => {
     if (isOpen && job && job.documents) {
-      setIsLoadingExistingDocuments(true)
+      setIsLoadingExistingDocuments(true);
 
       // Load existing resume if available
       if (job.documents.resume) {
-        setResumeData(job.documents.resume)
+        setResumeData(job.documents.resume);
       }
 
       // Load existing cover letter if available
       if (job.documents.coverLetter) {
-        setCoverLetterData(job.documents.coverLetter)
+        setCoverLetterData(job.documents.coverLetter);
       }
 
-      setIsLoadingExistingDocuments(false)
+      setIsLoadingExistingDocuments(false);
     } else if (isOpen) {
       // Reset data when opening for a job without documents
-      setResumeData(null)
-      setCoverLetterData(null)
+      setResumeData(null);
+      setCoverLetterData(null);
     }
-  }, [isOpen, job])
+  }, [isOpen, job]);
 
   const generateDocuments = async () => {
-    if (isLoadingExistingDocuments) return
-    if (!job) return
+    if (isLoadingExistingDocuments) return;
+    if (!job) return;
 
-    setIsGenerating(true)
+    setIsGenerating(true);
 
     try {
       // Simulate API call for resume generation
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Generate resume data based on job and user profile
       const generatedResumeData = {
@@ -87,13 +88,29 @@ export function DocumentGeneratorDialog({
           phone: userData.phone,
           location: userData.location,
         },
-        summary: `Experienced ${userData.position} with ${calculateYearsOfExperience(userData.experience)} years of expertise in ${userData.skills.slice(0, 3).join(", ")}. Proven track record of delivering results in ${job.industry || "the industry"}. Seeking to leverage my skills in ${job.title} role at ${job.company}.`,
+        summary: `Experienced ${
+          userData.position
+        } with ${calculateYearsOfExperience(
+          userData.experience
+        )} years of expertise in ${userData.skills
+          .slice(0, 3)
+          .join(", ")}. Proven track record of delivering results in ${
+          job.industry || "the industry"
+        }. Seeking to leverage my skills in ${job.title} role at ${
+          job.company
+        }.`,
         experience: userData.experience.map((exp: any) => ({
           ...exp,
           highlights: [
-            `Led projects resulting in ${Math.floor(Math.random() * 30) + 10}% improvement in efficiency`,
-            `Collaborated with cross-functional teams to deliver solutions for ${job.industry || "business"} challenges`,
-            `Utilized ${userData.skills.slice(0, 3).join(", ")} to optimize processes and workflows`,
+            `Led projects resulting in ${
+              Math.floor(Math.random() * 30) + 10
+            }% improvement in efficiency`,
+            `Collaborated with cross-functional teams to deliver solutions for ${
+              job.industry || "business"
+            } challenges`,
+            `Utilized ${userData.skills
+              .slice(0, 3)
+              .join(", ")} to optimize processes and workflows`,
           ],
         })),
         skills: userData.skills,
@@ -104,17 +121,36 @@ export function DocumentGeneratorDialog({
             year: "2016",
           },
         ],
-        certifications: ["Certified Data Analyst (CDA)", "Advanced SQL Certification"],
-      }
+        certifications: [
+          "Certified Data Analyst (CDA)",
+          "Advanced SQL Certification",
+        ],
+      };
 
-      setResumeData(generatedResumeData)
+      setResumeData(generatedResumeData);
 
       // Generate cover letter data
       const coverLetter = `Dear Hiring Manager,
 
-I am writing to express my interest in the ${job.title} position at ${job.company}. With ${calculateYearsOfExperience(userData.experience)} years of experience as a ${userData.position}, I have developed a strong foundation in ${userData.skills.slice(0, 3).join(", ")}.
+I am writing to express my interest in the ${job.title} position at ${
+        job.company
+      }. With ${calculateYearsOfExperience(
+        userData.experience
+      )} years of experience as a ${
+        userData.position
+      }, I have developed a strong foundation in ${userData.skills
+        .slice(0, 3)
+        .join(", ")}.
 
-Throughout my career at ${userData.experience[0]?.company}, I have consistently demonstrated my ability to ${settings.tone === "professional" ? "deliver high-quality results" : "think outside the box and drive innovation"}. My experience aligns perfectly with the requirements outlined in your job description, particularly in the areas of ${job.keySkills || "data analysis and visualization"}.
+Throughout my career at ${
+        userData.experience[0]?.company
+      }, I have consistently demonstrated my ability to ${
+        settings.tone === "professional"
+          ? "deliver high-quality results"
+          : "think outside the box and drive innovation"
+      }. My experience aligns perfectly with the requirements outlined in your job description, particularly in the areas of ${
+        job.keySkills || "data analysis and visualization"
+      }.
 
 ${
   settings.tone === "professional"
@@ -131,7 +167,7 @@ ${
 I look forward to the opportunity to discuss how my background, skills, and enthusiasm make me a strong candidate for this role. Thank you for considering my application.
 
 Sincerely,
-${userData.name}`
+${userData.name}`;
 
       setCoverLetterData({
         content: coverLetter,
@@ -144,53 +180,58 @@ ${userData.name}`
             location: userData.location,
           },
         },
-      })
+      });
     } catch (error) {
-      console.error("Error generating documents:", error)
+      console.error("Error generating documents:", error);
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const calculateYearsOfExperience = (experience: any[]) => {
-    if (!experience || experience.length === 0) return 0
+    if (!experience || experience.length === 0) return 0;
 
-    let totalYears = 0
+    let totalYears = 0;
     experience.forEach((exp: any) => {
-      const years = exp.years.split("-")
-      const startYear = Number.parseInt(years[0])
-      const endYear = years[1] === "Present" ? new Date().getFullYear() : Number.parseInt(years[1])
-      totalYears += endYear - startYear
-    })
+      const years = exp.years.split("-");
+      const startYear = Number.parseInt(years[0]);
+      const endYear =
+        years[1] === "Present"
+          ? new Date().getFullYear()
+          : Number.parseInt(years[1]);
+      totalYears += endYear - startYear;
+    });
 
-    return totalYears
-  }
+    return totalYears;
+  };
 
   const handleDownload = () => {
     // In a real implementation, this would generate and download a PDF
-    alert("Document download functionality would be implemented here")
-    onClose()
-  }
+    alert("Document download functionality would be implemented here");
+    onClose();
+  };
 
   const handleSaveDocuments = () => {
     if (onSaveDocuments && (resumeData || coverLetterData)) {
       const documents = {
         resume: resumeData,
         coverLetter: coverLetterData,
-      }
-      onSaveDocuments(documents)
-      alert("Documents saved successfully!")
-      onClose()
+      };
+      onSaveDocuments(documents);
+      alert("Documents saved successfully!");
+      onClose();
     }
-  }
+  };
 
-  if (!job) return null
+  if (!job) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{job.documents ? "Edit" : "Generate"} Application Documents</DialogTitle>
+          <DialogTitle>
+            {job.documents ? "Edit" : "Generate"} Application Documents
+          </DialogTitle>
           <DialogDescription>
             {job.documents
               ? `Edit your tailored resume and cover letter for ${job.title} at ${job.company}`
@@ -217,11 +258,17 @@ ${userData.name}`
               </TabsList>
 
               <TabsContent value="resume">
-                <ResumePreview resumeData={resumeData} isGenerating={isGenerating} />
+                <ResumePreview
+                  resumeData={resumeData}
+                  isGenerating={isGenerating}
+                />
               </TabsContent>
 
               <TabsContent value="coverLetter">
-                <CoverLetterPreview coverLetterData={coverLetterData} isGenerating={isGenerating} />
+                <CoverLetterPreview
+                  coverLetterData={coverLetterData}
+                  isGenerating={isGenerating}
+                />
               </TabsContent>
             </Tabs>
           </div>
@@ -276,6 +323,5 @@ ${userData.name}`
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

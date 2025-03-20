@@ -1,6 +1,7 @@
-import { sendVerification } from "@/lib/auth";
+import { sendVerificationEmail } from "@/lib/email";
 import { successResponse, errorResponse } from "@/lib/api-helpers";
 import prisma from "@/lib/prisma";
+import * as crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +23,20 @@ export async function POST(req: Request) {
       return errorResponse("Email already verified", 400);
     }
 
-    await sendVerification(email);
+    // Generate a new verification token
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Save the verification token
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token,
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      },
+    });
+
+    // Send the verification email
+    await sendVerificationEmail(email, token);
 
     return successResponse({
       message: "Verification email sent successfully",

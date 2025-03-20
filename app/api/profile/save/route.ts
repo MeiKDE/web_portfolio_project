@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import { updateUserProfile } from "@/lib/user-service";
-import { NextResponse } from "next/server";
 
 export const POST = withAuth(async (request: NextRequest, context, user) => {
   try {

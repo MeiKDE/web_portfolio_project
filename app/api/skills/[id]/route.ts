@@ -52,11 +52,7 @@ export const PUT = withOwnership(
         category: skill.category,
       });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update skill",
-        "PUT /skills/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "skill"
@@ -76,11 +72,7 @@ export const DELETE = withOwnership(
 
       return successResponse({ message: "Skill deleted successfully" });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete skill",
-        "DELETE /skills/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "skill"

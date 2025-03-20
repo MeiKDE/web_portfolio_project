@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AIBioGenerator } from "./ai-bio-generator";
-import { AIPreferences } from "./ai-preferences";
+import { AIBioGenerator } from "@/app/ai/components/AIBioGenerator";
+import { AIPreferences } from "@/app/ai/components/AIPreferences";
 import { getUserData } from "@/lib/user-data";
 
 interface AIAssistantDialogProps {

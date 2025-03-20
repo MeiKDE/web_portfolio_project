@@ -1,4 +1,4 @@
-import { JobDashboard } from "@/components/jobs/job-dashboard";
+import { JobDashboard } from "@/app/job-applications/components/JobDashboard";
 import { getJobListings } from "@/lib/job-data";
 import { getUserData } from "@/lib/user-data";
 

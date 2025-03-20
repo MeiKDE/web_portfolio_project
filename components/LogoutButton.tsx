@@ -1,8 +1,5 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-import { useState } from "react";
-
 interface LogoutButtonProps {
   className?: string;
   variant?: "default" | "link" | "icon";

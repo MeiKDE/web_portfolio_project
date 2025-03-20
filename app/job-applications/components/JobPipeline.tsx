@@ -1,56 +1,81 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { formatDistanceToNow } from "date-fns"
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { formatDistanceToNow } from "date-fns";
 
 interface JobPipelineProps {
-  jobListings: any[]
-  updateJobStatus: (jobId: string, status: string) => void
-  addPipelineNote: (jobId: string, stage: string, note: string) => void
+  jobListings: any[];
+  updateJobStatus: (jobId: string, status: string) => void;
+  addPipelineNote: (jobId: string, stage: string, note: string) => void;
 }
 
-export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: JobPipelineProps) {
-  const [selectedJob, setSelectedJob] = useState<string | null>(null)
-  const [noteText, setNoteText] = useState("")
-  const [selectedStage, setSelectedStage] = useState("")
+export function JobPipeline({
+  jobListings,
+  updateJobStatus,
+  addPipelineNote,
+}: JobPipelineProps) {
+  const [selectedJob, setSelectedJob] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [selectedStage, setSelectedStage] = useState("");
 
   const activeJobs = jobListings.filter(
-    (job) => job.status !== "saved" && job.status !== "rejected" && job.status !== "accepted",
-  )
+    (job) =>
+      job.status !== "saved" &&
+      job.status !== "rejected" &&
+      job.status !== "accepted"
+  );
 
   const stages = [
     { id: "applied", label: "Applied", color: "bg-blue-100 text-blue-800" },
-    { id: "phone-screening", label: "Phone Screening", color: "bg-purple-100 text-purple-800" },
-    { id: "interview", label: "Interview", color: "bg-amber-100 text-amber-800" },
-    { id: "offer-received", label: "Offer Received", color: "bg-emerald-100 text-emerald-800" },
-  ]
+    {
+      id: "phone-screening",
+      label: "Phone Screening",
+      color: "bg-purple-100 text-purple-800",
+    },
+    {
+      id: "interview",
+      label: "Interview",
+      color: "bg-amber-100 text-amber-800",
+    },
+    {
+      id: "offer-received",
+      label: "Offer Received",
+      color: "bg-emerald-100 text-emerald-800",
+    },
+  ];
 
   const handleAddNote = () => {
     if (selectedJob && selectedStage && noteText.trim()) {
-      addPipelineNote(selectedJob, selectedStage, noteText)
-      setNoteText("")
+      addPipelineNote(selectedJob, selectedStage, noteText);
+      setNoteText("");
     }
-  }
+  };
 
   const getJobStage = (job: any) => {
-    return stages.findIndex((stage) => stage.id === job.status)
-  }
+    return stages.findIndex((stage) => stage.id === job.status);
+  };
 
   const getNextStage = (currentStage: string) => {
-    const currentIndex = stages.findIndex((stage) => stage.id === currentStage)
-    return currentIndex < stages.length - 1 ? stages[currentIndex + 1].id : null
-  }
+    const currentIndex = stages.findIndex((stage) => stage.id === currentStage);
+    return currentIndex < stages.length - 1
+      ? stages[currentIndex + 1].id
+      : null;
+  };
 
   return (
     <div className="space-y-6">
       {activeJobs.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No active applications</h3>
-          <p className="mt-1 text-sm text-gray-500">Apply to jobs to start tracking your progress</p>
+          <h3 className="text-lg font-medium text-gray-900">
+            No active applications
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Apply to jobs to start tracking your progress
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
@@ -65,12 +90,12 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
                     {job.status === "applied"
                       ? "Applied"
                       : job.status === "phone-screening"
-                        ? "Phone Screening"
-                        : job.status === "interview"
-                          ? "Interview"
-                          : job.status === "offer-received"
-                            ? "Offer Received"
-                            : ""}
+                      ? "Phone Screening"
+                      : job.status === "interview"
+                      ? "Interview"
+                      : job.status === "offer-received"
+                      ? "Offer Received"
+                      : ""}
                   </Badge>
                 </div>
               </CardHeader>
@@ -94,35 +119,37 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
                               stage.stage === "applied"
                                 ? "bg-blue-100 text-blue-800"
                                 : stage.stage === "phone-screening"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : stage.stage === "interview"
-                                    ? "bg-amber-100 text-amber-800"
-                                    : stage.stage === "offer-received"
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : ""
+                                ? "bg-purple-100 text-purple-800"
+                                : stage.stage === "interview"
+                                ? "bg-amber-100 text-amber-800"
+                                : stage.stage === "offer-received"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : ""
                             }
                           >
                             {stage.stage === "applied"
                               ? "Applied"
                               : stage.stage === "phone-screening"
-                                ? "Phone Screening"
-                                : stage.stage === "interview"
-                                  ? "Interview"
-                                  : stage.stage === "offer-received"
-                                    ? "Offer Received"
-                                    : ""}
+                              ? "Phone Screening"
+                              : stage.stage === "interview"
+                              ? "Interview"
+                              : stage.stage === "offer-received"
+                              ? "Offer Received"
+                              : ""}
                           </Badge>
                           <span className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(stage.date), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(stage.date), {
+                              addSuffix: true,
+                            })}
                           </span>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setSelectedJob(job.id)
-                            setSelectedStage(stage.stage)
-                            setNoteText(stage.notes || "")
+                            setSelectedJob(job.id);
+                            setSelectedStage(stage.stage);
+                            setNoteText(stage.notes || "");
                           }}
                         >
                           <svg
@@ -141,7 +168,11 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
                           </svg>
                         </Button>
                       </div>
-                      {stage.notes && <div className="bg-gray-50 p-2 rounded text-sm">{stage.notes}</div>}
+                      {stage.notes && (
+                        <div className="bg-gray-50 p-2 rounded text-sm">
+                          {stage.notes}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -150,26 +181,38 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
                 {getNextStage(job.status) && (
                   <Button
                     className="w-full mt-4"
-                    onClick={() => updateJobStatus(job.id, getNextStage(job.status) as string)}
+                    onClick={() =>
+                      updateJobStatus(
+                        job.id,
+                        getNextStage(job.status) as string
+                      )
+                    }
                   >
                     Move to{" "}
                     {getNextStage(job.status) === "phone-screening"
                       ? "Phone Screening"
                       : getNextStage(job.status) === "interview"
-                        ? "Interview"
-                        : getNextStage(job.status) === "offer-received"
-                          ? "Offer Received"
-                          : ""}
+                      ? "Interview"
+                      : getNextStage(job.status) === "offer-received"
+                      ? "Offer Received"
+                      : ""}
                   </Button>
                 )}
 
                 {/* Final Stage Buttons */}
                 {job.status === "offer-received" && (
                   <div className="grid grid-cols-2 gap-2 mt-4">
-                    <Button variant="outline" className="w-full" onClick={() => updateJobStatus(job.id, "rejected")}>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => updateJobStatus(job.id, "rejected")}
+                    >
                       Decline Offer
                     </Button>
-                    <Button className="w-full" onClick={() => updateJobStatus(job.id, "accepted")}>
+                    <Button
+                      className="w-full"
+                      onClick={() => updateJobStatus(job.id, "accepted")}
+                    >
                       Accept Offer
                     </Button>
                   </div>
@@ -197,9 +240,9 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
               <Button
                 variant="outline"
                 onClick={() => {
-                  setSelectedJob(null)
-                  setSelectedStage("")
-                  setNoteText("")
+                  setSelectedJob(null);
+                  setSelectedStage("");
+                  setNoteText("");
                 }}
               >
                 Cancel
@@ -210,6 +253,5 @@ export function JobPipeline({ jobListings, updateJobStatus, addPipelineNote }: J
         </Card>
       )}
     </div>
-  )
+  );
 }
-

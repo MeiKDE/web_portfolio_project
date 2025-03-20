@@ -23,11 +23,7 @@ export async function GET(
 
     return successResponse(certification);
   } catch (error) {
-    return handleApiError(
-      error,
-      "Failed to fetch certification",
-      "GET /certifications/[id]"
-    );
+    return handleApiError(error);
   }
 }
 
@@ -59,11 +55,7 @@ export const PUT = withOwnership(
 
       return successResponse(updatedCertification);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update certification",
-        "PUT /certifications/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "certification"
@@ -83,11 +75,7 @@ export const DELETE = withOwnership(
 
       return successResponse({ message: "Certification deleted successfully" });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete certification",
-        "DELETE /certifications/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "certification"

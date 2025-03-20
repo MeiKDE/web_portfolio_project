@@ -33,9 +33,9 @@ export async function GET() {
         /\b(password|token|secret|key)\b/gi,
         "***"
       );
-      return errorResponse(500, `Failed to fetch users: ${safeErrorMessage}`);
+      return errorResponse(`Failed to fetch users: ${safeErrorMessage}`);
     }
 
-    return errorResponse(500, "Failed to fetch users");
+    return errorResponse("Failed to fetch users");
   }
 }

@@ -57,6 +57,6 @@ export async function POST(request: NextRequest) {
       user: userWithoutSensitiveData,
     });
   } catch (error) {
-    return handleApiError(error, "Login failed", "POST /auth/login");
+    return handleApiError("Login failed");
   }
 }

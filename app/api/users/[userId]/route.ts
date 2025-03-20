@@ -10,7 +10,6 @@ import {
   withAuth,
   validateRequest,
 } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
 
 // Define validation schema for user updates
 const userUpdateSchema = z.object({

@@ -41,11 +41,7 @@ export const PUT = withOwnership(
 
       return successResponse(socialLink);
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to update social link",
-        "PUT /social-links/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "socialLink"
@@ -65,11 +61,7 @@ export const DELETE = withOwnership(
 
       return successResponse({ message: "Social link deleted successfully" });
     } catch (error) {
-      return handleApiError(
-        error,
-        "Failed to delete social link",
-        "DELETE /social-links/[id]"
-      );
+      return handleApiError(error);
     }
   },
   "socialLink"

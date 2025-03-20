@@ -1,5 +1,3 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
 import prisma from "@/lib/prisma";
 import { userProfileSchema } from "@/lib/validations";

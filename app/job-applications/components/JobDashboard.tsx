@@ -1,21 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { JobListings } from "./job-listings"
-import { JobPipeline } from "./job-pipeline"
-import { JobAnalytics } from "./job-analytics"
-import { AddJobDialog } from "./add-job-dialog"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { JobListings } from "./JobListings";
+import { JobPipeline } from "./JobPipeline";
+import { JobAnalytics } from "./JobAnalytics";
+import { AddJobDialog } from "./AddJobDialog";
+import { Button } from "@/components/ui/button";
 
 interface JobDashboardProps {
-  userData: any
-  initialJobListings: any[]
+  userData: any;
+  initialJobListings: any[];
 }
 
-export function JobDashboard({ userData, initialJobListings }: JobDashboardProps) {
-  const [jobListings, setJobListings] = useState(initialJobListings)
-  const [isAddJobDialogOpen, setIsAddJobDialogOpen] = useState(false)
+export function JobDashboard({
+  userData,
+  initialJobListings,
+}: JobDashboardProps) {
+  const [jobListings, setJobListings] = useState(initialJobListings);
+  const [isAddJobDialogOpen, setIsAddJobDialogOpen] = useState(false);
 
   const addJob = (newJob: any) => {
     setJobListings((prev) => [
@@ -27,8 +30,8 @@ export function JobDashboard({ userData, initialJobListings }: JobDashboardProps
         dateAdded: new Date().toISOString(),
         pipeline: [],
       },
-    ])
-  }
+    ]);
+  };
 
   const updateJobStatus = (jobId: string, status: string) => {
     setJobListings((prev) =>
@@ -46,10 +49,10 @@ export function JobDashboard({ userData, initialJobListings }: JobDashboardProps
                 },
               ],
             }
-          : job,
-      ),
-    )
-  }
+          : job
+      )
+    );
+  };
 
   const addPipelineNote = (jobId: string, stage: string, note: string) => {
     setJobListings((prev) =>
@@ -57,25 +60,36 @@ export function JobDashboard({ userData, initialJobListings }: JobDashboardProps
         job.id === jobId
           ? {
               ...job,
-              pipeline: job.pipeline.map((p: any) => (p.stage === stage ? { ...p, notes: note } : p)),
+              pipeline: job.pipeline.map((p: any) =>
+                p.stage === stage ? { ...p, notes: note } : p
+              ),
             }
-          : job,
-      ),
-    )
-  }
+          : job
+      )
+    );
+  };
 
   const updateJobDocuments = (jobId: string, documents: any) => {
-    setJobListings((prev) => prev.map((job) => (job.id === jobId ? { ...job, documents } : job)))
-  }
+    setJobListings((prev) =>
+      prev.map((job) => (job.id === jobId ? { ...job, documents } : job))
+    );
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold">Welcome back, {userData.name}</h2>
-          <p className="text-gray-500">Manage your job applications and generate tailored documents</p>
+          <h2 className="text-xl font-semibold">
+            Welcome back, {userData.name}
+          </h2>
+          <p className="text-gray-500">
+            Manage your job applications and generate tailored documents
+          </p>
         </div>
-        <Button onClick={() => setIsAddJobDialogOpen(true)} className="flex items-center gap-1.5">
+        <Button
+          onClick={() => setIsAddJobDialogOpen(true)}
+          className="flex items-center gap-1.5"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -112,7 +126,11 @@ export function JobDashboard({ userData, initialJobListings }: JobDashboardProps
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-6">
-          <JobPipeline jobListings={jobListings} updateJobStatus={updateJobStatus} addPipelineNote={addPipelineNote} />
+          <JobPipeline
+            jobListings={jobListings}
+            updateJobStatus={updateJobStatus}
+            addPipelineNote={addPipelineNote}
+          />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
@@ -120,8 +138,11 @@ export function JobDashboard({ userData, initialJobListings }: JobDashboardProps
         </TabsContent>
       </Tabs>
 
-      <AddJobDialog isOpen={isAddJobDialogOpen} onClose={() => setIsAddJobDialogOpen(false)} onAddJob={addJob} />
+      <AddJobDialog
+        isOpen={isAddJobDialogOpen}
+        onClose={() => setIsAddJobDialogOpen(false)}
+        onAddJob={addJob}
+      />
     </div>
-  )
+  );
 }
-

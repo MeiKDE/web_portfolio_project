@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { experienceSchema } from "@/lib/validations";
 
 // GET all experiences for the current user

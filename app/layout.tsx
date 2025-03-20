@@ -1,11 +1,10 @@
-import AuthProvider from "@/components/AuthProvider";
+import AuthProvider from "@/components/auth/AuthProvider";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import MenuBar from "@/components/MenuBar";
+import Navbar from "@/components/layout/Navbar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { headers } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,7 +46,7 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
         <AuthProvider>
-          <MenuBar />
+          <Navbar />
           <main>{children}</main>
         </AuthProvider>
       </body>

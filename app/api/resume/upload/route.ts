@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
-import { extractTextFromPDF } from "@/lib/pdf-extractor";
 import { parseResumePDF } from "@/lib/resume-parser";
-import { updateUserProfile } from "@/lib/user-service";
 import prisma from "@/lib/prisma";
 
 // Helper function to convert text to title case

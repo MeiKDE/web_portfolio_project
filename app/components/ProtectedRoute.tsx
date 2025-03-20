@@ -3,8 +3,13 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { ReactNode } from "react";
 
-export default function ProtectedRoute({ children }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
