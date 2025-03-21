@@ -2,9 +2,14 @@
 // This file ([id]/route.ts) is focused on managing existing education entries (updating and deleting).
 
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import { withOwnership, successResponse } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
+import prisma from "@/app/lib/db/prisma";
+import {
+  withOwnership,
+  successResponse,
+  errorResponse,
+  withAuth,
+} from "@/app/lib/api/api-helpers";
+import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
 
 // GET a specific education entry
 export const GET = withOwnership(
@@ -73,4 +78,26 @@ export const DELETE = withOwnership(
     }
   },
   "education"
+);
+
+// CREATE a new education entry for a specific user
+export const POST = withAuth(
+  async (request: NextRequest, { params }: { params: { userId: string } }) => {
+    try {
+      const data = await request.json();
+
+      // No need to transform data anymore
+      const education = await prisma.education.create({
+        data: {
+          ...data,
+          userId: params.userId,
+        },
+      });
+
+      return successResponse(education);
+    } catch (error) {
+      console.error("Error creating education:", error);
+      return errorResponse("Failed to create education entry", 500);
+    }
+  }
 );

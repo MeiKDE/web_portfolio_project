@@ -8,7 +8,7 @@ import { Lightbulb, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/lib/form-validation";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 
 interface Skill {
   id: string;
@@ -69,8 +69,42 @@ export default function Skills({ userId }: SkillsProps) {
   }>({});
 
   // Use the form validation hook
-  const { validateData, getFieldError, touchField, getInputClassName } =
-    useFormValidation();
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    setValues,
+  } = useFormValidation(
+    {
+      name: "",
+      proficiencyLevel: 3,
+      category: "Frontend",
+    },
+    {
+      name: (value) => (!value ? "Skill name is required" : null),
+      proficiencyLevel: (value) =>
+        value < 1 ? "Proficiency level is required" : null,
+      category: (value) => (!value ? "Category is required" : null),
+    }
+  );
+
+  // Define custom helper functions
+  const validateData = (data: any, id: string) => validateForm();
+  const getFieldError = (id: string, field: string) =>
+    errors[field as keyof typeof errors];
+  const touchField = (id: string, field: string) =>
+    handleBlur(field as keyof typeof values);
+  const getInputClassName = (id: string, field: string, baseClass = "") =>
+    `${baseClass} ${
+      errors[field as keyof typeof errors] &&
+      touched[field as keyof typeof touched]
+        ? "border-red-500"
+        : ""
+    }`;
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/skills`,

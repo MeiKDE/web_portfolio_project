@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,7 +19,7 @@ import {
 import useSWR from "swr";
 import { z } from "zod"; // Import zod for validation
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/lib/form-validation";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 
 // Define Zod schema for experience validation
 const experienceSchema = z
@@ -70,11 +70,13 @@ const fetcher = (url: string) =>
     credentials: "include",
   }).then((res) => res.json());
 
-// Update the date formatting utility to show only month and year
+// Create a new formatDateForDisplay function name to avoid conflict
 const formatDateForDisplay = (isoDate: string) => {
   const date = new Date(isoDate);
-  // Format as "Month Year" (e.g., "Feb 2023")
-  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
 };
 
 // Keep the existing formatDateForInput function for the date input fields
@@ -136,6 +138,7 @@ const checkSession = async (userId: string) => {
 
     // Check also if we can access the experiences endpoint
     try {
+      console.log("ln141: checking experiences endpoint");
       const experiencesResponse = await fetch(
         `/api/users/${userId}/experiences`,
         {
@@ -150,7 +153,7 @@ const checkSession = async (userId: string) => {
       if (experiencesResponse.ok) {
         const expData = await experiencesResponse.json();
         console.log(
-          "Experiences data shape:",
+          "ln156: Experiences data shape:",
           expData.data ? "Has data property" : "No data property"
         );
       }
@@ -206,15 +209,68 @@ const calculateDuration = (
 
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
-  // Use the form validation hook
+  // Use the form validation hook correctly with initial values and validation rules
   const {
-    validateData,
-    getFieldError,
-    touchField,
-    hasErrorType,
-    getErrorTypeMessage,
-    getInputClassName,
-  } = useFormValidation(experienceSchema);
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    setValues,
+  } = useFormValidation(
+    {
+      position: "",
+      company: "",
+      startDate: "",
+      endDate: null,
+      description: "",
+      location: "",
+      isCurrentPosition: false,
+    },
+    {
+      position: (value) => (!value ? "Position is required" : null),
+      company: (value) => (!value ? "Company is required" : null),
+      startDate: (value) => (!value ? "Start date is required" : null),
+      endDate: () => null, // Optional
+      description: () => null, // Optional
+      location: () => null, // Optional
+      isCurrentPosition: () => null, // No validation needed
+    }
+  );
+
+  // Define custom helper functions
+  const getFieldError = (id: string, field: string) =>
+    errors[field as keyof typeof errors];
+  const touchField = (field: string) =>
+    handleBlur(field as keyof typeof values);
+  const hasErrorType = (id: string, fields: string[]) =>
+    fields.some(
+      (field) =>
+        !!errors[field as keyof typeof errors] &&
+        touched[field as keyof typeof touched]
+    );
+  const getErrorTypeMessage = (id: string, fields: string[]) => {
+    for (const field of fields) {
+      if (
+        errors[field as keyof typeof errors] &&
+        touched[field as keyof typeof touched]
+      ) {
+        return errors[field as keyof typeof errors];
+      }
+    }
+    return null;
+  };
+  const getInputClassName = (id: string, field: string, baseClass = "") =>
+    `${baseClass} ${
+      errors[field as keyof typeof errors] &&
+      touched[field as keyof typeof touched]
+        ? "border-red-500"
+        : ""
+    }`;
+
+  const validateData = () => validateForm();
 
   // A state variable error is initialized to null.
   const [localError, setLocalError] = useState<string | null>(null);
@@ -223,20 +279,33 @@ export default function Experiences({ userId }: ExperienceProps) {
   const [editedExperiences, setEditedExperiences] = useState<Experience[]>([]);
   // Add state for adding new experience
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newExperience, setNewExperience] = useState<Omit<Experience, "id">>({
-    position: "", // Changed from title to position
+  const [newExperience, setNewExperience] = useState({
+    position: "",
     company: "",
-    startDate: getCurrentDate(),
-    endDate: null,
-    description: "",
     location: "",
+    startDate: getCurrentDate(),
+    endDate: "",
     isCurrentPosition: false,
+    description: "",
   });
 
   console.log("ln152: userId:", userId);
 
+  // Add a state variable for editing experience
+  const [editingExperience, setEditingExperience] = useState({
+    id: "",
+    position: "",
+    company: "",
+    location: "",
+    startDate: "",
+    endDate: "",
+    isCurrentPosition: false,
+    description: "",
+  });
+
   // Add a state for tracking submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string>("");
 
   // Update the useSWR hook and data handling
   const {
@@ -275,13 +344,41 @@ export default function Experiences({ userId }: ExperienceProps) {
     checkSession(userId);
   }, [userId]);
 
+  // Define the missing saveChanges function
+  const saveChanges = async () => {
+    try {
+      setIsSubmitting(true);
+      // Save each edited experience
+      for (const experience of editedExperiences) {
+        const response = await fetch(`/api/experiences/${experience.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(experience),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to update experience ${experience.id}`);
+        }
+      }
+
+      // Refresh data from the server
+      mutate();
+    } catch (error) {
+      console.error("Error saving experiences:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditToggle = () => {
     if (isEditing) {
       // Validate all experiences before saving
       let hasErrors = false;
 
       editedExperiences.forEach((exp) => {
-        if (!validateData(exp, exp.id)) {
+        if (!validateData()) {
           hasErrors = true;
         }
       });
@@ -305,7 +402,7 @@ export default function Experiences({ userId }: ExperienceProps) {
         }))
       );
       // Reset validation errors when entering edit mode
-      touchField("", "");
+      resetForm();
     }
     setIsEditing(!isEditing);
   };
@@ -321,7 +418,7 @@ export default function Experiences({ userId }: ExperienceProps) {
     );
 
     // Mark field as touched
-    touchField(id, field as string);
+    touchField(id);
 
     // Get the updated experience object
     const updatedExperience = editedExperiences.find((exp) => exp.id === id);
@@ -333,20 +430,20 @@ export default function Experiences({ userId }: ExperienceProps) {
       };
 
       // Validate the updated data
-      validateData(experienceToValidate, id);
+      validateData();
     }
   };
 
   const handleAddNew = () => {
     setIsAddingNew(true);
     setNewExperience({
-      position: "", // Changed from title to position
+      position: "",
       company: "",
-      startDate: getCurrentDate(),
-      endDate: null,
-      description: "",
       location: "",
+      startDate: getCurrentDate(),
+      endDate: "",
       isCurrentPosition: false,
+      description: "",
     });
   };
 
@@ -381,102 +478,55 @@ export default function Experiences({ userId }: ExperienceProps) {
 
         // If invalid, update validation errors
         if (!isValid) {
-          touchField("new", field);
-          validateData(
-            {
-              ...updatedExperience,
-              [field]: value,
-            },
-            "new"
-          );
+          touchField("new");
+          validateData();
         } else {
           // Clear date relationship errors if valid
-          touchField("new", field);
-          validateData(
-            {
-              ...updatedExperience,
-              [field]: value,
-            },
-            "new"
-          );
+          touchField("new");
+          validateData();
         }
       }
     }
   };
 
-  const handleSaveNewExperience = async (e: React.FormEvent) => {
+  // Create a new experience
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate the new experience with Zod
-    try {
-      validateData(newExperience, "new");
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        touchField("new", "position");
-        touchField("new", "company");
-        touchField("new", "startDate");
-        touchField("new", "endDate");
-        touchField("new", "description");
-        touchField("new", "location");
-        touchField("new", "isCurrentPosition");
-        return;
-      }
-    }
+    setIsSubmitting(true);
 
     try {
-      // Format dates properly
-      const formattedExperience = {
-        ...newExperience,
-        startDate: newExperience.startDate
-          ? new Date(newExperience.startDate).toISOString()
-          : new Date().toISOString(),
-        endDate:
-          newExperience.endDate && !newExperience.isCurrentPosition
-            ? new Date(newExperience.endDate).toISOString()
-            : null,
-        isCurrentPosition: newExperience.isCurrentPosition || false,
-        // Ensure description is a string or empty string, not undefined
-        description: newExperience.description || "",
-      };
-
-      // Log the formatted experience data
-      console.log("Sending experience data:", formattedExperience);
-
-      const response = await fetch(`/api/users/${userId}/experiences`, {
+      // Use the new flat API structure - no userId in the URL
+      const response = await fetch(`/api/experiences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify(formattedExperience),
+        body: JSON.stringify(newExperience),
       });
-
-      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
         console.log("Error details:", errorData);
-        throw new Error(
-          `Failed to add experience: ${errorData.error || response.statusText}`
-        );
+        throw new Error(errorData.message || "Failed to add experience");
       }
 
-      // Reset form and refresh data
-      setIsAddingNew(false);
+      const data = await response.json();
+      setExperienceData([...experienceData, data.data]);
       setNewExperience({
-        position: "",
         company: "",
+        position: "",
         location: "",
-        startDate: "",
+        startDate: getCurrentDate(),
         endDate: "",
-        description: "",
         isCurrentPosition: false,
+        description: "",
       });
-
-      // Refresh the data
-      mutate();
+      setIsAddingNew(false);
     } catch (error) {
       console.error("Error adding experience:", error);
+      // Handle error display to the user
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -520,132 +570,135 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   };
 
-  const saveChanges = async () => {
+  const handleEdit = (experience: Experience) => {
+    // Force hide the add form
+    setIsAddingNew(false);
+
+    setEditingExperience({
+      id: experience.id,
+      position: experience.position,
+      company: experience.company,
+      location: experience.location || "",
+      startDate: formatDateForInput(experience.startDate),
+      endDate: experience.endDate ? formatDateForInput(experience.endDate) : "",
+      isCurrentPosition: experience.isCurrentPosition || false,
+      description: experience.description || "",
+    });
+
+    setIsEditing(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingExperience) return;
+
+    // Validate required fields
+    if (
+      !editingExperience.company ||
+      !editingExperience.position ||
+      !editingExperience.startDate
+    ) {
+      setValidationError("Please fill out all required fields before saving.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setValidationError("");
+
     try {
-      setIsSubmitting(true);
+      const response = await fetch(`/api/experiences/${editingExperience.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editingExperience),
+      });
 
-      // Create a copy of experiences to track which ones were successfully updated
-      const successfullyUpdated = new Set();
-      const failedUpdates: string[] = [];
-
-      for (const experience of editedExperiences) {
-        // Skip any experiences that were deleted during this edit session
-        if (!experienceData.some((exp) => exp.id === experience.id)) {
-          continue;
-        }
-
-        console.log("Sending experience data:", {
-          position: experience.position,
-          company: experience.company,
-          startDate: formatDateForDatabase(experience.startDate),
-          endDate: experience.endDate
-            ? formatDateForDatabase(experience.endDate)
-            : null,
-          description: experience.description,
-          location: experience.location,
-          isCurrentPosition: experience.isCurrentPosition,
-        });
-
-        try {
-          const response = await fetch(`/api/experiences/${experience.id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              position: experience.position,
-              company: experience.company,
-              startDate: formatDateForDatabase(experience.startDate),
-              endDate: experience.endDate
-                ? formatDateForDatabase(experience.endDate)
-                : null,
-              description: experience.description,
-              location: experience.location,
-              isCurrentPosition: experience.isCurrentPosition,
-            }),
-          });
-
-          if (!response.ok) {
-            // Check if response has content before trying to parse JSON
-            const contentType = response.headers.get("content-type");
-            let errorData = { error: response.statusText };
-
-            if (contentType && contentType.includes("application/json")) {
-              try {
-                errorData = await response.json();
-              } catch (jsonError) {
-                console.error("Error parsing JSON response:", jsonError);
-              }
-            }
-
-            console.error("API Error Response:", {
-              status: response.status,
-              statusText: response.statusText,
-              errorData,
-            });
-
-            if (response.status === 401) {
-              // Handle unauthorized - redirect to login
-              window.location.href = "/login";
-              return;
-            }
-
-            if (response.status === 400) {
-              // Handle validation errors
-              setLocalError(
-                `Validation error: ${errorData.error || "Invalid data"}`
-              );
-              if (errorData.details) {
-                console.error("Validation details:", errorData.details);
-              }
-              failedUpdates.push(experience.id);
-              continue;
-            }
-
-            // For 404 Not Found, the experience was likely deleted
-            if (response.status === 404) {
-              console.log(
-                `Experience ${experience.id} not found, likely deleted`
-              );
-              continue;
-            }
-
-            failedUpdates.push(experience.id);
-            continue;
-          }
-
-          // Mark as successfully updated
-          successfullyUpdated.add(experience.id);
-        } catch (error) {
-          console.error(`Error updating experience ${experience.id}:`, error);
-          failedUpdates.push(experience.id);
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update experience");
       }
 
-      // Update the experience data with only the successfully updated experiences
-      const updatedExperienceData = editedExperiences.filter(
-        (exp) =>
-          successfullyUpdated.has(exp.id) || !failedUpdates.includes(exp.id)
+      const data = await response.json();
+      const updatedExperience = data.data;
+
+      setExperienceData(
+        experienceData.map((exp) =>
+          exp.id === updatedExperience.id ? updatedExperience : exp
+        )
       );
 
-      setExperienceData(updatedExperienceData);
-      mutate();
-
-      // Only show error if there were actual failures (not including deleted items)
-      if (failedUpdates.length > 0) {
-        console.error(`Failed to update ${failedUpdates.length} experiences`);
-      }
+      // Reset editing state
+      setIsEditing(false);
+      setEditingExperience({
+        id: "",
+        position: "",
+        company: "",
+        location: "",
+        startDate: "",
+        endDate: "",
+        isCurrentPosition: false,
+        description: "",
+      });
     } catch (error) {
-      console.error("Error saving changes:", error);
-      // Only show alert for non-syntax errors
-      if (!(error instanceof SyntaxError)) {
-        alert("Failed to save changes. Please try again.");
-      }
+      console.error("Error updating experience:", error);
     } finally {
       setIsSubmitting(false);
-      setIsEditing(false);
     }
+  };
+
+  const handleEditChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    if (!editingExperience) return;
+
+    const { name, value, type } = e.target;
+
+    // Handle checkboxes separately
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setEditingExperience({
+        ...editingExperience,
+        [name]: checked,
+        // If "currently working" is checked, clear the end date
+        ...(name === "isCurrentPosition" && checked ? { endDate: "" } : {}),
+      });
+    } else {
+      setEditingExperience({
+        ...editingExperience,
+        [name]: value,
+      });
+    }
+
+    // Clear validation error when user makes changes
+    if (validationError) {
+      setValidationError("");
+    }
+  };
+
+  // Simplified toggleAddForm without references to edit mode
+  const toggleAddForm = () => {
+    setIsAddingNew(!isAddingNew);
+    setValidationError("");
+  };
+
+  // When canceling an edit, just reset the edit state
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditingExperience({
+      id: "",
+      position: "",
+      company: "",
+      location: "",
+      startDate: "",
+      endDate: "",
+      isCurrentPosition: false,
+      description: "",
+    });
+    setValidationError("");
   };
 
   if (isLoading)
@@ -664,7 +717,7 @@ export default function Experiences({ userId }: ExperienceProps) {
 
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <Button variant="ghost" size="sm" onClick={handleAddNew}>
+              <Button variant="ghost" size="sm" onClick={toggleAddForm}>
                 <>
                   <Plus className="h-4 w-4 mr-2" />
                   Add
@@ -716,11 +769,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                     onChange={(e) =>
                       handleNewExperienceChange("position", e.target.value)
                     }
-                    className={getInputClassName(
-                      "new",
-                      "position",
-                      "text-muted-foreground"
-                    )}
+                    className={getInputClassName("new", "position")}
                     placeholder="Position*"
                   />
                   {getFieldError("new", "position") && (
@@ -736,11 +785,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                     onChange={(e) =>
                       handleNewExperienceChange("company", e.target.value)
                     }
-                    className={getInputClassName(
-                      "new",
-                      "company",
-                      "text-muted-foreground"
-                    )}
+                    className={getInputClassName("new", "company")}
                     placeholder="Company*"
                   />
                   {getFieldError("new", "company") && (
@@ -769,11 +814,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                       onChange={(e) =>
                         handleNewExperienceChange("startDate", e.target.value)
                       }
-                      className={getInputClassName(
-                        "new",
-                        "startDate",
-                        "text-sm text-muted-foreground"
-                      )}
+                      className={getInputClassName("new", "startDate")}
                       max={getCurrentDate()}
                     />
                     {getFieldError("new", "startDate") && (
@@ -795,11 +836,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                           e.target.value || null
                         )
                       }
-                      className={getInputClassName(
-                        "new",
-                        "endDate",
-                        "text-sm text-muted-foreground"
-                      )}
+                      className={getInputClassName("new", "endDate")}
                       placeholder="Present"
                       max={getCurrentDate()}
                     />
@@ -832,11 +869,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                   onChange={(e) =>
                     handleNewExperienceChange("description", e.target.value)
                   }
-                  className={getInputClassName(
-                    "new",
-                    "description",
-                    "mt-2 w-full p-1 border rounded"
-                  )}
+                  className={getInputClassName("new", "description")}
                   rows={4}
                   placeholder="Describe your responsibilities and achievements..."
                 />
@@ -844,13 +877,173 @@ export default function Experiences({ userId }: ExperienceProps) {
                   <Button variant="outline" size="sm" onClick={handleCancelAdd}>
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={handleSaveNewExperience}>
+                  <Button size="sm" onClick={handleFormSubmit}>
                     Save Experience
                   </Button>
                 </div>
               </div>
             </div>
           </div>
+        )}
+
+        {isEditing && (
+          <form onSubmit={handleSave} className="space-y-4 mt-4">
+            {validationError && (
+              <div className="text-red-500 text-sm">{validationError}</div>
+            )}
+            {editingExperience && (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-shrink-0">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback>
+                      {editingExperience.company.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-grow">
+                  <div className="mb-2">
+                    <Input
+                      value={editingExperience.position}
+                      onChange={handleEditChange}
+                      name="position"
+                      className={getInputClassName(
+                        editingExperience.id,
+                        "position"
+                      )}
+                      placeholder="Position*"
+                    />
+                    {getFieldError(editingExperience.id, "position") && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {getFieldError(editingExperience.id, "position")}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mb-2">
+                    <Input
+                      value={editingExperience.company}
+                      onChange={handleEditChange}
+                      name="company"
+                      className={getInputClassName(
+                        editingExperience.id,
+                        "company"
+                      )}
+                      placeholder="Company*"
+                    />
+                    {getFieldError(editingExperience.id, "company") && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {getFieldError(editingExperience.id, "company")}
+                      </p>
+                    )}
+                  </div>
+
+                  <Input
+                    value={editingExperience.location}
+                    onChange={handleEditChange}
+                    name="location"
+                    className={getInputClassName(
+                      editingExperience.id,
+                      "location"
+                    )}
+                    placeholder="Location"
+                  />
+                  <div className="flex gap-2 mb-2">
+                    <div className="w-1/2">
+                      <label className="text-xs text-muted-foreground">
+                        Start Date* (Month/Year)
+                      </label>
+                      <Input
+                        type="date"
+                        value={editingExperience.startDate}
+                        onChange={handleEditChange}
+                        name="startDate"
+                        className={getInputClassName(
+                          editingExperience.id,
+                          "startDate"
+                        )}
+                        max={getCurrentDate()}
+                      />
+                      {getFieldError(editingExperience.id, "startDate") && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {getFieldError(editingExperience.id, "startDate")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="w-1/2">
+                      <label className="text-xs text-muted-foreground">
+                        End Date (Month/Year or leave empty for Present)
+                      </label>
+                      <Input
+                        type="date"
+                        value={editingExperience.endDate || ""}
+                        onChange={handleEditChange}
+                        name="endDate"
+                        className={getInputClassName(
+                          editingExperience.id,
+                          "endDate"
+                        )}
+                        max={getCurrentDate()}
+                      />
+                    </div>
+                  </div>
+                  {hasErrorType(editingExperience.id, [
+                    "startDate",
+                    "endDate",
+                  ]) && (
+                    <p className="text-red-500 text-xs mt-1 mb-2">
+                      {getErrorTypeMessage(editingExperience.id, [
+                        "startDate",
+                        "endDate",
+                      ])}
+                    </p>
+                  )}
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id={`current-${editingExperience.id}`}
+                      checked={editingExperience.isCurrentPosition}
+                      onChange={handleEditChange}
+                      name="isCurrentPosition"
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor={`current-${editingExperience.id}`}
+                      className="text-sm"
+                    >
+                      Current Position
+                    </label>
+                  </div>
+                  <Textarea
+                    value={editingExperience.description}
+                    onChange={handleEditChange}
+                    name="description"
+                    className={getInputClassName(
+                      editingExperience.id,
+                      "description"
+                    )}
+                    rows={4}
+                    placeholder="Description (optional)"
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="px-4 py-2 border rounded-md hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {isSubmitting ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </form>
         )}
 
         {(isEditing ? editedExperiences : experienceData) &&
@@ -883,8 +1076,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                             }
                             className={getInputClassName(
                               experience.id,
-                              "position",
-                              "font-semibold w-full p-1 border rounded"
+                              "position"
                             )}
                             placeholder="Position*"
                           />
@@ -907,8 +1099,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                             }
                             className={getInputClassName(
                               experience.id,
-                              "company",
-                              "text-muted-foreground w-full p-1 border rounded"
+                              "company"
                             )}
                             placeholder="Company*"
                           />
@@ -930,8 +1121,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                           }
                           className={getInputClassName(
                             experience.id,
-                            "location",
-                            "text-muted-foreground mb-2 w-full p-1 border rounded"
+                            "location"
                           )}
                           placeholder="Location"
                         />
@@ -952,8 +1142,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                               }
                               className={getInputClassName(
                                 experience.id,
-                                "startDate",
-                                "text-sm text-muted-foreground p-1 border rounded"
+                                "startDate"
                               )}
                               max={getCurrentDate()}
                             />
@@ -981,8 +1170,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                               }
                               className={getInputClassName(
                                 experience.id,
-                                "endDate",
-                                "text-sm text-muted-foreground p-1 border rounded"
+                                "endDate"
                               )}
                               max={getCurrentDate()}
                             />
@@ -1031,8 +1219,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                           }
                           className={getInputClassName(
                             experience.id,
-                            "description",
-                            "mt-2 w-full p-1 border rounded"
+                            "description"
                           )}
                           rows={4}
                           placeholder="Description (optional)"

@@ -2,9 +2,13 @@
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import { withOwnership, successResponse } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
+import prisma from "@/app/lib/db/prisma";
+import {
+  withOwnership,
+  successResponse,
+  errorResponse,
+} from "@/app/lib/api/api-helpers";
+import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
 
 // UPDATE a project
 export const PUT = withOwnership(

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AIBioGenerator } from "@/app/ai/components/AIBioGenerator";
 import { AIPreferences } from "@/app/ai/components/AIPreferences";
-import { getUserData } from "@/lib/user-data";
+import { getUserData } from "@/app/lib/data/user-data";
 
 interface AIAssistantDialogProps {
   isOpen: boolean;

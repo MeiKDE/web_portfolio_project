@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/app/lib/auth/auth-options";
 import ResumeUpload from "@/components/common/ResumeUpload";
 import { redirect } from "next/navigation";
-import { getUserProfile } from "@/lib/user-service";
+import { getUserProfile } from "@/app/lib/services/user-service";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);

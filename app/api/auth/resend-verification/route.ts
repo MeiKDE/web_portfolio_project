@@ -1,6 +1,6 @@
-import { sendVerificationEmail } from "@/lib/email";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
-import prisma from "@/lib/prisma";
+import { sendVerificationEmail } from "@/app/lib/utils/email";
+import { successResponse, errorResponse } from "@/app/lib/api/api-helpers";
+import prisma from "@/app/lib/db/prisma";
 import * as crypto from "crypto";
 
 export async function POST(req: Request) {

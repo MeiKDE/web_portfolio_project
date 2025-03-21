@@ -1,4 +1,10 @@
-import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
+// this file is focused on getting the current user's data
+
+import {
+  successResponse,
+  errorResponse,
+  withAuth,
+} from "@/app/lib/api/api-helpers";
 import { NextRequest } from "next/server";
 
 export const GET = withAuth(async (request: NextRequest, context, user) => {

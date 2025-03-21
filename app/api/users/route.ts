@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
+import { authOptions } from "@/app/lib/auth/auth-options";
+import prisma from "@/app/lib/db/prisma";
+import { successResponse, errorResponse } from "@/app/lib/api/api-helpers";
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session) {
-      return errorResponse(401, "Unauthorized");
+      return errorResponse("Unauthorized");
     }
 
     // Fetch all users (you might want to add pagination or filtering)

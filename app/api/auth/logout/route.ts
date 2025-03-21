@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { successResponse } from "@/lib/api-helpers";
-import { handleApiError } from "@/lib/error-handler";
+import { successResponse } from "@/app/lib/api/api-helpers";
+import { handleApiError } from "@/app/lib/api/error-handler";
 
 export async function POST(request: NextRequest) {
   try {

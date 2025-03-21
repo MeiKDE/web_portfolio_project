@@ -1,6 +1,11 @@
-import prisma from "@/lib/prisma";
-import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
+import prisma from "@/app/lib/db/prisma";
+import {
+  successResponse,
+  errorResponse,
+  withAuth,
+} from "@/app/lib/api/api-helpers";
 import { NextRequest, NextResponse } from "next/server";
+import { updateUserProfile } from "@/app/lib/services/user-service";
 
 export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
@@ -74,5 +79,32 @@ export const PUT = withAuth(async (request: NextRequest, context, user) => {
   } catch (error) {
     console.error("Error updating profile:", error);
     return errorResponse("Failed to update profile", 500);
+  }
+});
+
+export const POST = withAuth(async (request: NextRequest, context, user) => {
+  try {
+    // Parse the request body
+    const body = await request.json();
+    console.log("ln12: body", body);
+    const { profileData } = body;
+
+    if (!profileData) {
+      console.log("ln16: No profile data provided");
+      return errorResponse("No profile data provided", 400);
+    }
+
+    // Update user profile with parsed data
+    await updateUserProfile(user.id, profileData);
+
+    return successResponse({
+      message: "Profile saved successfully",
+    });
+  } catch (error) {
+    console.log("Profile save error:", error);
+    return errorResponse(
+      error instanceof Error ? error.message : "Failed to save profile",
+      500
+    );
   }
 });

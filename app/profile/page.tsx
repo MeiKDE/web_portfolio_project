@@ -49,7 +49,7 @@ export default function ProfilePage() {
   // fetchUserProfile is a function that fetches the user profile
   // it is a useCallback function which is cached in the browser and not recreated on each render
   const fetchUserProfile = useCallback(
-    async (userId: string) => {
+    async (id: string) => {
       try {
         // If we've already attempted a fetch, don't try again
         // hasFetchAttempted.current equals false, so we don't try again
@@ -59,7 +59,7 @@ export default function ProfilePage() {
         setIsLoading(true);
         setFetchError(null);
 
-        const response = await fetch(`/api/profile?userId=${userId}`);
+        const response = await fetch(`/api/profile?id=${id}`);
 
         if (!response.ok) {
           const errorData = await response.json();

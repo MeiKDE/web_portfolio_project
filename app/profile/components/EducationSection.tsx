@@ -8,7 +8,7 @@ import { GraduationCap, Edit, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/lib/form-validation";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 
 interface Education {
   id: string;
@@ -115,13 +115,32 @@ export default function Educations({ userId }: EducationProps) {
 
   // Use the form validation hook
   const {
-    validateData,
-    getFieldError,
-    touchField,
-    hasErrorType,
-    getErrorTypeMessage,
-    getInputClassName,
-  } = useFormValidation(educationSchema);
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    setValues,
+  } = useFormValidation(
+    {
+      institution: "",
+      degree: "",
+      fieldOfStudy: "",
+      startYear: new Date().getFullYear(),
+      endYear: new Date().getFullYear(),
+      description: "",
+    },
+    {
+      institution: (value) => (!value ? "Institution is required" : null),
+      degree: (value) => (!value ? "Degree is required" : null),
+      fieldOfStudy: (value) => (!value ? "Field of study is required" : null),
+      startYear: (value) => (!value ? "Start year is required" : null),
+      endYear: () => null, // optional
+      description: () => null, // optional
+    }
+  );
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/education`,
@@ -258,12 +277,31 @@ export default function Educations({ userId }: EducationProps) {
     return issue ? issue.message : null;
   };
 
+  // Define custom helpers that use the existing validationErrors state
+  const getInputClassName = (id: string, field: string, baseClass: string) => {
+    const hasError = getLocalFieldError(id, field) !== null;
+    return hasError ? `${baseClass} border-red-500` : baseClass;
+  };
+
+  const hasErrorType = (id: string, fields: string[]) => {
+    return fields.some((field) => getLocalFieldError(id, field) !== null);
+  };
+
+  const getErrorTypeMessage = (id: string, fields: string[]) => {
+    for (const field of fields) {
+      const error = getLocalFieldError(id, field);
+      if (error) return error;
+    }
+    return hasYearRangeError(id) ? getYearRangeError(id) : null;
+  };
+
+  // Simplified handleInputChange
   const handleInputChange = (
     id: string,
     field: keyof Education,
     value: any
   ) => {
-    // Update your state
+    // Update the education data
     setEditedEducation((prev) =>
       prev.map((edu) =>
         edu.id === id
@@ -275,10 +313,7 @@ export default function Educations({ userId }: EducationProps) {
       )
     );
 
-    // Mark field as touched
-    touchField(id, field as string);
-
-    // Get the updated education object
+    // Find the updated education
     const updatedEducation = editedEducation.find((edu) => edu.id === id);
     if (updatedEducation) {
       // Create a copy with the new value
@@ -287,8 +322,8 @@ export default function Educations({ userId }: EducationProps) {
         [field]: field.includes("Year") ? parseInt(value) : value,
       };
 
-      // Validate the updated data
-      validateData(educationToValidate, id);
+      // Validate it
+      validateEducation(educationToValidate, id);
     }
   };
 

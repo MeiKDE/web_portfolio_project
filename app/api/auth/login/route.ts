@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/db/prisma";
 import { z } from "zod";
-import { successResponse, validateRequest } from "@/lib/api-helpers";
+import { successResponse, validateRequest } from "@/app/lib/api/api-helpers";
 import {
   handleApiError,
   createApiError,
   HTTP_STATUS,
-} from "@/lib/error-handler";
-import { verifyPassword } from "@/lib/auth";
+} from "@/app/lib/api/error-handler";
+import { verifyPassword } from "@/app/lib/auth/crypto-utils";
 
 // Define validation schema for login
 const loginSchema = z.object({

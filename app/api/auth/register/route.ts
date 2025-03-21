@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/db/prisma";
 import { z } from "zod";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
-import { hashPassword } from "@/lib/auth";
-import { generateVerificationToken } from "@/lib/verification";
-import { sendVerificationEmail } from "@/lib/email";
+import { successResponse, errorResponse } from "@/app/lib/api/api-helpers";
+import { hashPassword } from "@/app/lib/auth/auth-options";
+import { generateVerificationToken } from "@/app/lib/auth/verification";
+import { sendVerificationEmail } from "@/app/lib/utils/email";
 
 // Define validation schema for registration
 const registerSchema = z.object({

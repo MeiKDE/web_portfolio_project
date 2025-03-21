@@ -1,6 +1,10 @@
-import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
-import prisma from "@/lib/prisma";
-import { userProfileSchema } from "@/lib/validations";
+import {
+  successResponse,
+  errorResponse,
+  withAuth,
+} from "@/app/lib/api/api-helpers";
+import prisma from "@/app/lib/db/prisma";
+import { userProfileSchema } from "@/app/hooks/validations";
 import { NextRequest } from "next/server";
 
 export const GET = withAuth(async (request: NextRequest, context, user) => {

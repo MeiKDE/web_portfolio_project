@@ -135,7 +135,7 @@ export default function ResumeUpload({
   const saveProfileData = async (profileData: ResumeData) => {
     try {
       console.log("ln149: Automatically saving profile data...");
-      const response = await fetch("/api/profile/save", {
+      const response = await fetch("/api/profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

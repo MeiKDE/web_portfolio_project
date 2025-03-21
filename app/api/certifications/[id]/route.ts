@@ -2,10 +2,16 @@
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import { certificationSchema } from "@/lib/validations";
-import { withOwnership, successResponse } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
+import prisma from "@/app/lib/db/prisma";
+import { certificationSchema } from "@/app/hooks/validations";
+import {
+  withOwnership,
+  successResponse,
+  errorResponse,
+} from "@/app/lib/api/api-helpers";
+import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/lib/auth/auth-options";
 
 // GET a single certification
 export async function GET(

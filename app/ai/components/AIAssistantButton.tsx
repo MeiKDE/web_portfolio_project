@@ -1,5 +1,5 @@
 "use client";
-
+import React, { JSX } from "react";
 import { useState } from "react";
 import { AIAssistantDialog } from "@/app/ai/components/AIAssistantDialog";
 

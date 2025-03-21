@@ -7,8 +7,8 @@ import { Edit, MapPin, Mail, Phone, Calendar, Save, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/lib/form-validation";
-import { userProfileSchema } from "@/lib/validations";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
+import { userProfileSchema } from "@/app/hooks/validations";
 import ProfileImage from "@/app/profile/components/ProfileImageUpload";
 import PhoneInput from "@/components/PhoneInput";
 import { AIAssistantButton } from "@/app/ai/components/AIAssistantButton";
@@ -44,15 +44,58 @@ export default function User({ userId }: UserProps) {
 
   // Use the form validation hook with the userProfileSchema
   const {
-    validateData,
-    getFieldError,
-    touchField,
-    isFieldTouched,
-    getInputClassName,
-  } = useFormValidation(userProfileSchema);
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    setValues,
+  } = useFormValidation(
+    {
+      name: "",
+      email: "",
+      title: "",
+      location: "",
+      phone: "",
+      bio: "",
+      image: "",
+      profile_email: "",
+    },
+    {
+      name: (value) => (!value ? "Name is required" : null),
+      email: (value) => (!value ? "Email is required" : null),
+      // Optional fields don't need validation rules
+      title: () => null,
+      location: () => null,
+      phone: () => null,
+      bio: () => null,
+      image: () => null,
+      profile_email: (value) =>
+        value && !value.includes("@") ? "Invalid email format" : null,
+    }
+  );
+
+  // Define custom helper functions
+  const validateData = (data: any) => validateForm();
+  const getFieldError = (id: string, field: string) =>
+    errors[field as keyof typeof errors];
+  const touchField = (id: string, field: string) =>
+    handleBlur(field as keyof typeof values);
+  const isFieldTouched = (id: string, field: string) =>
+    touched[field as keyof typeof touched];
+  const getInputClassName = (id: string, field: string, baseClass = "") =>
+    `${baseClass} ${
+      errors[field as keyof typeof errors] &&
+      touched[field as keyof typeof touched]
+        ? "border-red-500"
+        : ""
+    }`;
 
   // Memoize the fetch function to avoid recreation on each render
   const fetchUser = useCallback(async () => {
+    console.log("ln98:fetchUser function called");
     // Skip if no userId or already fetched
     if (!userId || hasFetched.current) return;
 
@@ -129,7 +172,7 @@ export default function User({ userId }: UserProps) {
 
     // Create a validation object with just the updated field
     const fieldUpdate = { ...editedUser, [field]: value };
-    validateData(fieldUpdate, "user");
+    validateData(fieldUpdate);
   };
 
   const handleAvailabilityToggle = (isAvailable: boolean) => {
@@ -144,7 +187,7 @@ export default function User({ userId }: UserProps) {
 
     // Validate the updated data
     const updatedUser = { ...editedUser, isAvailable };
-    validateData(updatedUser, "user");
+    validateData(updatedUser);
   };
 
   const saveChanges = async () => {
@@ -186,7 +229,7 @@ export default function User({ userId }: UserProps) {
       });
 
       // Validate the entire form with the modified validation object
-      const isValid = validateData(validationUser, "user");
+      const isValid = validateData(validationUser);
       console.log("check isValid", isValid);
 
       // Check for phone error as well

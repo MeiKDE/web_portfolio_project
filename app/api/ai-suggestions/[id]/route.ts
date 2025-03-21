@@ -2,9 +2,13 @@
 // This file ([id]/route.ts) is focused on managing existing suggestions (updating and deleting).
 
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import { withAuth, successResponse } from "@/lib/api-helpers";
-import { handleApiError, createApiError } from "@/lib/error-handler";
+import prisma from "@/app/lib/db/prisma";
+import {
+  withAuth,
+  successResponse,
+  errorResponse,
+} from "@/app/lib/api/api-helpers";
+import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
 import { z } from "zod";
 
 // Define validation schema for suggestion updates
@@ -127,3 +131,51 @@ export const DELETE = withAuth(
     }
   }
 );
+
+// Generate a new AI suggestion
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { targetType, targetId } = await request.json();
+
+    // In a real application, you would call an AI service here
+    // For now, we'll just create a mock suggestion
+    let suggestion = "";
+
+    switch (targetType) {
+      case "experience":
+        suggestion =
+          "Consider adding more quantifiable achievements to this experience.";
+        break;
+      case "skill":
+        suggestion = "Add Next.js to your skills based on your experience.";
+        break;
+      case "project":
+        suggestion = "Add a GraphQL project to showcase your expertise.";
+        break;
+      case "tagline":
+        suggestion =
+          "Innovative problem-solver transforming complex challenges into elegant solutions.";
+        break;
+      default:
+        suggestion = "Consider updating your profile with more details.";
+    }
+
+    const aiSuggestion = await prisma.aISuggestion.create({
+      data: {
+        targetType,
+        targetId,
+        suggestion,
+        status: "pending",
+        userId: params.id,
+      },
+    });
+
+    return successResponse(aiSuggestion);
+  } catch (error) {
+    console.error("Error generating AI suggestion:", error);
+    return errorResponse("Failed to generate AI suggestion");
+  }
+}

@@ -6,10 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, CheckCircle, Save, Plus, X } from "lucide-react";
 import useSWR from "swr";
 import { Input } from "@/components/ui/input";
-import { AlertCircle } from "lucide-react";
 import { z } from "zod";
-import { format } from "date-fns";
-import { useFormValidation } from "@/lib/form-validation";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 
 interface Certification {
   id: string;
@@ -144,7 +142,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   >([]);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCertification, setNewCertification] = useState<
-    Omit<Certification, "id">
+    Omit<Certification, "id"> //this means id is not required
   >({
     name: "",
     issuer: "",
@@ -165,15 +163,23 @@ export default function Certifications({ userId }: CertificationsProps) {
 
   // Use the form validation hook
   const {
-    validateData,
-    getFieldError,
-    touchField,
-    isFieldTouched,
-    getInputClassName,
-    clearValidationErrors,
-    clearTouchedFields,
-  } = useFormValidation(certificationFormSchema);
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+    setValues,
+  } = useFormValidation(newCertification, {
+    name: (value) => (!value ? "Name is required" : null),
+    issuer: (value) => (!value ? "Issuer is required" : null),
+    issueDate: (value) => (!value ? "Issue date is required" : null),
+    expirationDate: () => null, // optional
+    credentialUrl: () => null, // optional
+  });
 
+  // GET all certifications for a user
   const { data, error, isLoading, mutate } = useSWR(
     `/api/users/${userId}/certifications`,
     fetcher,
@@ -239,9 +245,12 @@ export default function Certifications({ userId }: CertificationsProps) {
   }, [data]);
 
   const handleEditToggle = () => {
+    console.log("ln247: handleEditToggle function called");
     if (editable) {
+      console.log("ln249: editable is true");
       saveChanges();
     } else {
+      console.log("ln252: editable is false");
       // Make sure dates are properly formatted for editing
       const formattedData = certificationsData.map((cert) => ({
         ...cert,
@@ -267,6 +276,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   const validateEditedCertifications = () => {
+    console.log("ln278: validateEditedCertifications function called");
     const errors: Record<string, { field: string; message: string }[]> = {};
 
     for (const cert of editedCertifications) {
@@ -337,6 +347,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   const saveChanges = async () => {
+    console.log("ln256: saveChanges function called");
     try {
       const validationErrors = validateEditedCertifications();
       if (validationErrors) {
@@ -425,18 +436,8 @@ export default function Certifications({ userId }: CertificationsProps) {
     setNewCertification((prev) => ({ ...prev, [field]: value }));
 
     // Mark field as touched and validate
-    touchField("new", field);
-    validateData(
-      {
-        ...newCertification,
-        [field]: value,
-      },
-      "new"
-    );
-  };
-
-  const validateForm = () => {
-    return validateData(newCertification, "new");
+    handleBlur(field);
+    validateForm();
   };
 
   const handleSaveNewCertification = async (e: React.FormEvent) => {
@@ -480,8 +481,12 @@ export default function Certifications({ userId }: CertificationsProps) {
             ? newCertification.credentialUrl.trim()
             : null,
       };
-
-      const response = await fetch(`/api/users/${userId}/certifications`, {
+      // POST is create new certification
+      console.log(
+        "ln484: check formattedCertification",
+        formattedCertification
+      );
+      const response = await fetch(`/api/certifications/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

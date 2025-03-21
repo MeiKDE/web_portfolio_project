@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { successResponse, errorResponse, withAuth } from "@/lib/api-helpers";
-import { parseResumePDF } from "@/lib/resume-parser";
-import prisma from "@/lib/prisma";
+import {
+  successResponse,
+  errorResponse,
+  withAuth,
+} from "@/app/lib/api/api-helpers";
+import { parseResumePDF } from "@/app/lib/utils/resume-parser";
+import prisma from "@/app/lib/db/prisma";
 
 // Helper function to convert text to title case
 function toTitleCase(text: string): string {
