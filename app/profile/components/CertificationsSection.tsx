@@ -12,9 +12,9 @@ import {
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
 import { useEditableState } from "@/app/hooks/form/use-editable-state";
-import { handleEditToggle } from "./certificate/HandleEditToggle";
-import { handleCancelAdd } from "./certificate/HandleCancelAdd";
-import { Certification } from "./certificate/Interface";
+import { handleEditToggle } from "./certificates/HandleEditToggle";
+import { handleCancelAdd } from "./certificates/HandleCancelAdd";
+import { Certification } from "./certificates/Interface";
 
 interface CertificationsProps {
   userId: string;
