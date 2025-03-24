@@ -47,6 +47,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     handleInputChange,
     handleSaveNewItem,
     handleDeleteItem,
+    handleSaveEdits,
   } = useEditableState<Certification[]>([]);
 
   // Fetch certifications data
@@ -125,6 +126,19 @@ export default function Certifications({ userId }: CertificationsProps) {
     });
   };
 
+  // SAVE certifications
+  const handleSaveCertifications = () => {
+    handleSaveEdits({
+      endpoint: "/api/certifications",
+      dateFields: ["issueDate", "expirationDate"],
+      onSuccess: () => mutate(),
+      onError: (error) => {
+        console.error("Error saving certifications:", error);
+        alert("Failed to save certifications. Please try again.");
+      },
+    });
+  };
+
   if (isLoading) return <div>Loading certifications...</div>;
   if (error) return <div>Error loading certification information</div>;
 
@@ -133,21 +147,22 @@ export default function Certifications({ userId }: CertificationsProps) {
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Certifications</h3>
-
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  startAddingNew({
-                    id: "new",
-                    name: "",
-                    issuer: "",
-                    issueDate: getCurrentDate(),
-                    expirationDate: "",
-                    credentialUrl: "",
-                  })
+                  startAddingNew([
+                    {
+                      id: "new",
+                      name: "",
+                      issuer: "",
+                      issueDate: getCurrentDate(),
+                      expirationDate: "",
+                      credentialUrl: "",
+                    },
+                  ])
                 }
               >
                 <>
@@ -161,18 +176,7 @@ export default function Certifications({ userId }: CertificationsProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() =>
-                  handleEditToggle(
-                    isEditing,
-                    editedData,
-                    setIsSubmitting,
-                    setIsEditing,
-                    setSaveSuccess,
-                    mutate,
-                    startEditing,
-                    setIsAddingNew
-                  )
-                }
+                onClick={handleSaveCertifications}
                 disabled={isSubmitting}
               >
                 <>
@@ -185,18 +189,14 @@ export default function Certifications({ userId }: CertificationsProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
-                    handleEditToggle(
-                      isEditing,
-                      editedData,
-                      setIsSubmitting,
-                      setIsEditing,
-                      setSaveSuccess,
-                      mutate,
-                      startEditing,
-                      setIsAddingNew
-                    )
-                  }
+                  onClick={() => {
+                    if (data) {
+                      startEditing();
+                      setEditedData(formatCertificationsForUI(data));
+                    } else {
+                      startEditing();
+                    }
+                  }}
                 >
                   <>
                     <Edit className="h-4 w-4 mr-2" />

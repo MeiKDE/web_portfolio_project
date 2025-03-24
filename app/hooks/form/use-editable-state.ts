@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDateForDatabase } from "@/app/hooks/date-utils";
 
 export function useEditableState<T>(initialData: T | null) {
   const [isEditing, setIsEditing] = useState(false);
@@ -176,6 +177,118 @@ export function useEditableState<T>(initialData: T | null) {
     }
   };
 
+  /**
+   * Generic function to save edited items
+   */
+  const handleSaveEdits = async ({
+    endpoint,
+    dateFields = [],
+    validateFn,
+    onSuccess,
+    onError,
+  }: {
+    endpoint: string;
+    dateFields?: string[];
+    validateFn?: (data: any) => boolean | string | null;
+    onSuccess?: () => void;
+    onError?: (error: any) => void;
+  }) => {
+    try {
+      // Optional validation check
+      if (validateFn && editedData) {
+        const validationResult = validateFn(editedData);
+        if (validationResult !== true && validationResult !== null) {
+          console.error("Validation errors:", validationResult);
+          onError?.(new Error(`Validation failed: ${validationResult}`));
+          return;
+        }
+      }
+
+      setIsSubmitting(true);
+
+      if (!editedData) {
+        console.warn("No data to update");
+        return;
+      }
+
+      // Handle both array and single object cases
+      const itemsToUpdate = Array.isArray(editedData)
+        ? editedData
+        : [editedData];
+
+      for (const item of itemsToUpdate) {
+        // Format the item for API, particularly handling date fields
+        const formattedItem = formatItemForApi(item, dateFields);
+
+        const itemId = item.id;
+        const itemEndpoint = itemId ? `${endpoint}/${itemId}` : endpoint;
+
+        const response = await fetch(itemEndpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formattedItem),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Failed to update item: ${errorData.error || response.statusText}`
+          );
+        }
+      }
+
+      setIsEditing(false);
+      setSaveSuccess(true);
+      onSuccess?.(); // Call success callback if provided
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      onError?.(error); // Call error callback if provided
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to format item for API, using date-utils.ts formatDateForDatabase
+  const formatItemForApi = (item: any, dateFields: string[] = []) => {
+    const formatted = { ...item };
+
+    // Process specified date fields
+    for (const field of dateFields) {
+      if (formatted[field]) {
+        // Use the existing utility function to format dates for database
+        formatted[field] = formatDateForDatabase(formatted[field]);
+      } else if (formatted[field] === "") {
+        // Convert empty strings to null
+        formatted[field] = null;
+      }
+    }
+
+    // Handle other fields - trim strings, etc.
+    for (const [key, value] of Object.entries(formatted)) {
+      // Skip date fields that were already processed
+      if (dateFields.includes(key)) continue;
+
+      // Trim string values
+      if (typeof value === "string") {
+        formatted[key] = value.trim();
+
+        // Convert empty strings to null for optional fields
+        if (
+          value.trim() === "" &&
+          key !== "name" &&
+          key !== "issuer" &&
+          !key.includes("id") &&
+          !key.includes("Id")
+        ) {
+          formatted[key] = null;
+        }
+      }
+    }
+
+    return formatted;
+  };
+
   return {
     isEditing,
     isAddingNew,
@@ -200,5 +313,6 @@ export function useEditableState<T>(initialData: T | null) {
     handleInputChange,
     handleSaveNewItem,
     handleDeleteItem,
+    handleSaveEdits,
   };
 }
