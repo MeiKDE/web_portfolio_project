@@ -4,14 +4,20 @@ import { PrismaClient } from "@prisma/client";
 // exhausting your database connection limit.
 // Learn more: https://pris.ly/d/help/next-prisma-client-dev-practices
 
+// Define Prisma client with logging configuration
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log: ["error", "warn"], // Only log errors and warnings, not queries
+  });
+};
+
+// Set up global type
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ["query", "error", "warn"],
-  });
+// Use existing instance or create new one with logging disabled
+export const prisma = globalForPrisma.prisma || prismaClientSingleton();
 
+// Save to global object in development
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export default prisma;

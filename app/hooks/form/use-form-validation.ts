@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCallback } from "react";
 
 export function useFormValidation<T>(
   initialValues: T,
@@ -60,5 +61,70 @@ export function useFormValidation<T>(
     validateForm,
     resetForm,
     setValues,
+  };
+}
+
+export function useValidationHelpers(
+  errors: any,
+  touched: any,
+  validateForm: () => boolean,
+  handleBlur: any,
+  values: any
+) {
+  const getFieldError = useCallback(
+    (id: string, field: string) => errors[field as keyof typeof errors],
+    [errors]
+  );
+
+  const touchField = useCallback(
+    (field: string) => handleBlur(field as keyof typeof values),
+    [handleBlur, values]
+  );
+
+  const hasErrorType = useCallback(
+    (id: string, fields: string[]) =>
+      fields.some(
+        (field) =>
+          !!errors[field as keyof typeof errors] &&
+          touched[field as keyof typeof touched]
+      ),
+    [errors, touched]
+  );
+
+  const getErrorTypeMessage = useCallback(
+    (id: string, fields: string[]) => {
+      for (const field of fields) {
+        if (
+          errors[field as keyof typeof errors] &&
+          touched[field as keyof typeof touched]
+        ) {
+          return errors[field as keyof typeof errors];
+        }
+      }
+      return null;
+    },
+    [errors, touched]
+  );
+
+  const getInputClassName = useCallback(
+    (id: string, field: string, baseClass = "") =>
+      `${baseClass} ${
+        errors[field as keyof typeof errors] &&
+        touched[field as keyof typeof touched]
+          ? "border-red-500"
+          : ""
+      }`,
+    [errors, touched]
+  );
+
+  const validateData = useCallback(() => validateForm(), [validateForm]);
+
+  return {
+    getFieldError,
+    touchField,
+    hasErrorType,
+    getErrorTypeMessage,
+    getInputClassName,
+    validateData,
   };
 }

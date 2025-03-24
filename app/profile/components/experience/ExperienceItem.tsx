@@ -10,7 +10,7 @@ import {
   formatDateForInput,
   calculateDuration,
   getCurrentDate,
-} from "@/lib/date-utils";
+} from "@/app/hooks/date-utils";
 
 interface Experience {
   id: string;
@@ -38,6 +38,7 @@ interface ExperienceItemProps {
   getErrorTypeMessage: (id: string, fields: string[]) => string;
 }
 
+// this function is used to display the experience item in the experience section
 export default function ExperienceItem({
   experience,
   isEditing,

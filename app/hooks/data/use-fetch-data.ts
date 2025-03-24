@@ -1,7 +1,7 @@
 import useSWR from "swr";
 
 // Improved fetcher function with error handling
-const fetcher = async (url: string) => {
+export const fetcher = async (url: string) => {
   const response = await fetch(url, {
     credentials: "include",
   });
@@ -25,8 +25,8 @@ const fetcher = async (url: string) => {
 
     throw error;
   }
-
-  return response.json();
+  const data = await response.json();
+  return data.data;
 };
 
 export function useFetchData<T>(url: string | null) {

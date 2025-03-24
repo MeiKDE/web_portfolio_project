@@ -1,17 +1,47 @@
 import useSWR from "swr";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+// Updated fetcher with credentials for authenticated requests
+const fetcher = (url: string) =>
+  fetch(url, {
+    credentials: "include",
+  }).then((res) => res.json());
 
+// Generic data fetching hook for any authenticated API endpoint
+export function useAuthData(url: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher);
+
+  return {
+    data,
+    isLoading,
+    isError: error,
+    mutate,
+  };
+}
+
+// User-specific hook based on the generic one
 export function useUser(id: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    id ? `/api/users/${id}` : null,
-    fetcher
+  const { data, isLoading, isError, mutate } = useAuthData(
+    id ? `/api/users/${id}` : null
   );
 
   return {
     user: data,
     isLoading,
-    isError: error,
+    isError,
+    mutate,
+  };
+}
+
+// New hook specifically for experiences
+export function useExperiences(userId: string) {
+  const { data, isLoading, isError, mutate } = useAuthData(
+    userId ? `/api/users/${userId}/experiences` : null
+  );
+
+  return {
+    experiences: data?.data || [],
+    isLoading,
+    isError,
     mutate,
   };
 }

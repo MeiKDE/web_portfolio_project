@@ -16,103 +16,47 @@ import {
   Save,
   Plus,
 } from "lucide-react";
-import useSWR from "swr";
-import { z } from "zod"; // Import zod for validation
+import { useExperiences } from "@/app/hooks/use-user";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/app/hooks/form/use-form-validation";
-
-// Define Zod schema for experience validation
-const experienceSchema = z
-  .object({
-    position: z.string().min(1, "Position is required"),
-    company: z.string().min(1, "Company is required"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().nullable(),
-    description: z.string().optional(),
-    location: z.string().optional(),
-    isCurrentPosition: z.boolean().default(false),
-  })
-  .refine(
-    (data) => {
-      // Skip validation if end date is null or empty (current position)
-      if (!data.endDate || data.isCurrentPosition) return true;
-
-      // Compare dates - start date should be before or equal to end date
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      return startDate <= endDate;
-    },
-    {
-      message: "Start date cannot be after end date",
-      path: ["startDate", "endDate"],
-    }
-  );
+import {
+  useFormValidation,
+  useValidationHelpers,
+} from "@/app/hooks/form/use-form-validation";
+import {
+  formatDateForInput,
+  formatDateForDisplay,
+  getCurrentDate,
+  calculateDuration,
+} from "@/app/hooks/date-utils";
 
 interface Experience {
   id: string;
   position: string; // Changed from title to position
   company: string;
   startDate: string;
-  endDate: string | null;
+  endDate: string;
   description: string;
   location: string;
   isCurrentPosition: boolean;
 }
 
-//Defines the props for the Experience component, which includes a userId.
+//Defines the props for the Experience component, which  a userId.
 interface ExperienceProps {
   userId: string;
 }
 
-//A utility function fetcher is defined to fetch data from a given URL and parse it as JSON.
-const fetcher = (url: string) =>
-  fetch(url, {
-    credentials: "include",
-  }).then((res) => res.json());
-
-// Create a new formatDateForDisplay function name to avoid conflict
-const formatDateForDisplay = (isoDate: string) => {
-  const date = new Date(isoDate);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(date);
-};
-
-// Keep the existing formatDateForInput function for the date input fields
-const formatDateForInput = (isoDate: string) => {
-  const date = new Date(isoDate);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-// Utility function to format date to ISO-8601 format for database
-const formatDateForDatabase = (date: string) => {
-  const d = new Date(date);
-  return d.toISOString(); // Converts to ISO-8601 format
-};
-
-// Get current date in YYYY-MM-DD format for date input max attribute
-const getCurrentDate = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
 // Add a function to handle date relationship validation in the UI
 const validateDateRange = (
   startDate: string,
-  endDate: string | null,
+  endDate: string,
   isCurrentPosition: boolean
 ) => {
-  if (!endDate || isCurrentPosition) return true;
+  // if the end date is empty or the experience is currently active, return true
+  if (!endDate || endDate === "" || isCurrentPosition) return true;
 
   const start = new Date(startDate);
   const end = new Date(endDate);
+  // if the start date is before the end date, return true
   return start <= end;
 };
 
@@ -120,7 +64,7 @@ const validateDateRange = (
 const checkSession = async (userId: string) => {
   try {
     const response = await fetch("/api/auth/me", {
-      credentials: "include",
+      credentials: "include", // include the session cookie in the request
     });
 
     if (!response.ok) {
@@ -133,82 +77,39 @@ const checkSession = async (userId: string) => {
     }
 
     const data = await response.json();
-    console.log("Current session user:", data);
-    console.log("URL userId:", userId);
+    console.log("ln80: Current session user:", data);
+    console.log("ln81: api call userId:", userId);
 
     // Check also if we can access the experiences endpoint
     try {
-      console.log("ln141: checking experiences endpoint");
+      console.log("ln141: fetching experiences");
       const experiencesResponse = await fetch(
         `/api/users/${userId}/experiences`,
         {
           credentials: "include",
         }
       );
-      console.log("Experiences endpoint check:", {
-        status: experiencesResponse.status,
-        ok: experiencesResponse.ok,
-      });
-
       if (experiencesResponse.ok) {
+        console.log("ln93: experiences endpoint is ok");
         const expData = await experiencesResponse.json();
-        console.log(
-          "ln156: Experiences data shape:",
-          expData.data ? "Has data property" : "No data property"
-        );
+        console.log("ln95: experiences data:", expData);
       }
     } catch (expError) {
-      console.error("Experiences endpoint check failed:", expError);
+      console.error("ln98: Experiences endpoint check failed:", expError);
     }
 
     return data;
   } catch (error) {
-    console.error("Error checking session:", error);
+    console.error("ln103: Error checking session:", error);
     return null;
   }
 };
 
-// Add this function to calculate duration between two dates
-const calculateDuration = (
-  startDate: string,
-  endDate: string | null
-): string => {
-  if (!endDate) return "";
-
-  const start = new Date(startDate);
-  const end = endDate ? new Date(endDate) : new Date();
-
-  // Calculate years and months
-  let years = end.getFullYear() - start.getFullYear();
-  let months = end.getMonth() - start.getMonth();
-
-  // Adjust if months is negative
-  if (months < 0) {
-    years--;
-    months += 12;
-  }
-
-  // Format the duration string
-  let durationStr = "";
-  if (years > 0) {
-    durationStr += `${years} ${years === 1 ? "yr" : "yrs"}`;
-  }
-
-  if (months > 0) {
-    if (durationStr) durationStr += " ";
-    durationStr += `${months} ${months === 1 ? "mo" : "mos"}`;
-  }
-
-  // If less than a month, show "< 1 mo"
-  if (years === 0 && months === 0) {
-    durationStr = "< 1 mo";
-  }
-
-  return durationStr;
-};
-
 //The Experience component is defined as a functional component that takes userId as a prop.
 export default function Experiences({ userId }: ExperienceProps) {
+  // Replace the useSWR call with the custom hook
+  const { experiences, isLoading, isError, mutate } = useExperiences(userId);
+
   // Use the form validation hook correctly with initial values and validation rules
   const {
     values,
@@ -224,7 +125,7 @@ export default function Experiences({ userId }: ExperienceProps) {
       position: "",
       company: "",
       startDate: "",
-      endDate: null,
+      endDate: "",
       description: "",
       location: "",
       isCurrentPosition: false,
@@ -240,37 +141,23 @@ export default function Experiences({ userId }: ExperienceProps) {
     }
   );
 
-  // Define custom helper functions
-  const getFieldError = (id: string, field: string) =>
-    errors[field as keyof typeof errors];
-  const touchField = (field: string) =>
-    handleBlur(field as keyof typeof values);
-  const hasErrorType = (id: string, fields: string[]) =>
-    fields.some(
-      (field) =>
-        !!errors[field as keyof typeof errors] &&
-        touched[field as keyof typeof touched]
-    );
-  const getErrorTypeMessage = (id: string, fields: string[]) => {
-    for (const field of fields) {
-      if (
-        errors[field as keyof typeof errors] &&
-        touched[field as keyof typeof touched]
-      ) {
-        return errors[field as keyof typeof errors];
-      }
-    }
-    return null;
-  };
-  const getInputClassName = (id: string, field: string, baseClass = "") =>
-    `${baseClass} ${
-      errors[field as keyof typeof errors] &&
-      touched[field as keyof typeof touched]
-        ? "border-red-500"
-        : ""
-    }`;
+  const validationHelpers = useValidationHelpers(
+    errors,
+    touched,
+    validateForm,
+    handleBlur,
+    values
+  );
+  const {
+    getFieldError,
+    touchField,
+    hasErrorType,
+    getErrorTypeMessage,
+    getInputClassName,
+    validateData,
+  } = validationHelpers;
 
-  const validateData = () => validateForm();
+  console.log("ln160: validationHelpers:", validationHelpers);
 
   // A state variable error is initialized to null.
   const [localError, setLocalError] = useState<string | null>(null);
@@ -289,8 +176,6 @@ export default function Experiences({ userId }: ExperienceProps) {
     description: "",
   });
 
-  console.log("ln152: userId:", userId);
-
   // Add a state variable for editing experience
   const [editingExperience, setEditingExperience] = useState({
     id: "",
@@ -307,37 +192,29 @@ export default function Experiences({ userId }: ExperienceProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState<string>("");
 
-  // Update the useSWR hook and data handling
-  const {
-    data: apiResponse,
-    error,
-    isLoading,
-    mutate,
-  } = useSWR(`/api/users/${userId}/experiences`, fetcher);
-
   // Update local state when data is fetched
   useEffect(() => {
-    console.log("ln216: apiResponse:", apiResponse);
-    if (apiResponse && apiResponse.data) {
+    console.log("ln216: apiResponse:", experiences);
+    if (experiences && experiences.data) {
       // Extract the data array from the API response
-      const experiences = apiResponse.data || [];
-      setExperienceData(experiences);
+      const experiencesData = experiences.data || [];
+      setExperienceData(experiencesData);
 
       // Format dates for editing
       const formattedExperiences =
-        experiences && Array.isArray(experiences)
-          ? experiences.map((exp: Experience) => ({
+        experiencesData && Array.isArray(experiencesData)
+          ? experiencesData.map((exp: Experience) => ({
               ...exp,
-              startDate: exp.startDate
-                ? formatDateForInput(exp.startDate)
-                : getCurrentDate(),
-              endDate: exp.endDate ? formatDateForInput(exp.endDate) : null,
+              startDate: exp.startDate ? formatDateForInput(exp.startDate) : "",
+              endDate: exp.endDate ? formatDateForInput(exp.endDate) : "",
+              location: exp.location || "",
+              description: exp.description || "",
             }))
           : [];
 
       setEditedExperiences(formattedExperiences);
     }
-  }, [apiResponse, setExperienceData, setEditedExperiences]);
+  }, [experiences, setExperienceData, setEditedExperiences]);
 
   // Call this in useEffect
   useEffect(() => {
@@ -373,6 +250,9 @@ export default function Experiences({ userId }: ExperienceProps) {
   };
 
   const handleEditToggle = () => {
+    // Explicitly close the add form when toggling edit mode
+    setIsAddingNew(false);
+
     if (isEditing) {
       // Validate all experiences before saving
       let hasErrors = false;
@@ -393,12 +273,8 @@ export default function Experiences({ userId }: ExperienceProps) {
       setEditedExperiences(
         experienceData.map((exp) => ({
           ...exp,
-          startDate: exp.startDate
-            ? formatDateForInput(exp.startDate)
-            : getCurrentDate(),
-          endDate: exp.endDate
-            ? formatDateForInput(exp.endDate)
-            : getCurrentDate(),
+          startDate: exp.startDate ? formatDateForInput(exp.startDate) : "",
+          endDate: exp.endDate ? formatDateForInput(exp.endDate) : "",
         }))
       );
       // Reset validation errors when entering edit mode
@@ -412,9 +288,14 @@ export default function Experiences({ userId }: ExperienceProps) {
     field: keyof Experience,
     value: any
   ) => {
+    // Convert null to empty string for input fields to avoid React warnings
+    const processedValue = field === "endDate" && value === null ? "" : value;
+
     // Update your state
     setEditedExperiences((prev) =>
-      prev.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp))
+      prev.map((exp) =>
+        exp.id === id ? { ...exp, [field]: processedValue } : exp
+      )
     );
 
     // Mark field as touched
@@ -426,7 +307,7 @@ export default function Experiences({ userId }: ExperienceProps) {
       // Create a copy with the new value
       const experienceToValidate = {
         ...updatedExperience,
-        [field]: value,
+        [field]: processedValue,
       };
 
       // Validate the updated data
@@ -455,7 +336,9 @@ export default function Experiences({ userId }: ExperienceProps) {
     field: keyof Omit<Experience, "id">,
     value: string | boolean | null
   ) => {
-    const updatedExperience = { ...newExperience, [field]: value };
+    // For input fields, convert null to empty string to avoid React warning
+    const processedValue = field === "endDate" && value === null ? "" : value;
+    const updatedExperience = { ...newExperience, [field]: processedValue };
     setNewExperience(updatedExperience);
 
     // If changing dates or current position status, validate the date relationship
@@ -667,9 +550,11 @@ export default function Experiences({ userId }: ExperienceProps) {
         ...(name === "isCurrentPosition" && checked ? { endDate: "" } : {}),
       });
     } else {
+      // For date inputs, ensure we never pass null to input value props
+      const processedValue = name === "endDate" && value === "" ? "" : value;
       setEditingExperience({
         ...editingExperience,
-        [name]: value,
+        [name]: processedValue,
       });
     }
 
@@ -703,7 +588,7 @@ export default function Experiences({ userId }: ExperienceProps) {
 
   if (isLoading)
     return <LoadingSpinner size="sm" text="Loading experiences..." />;
-  if (error) return <div>Error loading experiences: {error.message}</div>;
+  if (isError) return <div>Error loading experiences: {isError.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
 
   return (
@@ -833,7 +718,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                       onChange={(e) =>
                         handleNewExperienceChange(
                           "endDate",
-                          e.target.value || null
+                          e.target.value || ""
                         )
                       }
                       className={getInputClassName("new", "endDate")}
@@ -939,7 +824,13 @@ export default function Experiences({ userId }: ExperienceProps) {
 
                   <Input
                     value={editingExperience.location}
-                    onChange={handleEditChange}
+                    onChange={(e) =>
+                      handleInputChange(
+                        editingExperience.id,
+                        "location",
+                        e.target.value
+                      )
+                    }
                     name="location"
                     className={getInputClassName(
                       editingExperience.id,
@@ -955,7 +846,13 @@ export default function Experiences({ userId }: ExperienceProps) {
                       <Input
                         type="date"
                         value={editingExperience.startDate}
-                        onChange={handleEditChange}
+                        onChange={(e) =>
+                          handleInputChange(
+                            editingExperience.id,
+                            "startDate",
+                            e.target.value
+                          )
+                        }
                         name="startDate"
                         className={getInputClassName(
                           editingExperience.id,
@@ -976,7 +873,13 @@ export default function Experiences({ userId }: ExperienceProps) {
                       <Input
                         type="date"
                         value={editingExperience.endDate || ""}
-                        onChange={handleEditChange}
+                        onChange={(e) =>
+                          handleInputChange(
+                            editingExperience.id,
+                            "endDate",
+                            e.target.value || ""
+                          )
+                        }
                         name="endDate"
                         className={getInputClassName(
                           editingExperience.id,
@@ -1015,7 +918,13 @@ export default function Experiences({ userId }: ExperienceProps) {
                   </div>
                   <Textarea
                     value={editingExperience.description}
-                    onChange={handleEditChange}
+                    onChange={(e) =>
+                      handleInputChange(
+                        editingExperience.id,
+                        "description",
+                        e.target.value
+                      )
+                    }
                     name="description"
                     className={getInputClassName(
                       editingExperience.id,
@@ -1158,14 +1067,12 @@ export default function Experiences({ userId }: ExperienceProps) {
                             </label>
                             <Input
                               type="date"
-                              value={
-                                experience.endDate ? experience.endDate : ""
-                              }
+                              value={experience.endDate || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   experience.id,
                                   "endDate",
-                                  e.target.value || null
+                                  e.target.value || ""
                                 )
                               }
                               className={getInputClassName(
