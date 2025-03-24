@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,17 +12,9 @@ import {
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
 import { useEditableState } from "@/app/hooks/form/use-editable-state";
-import { handleAddNew } from "./certificate/HandleAddNew";
 import { handleEditToggle } from "./certificate/HandleEditToggle";
 import { handleCancelAdd } from "./certificate/HandleCancelAdd";
-interface Certification {
-  id: string;
-  name: string;
-  issuer: string;
-  issueDate: string;
-  expirationDate?: string;
-  credentialUrl?: string;
-}
+import { Certification } from "./certificate/Interface";
 
 interface CertificationsProps {
   userId: string;
@@ -30,7 +22,7 @@ interface CertificationsProps {
 
 // This function is used to display the certifications section in the profile page
 export default function Certifications({ userId }: CertificationsProps) {
-  // Use the editable state hook with the correct type
+  // this is the hook that is used to handle the editable STATE of the certifications section
   const {
     isEditing,
     isAddingNew,
@@ -62,15 +54,27 @@ export default function Certifications({ userId }: CertificationsProps) {
     `/api/users/${userId}/certifications`
   );
 
-  // Update local state when data is fetched
-  // The data is fetched from the server and we need to update the local state with the fetched data
-  // to formate UI dates properly
+  // Update local state when data is fetched - ensure this happens correctly
   useEffect(() => {
-    if (data) {
+    if (data && data.length > 0) {
+      // Make sure to set the formatted data when not in editing or adding mode
+      if (!isEditing && !isAddingNew) {
+        setEditedData(formatCertificationsForUI(data));
+      }
+    } else if (data && data.length === 0) {
+      // If there's no data, set an empty array
+      setEditedData([]);
+    }
+  }, [data, setEditedData, isEditing, isAddingNew]);
+
+  // Also ensure data is correctly reset when exiting edit/add modes
+  useEffect(() => {
+    if (!isEditing && !isAddingNew && data) {
       setEditedData(formatCertificationsForUI(data));
     }
-  }, [data, setEditedData]);
+  }, [isEditing, isAddingNew, data, setEditedData]);
 
+  // This function is used to handle the new certification CHANGE
   const handleNewCertificationChange = (
     field: keyof Omit<Certification, "id">,
     value: string
@@ -78,7 +82,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     handleNewItemChange(field, value);
   };
 
-  // This function is used to save a new certification
+  // This function is used to SAVE a new certification
   const handleSaveNewCertification = (e: React.FormEvent) => {
     handleSaveNewItem({
       event: e,
@@ -104,7 +108,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     });
   };
 
-  // Delete certification
+  // DELETE certification
   const handleDeleteCertification = (id: string) => {
     handleDeleteItem({
       id,
@@ -136,16 +140,14 @@ export default function Certifications({ userId }: CertificationsProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  startAddingNew([
-                    {
-                      id: "new",
-                      name: "",
-                      issuer: "",
-                      issueDate: getCurrentDate(),
-                      expirationDate: "",
-                      credentialUrl: "",
-                    },
-                  ])
+                  startAddingNew({
+                    id: "new",
+                    name: "",
+                    issuer: "",
+                    issueDate: getCurrentDate(),
+                    expirationDate: "",
+                    credentialUrl: "",
+                  })
                 }
               >
                 <>
@@ -341,116 +343,164 @@ export default function Certifications({ userId }: CertificationsProps) {
           </div>
         )}
 
-        {/* Certifications List */}
-        {editedData && editedData.length > 0 ? (
-          <div className="space-y-4">
-            {editedData.map((certification) => (
-              <div
-                key={certification.id}
-                className="relative border-b pb-4 last:border-0"
-              >
-                <div className="flex items-center gap-3">
-                  <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
-                    <CheckCircle className="h-4 w-4" />
-                  </Badge>
-                  <div className="flex-grow">
-                    <Input
-                      type="text"
-                      value={certification.name}
-                      onChange={(e) =>
-                        handleInputChange(
-                          certification.id,
-                          "name",
-                          e.target.value
-                        )
-                      }
-                      className="font-medium mb-2 w-full"
-                      placeholder="Certification Name"
-                    />
-                    <Input
-                      type="text"
-                      value={certification.issuer}
-                      onChange={(e) =>
-                        handleInputChange(
-                          certification.id,
-                          "issuer",
-                          e.target.value
-                        )
-                      }
-                      className="text-sm text-muted-foreground mb-2 w-full"
-                      placeholder="Issuing Organization"
-                    />
-                    <div className="flex gap-2 mb-2">
-                      <div className="w-1/2">
-                        <label className="text-xs text-muted-foreground">
-                          Issue Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={certification.issueDate}
-                          onChange={(e) =>
-                            handleInputChange(
-                              certification.id,
-                              "issueDate",
-                              e.target.value
-                            )
-                          }
-                          className="text-sm text-muted-foreground"
-                          max={getCurrentDate()}
-                        />
-                      </div>
-                      <div className="w-1/2">
-                        <label className="text-xs text-muted-foreground">
-                          Expiration Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={certification.expirationDate || ""}
-                          onChange={(e) =>
-                            handleInputChange(
-                              certification.id,
-                              "expirationDate",
-                              e.target.value
-                            )
-                          }
-                          className="text-sm text-muted-foreground"
-                          max={getCurrentDate()}
-                        />
-                      </div>
-                    </div>
-                    <Input
-                      type="url"
-                      value={certification.credentialUrl || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          certification.id,
-                          "credentialUrl",
-                          e.target.value
-                        )
-                      }
-                      className="text-sm text-muted-foreground mb-2 w-full"
-                      placeholder="Credential URL"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-0 right-0 text-red-500"
-                    onClick={() => handleDeleteCertification(certification.id)}
+        {/* Certifications List - ensure we show all items when not in edit/add mode */}
+        {!isLoading && !error ? (
+          <>
+            {editedData && editedData.length > 0 ? (
+              <div className="space-y-4">
+                {editedData.map((certification) => (
+                  <div
+                    key={certification.id}
+                    className="relative border-b pb-4 last:border-0"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
+                        <CheckCircle className="h-4 w-4" />
+                      </Badge>
+                      <div className="flex-grow">
+                        {isEditing ? (
+                          // Show input fields when editing
+                          <>
+                            <Input
+                              type="text"
+                              value={certification.name}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  certification.id,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              className="font-medium mb-2 w-full"
+                              placeholder="Certification Name"
+                            />
+                            <Input
+                              type="text"
+                              value={certification.issuer}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  certification.id,
+                                  "issuer",
+                                  e.target.value
+                                )
+                              }
+                              className="text-sm text-muted-foreground mb-2 w-full"
+                              placeholder="Issuing Organization"
+                            />
+                            <div className="flex gap-2 mb-2">
+                              <div className="w-1/2">
+                                <label className="text-xs text-muted-foreground">
+                                  Issue Date
+                                </label>
+                                <Input
+                                  type="date"
+                                  value={certification.issueDate}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      certification.id,
+                                      "issueDate",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="text-sm text-muted-foreground"
+                                  max={getCurrentDate()}
+                                />
+                              </div>
+                              <div className="w-1/2">
+                                <label className="text-xs text-muted-foreground">
+                                  Expiration Date
+                                </label>
+                                <Input
+                                  type="date"
+                                  value={certification.expirationDate || ""}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      certification.id,
+                                      "expirationDate",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="text-sm text-muted-foreground"
+                                  max={getCurrentDate()}
+                                />
+                              </div>
+                            </div>
+                            <Input
+                              type="url"
+                              value={certification.credentialUrl || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  certification.id,
+                                  "credentialUrl",
+                                  e.target.value
+                                )
+                              }
+                              className="text-sm text-muted-foreground mb-2 w-full"
+                              placeholder="Credential URL"
+                            />
+                          </>
+                        ) : (
+                          // Show plain text when not editing
+                          <>
+                            <h4 className="font-medium">
+                              {certification.name}
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              {certification.issuer}
+                            </p>
+                            <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                              <span>Issued: {certification.issueDate}</span>
+                              {certification.expirationDate && (
+                                <span>
+                                  Expires: {certification.expirationDate}
+                                </span>
+                              )}
+                            </div>
+                            {certification.credentialUrl && (
+                              <a
+                                href={certification.credentialUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-500 hover:underline mt-1 inline-block"
+                              >
+                                View Credential
+                              </a>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-0 right-0 text-red-500"
+                          onClick={() =>
+                            handleDeleteCertification(certification.id)
+                          }
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            ) : (
+              !isAddingNew && (
+                <div className="text-center py-4 text-muted-foreground">
+                  No certifications found. Add your certifications to showcase
+                  your professional credentials.
+                </div>
+              )
+            )}
+          </>
+        ) : isLoading ? (
+          <div className="text-center py-4">Loading certifications...</div>
         ) : (
-          !isAddingNew && (
-            <div className="text-center py-4 text-muted-foreground">
-              No certifications found. Add your certifications to showcase your
-              professional credentials.
-            </div>
-          )
+          <div className="text-center py-4 text-red-500">
+            Error loading certification information
+          </div>
         )}
       </CardContent>
     </Card>
