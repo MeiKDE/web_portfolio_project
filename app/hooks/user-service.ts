@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/db/prisma";
 // Remove the db import since it's causing an error
 // import { db } from '@/lib/db'; // Assuming you have a database connection
 

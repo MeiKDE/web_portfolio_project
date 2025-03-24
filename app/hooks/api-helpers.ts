@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/db/prisma";
 import { createApiError } from "./error-handler";
 import { z } from "zod";
 
