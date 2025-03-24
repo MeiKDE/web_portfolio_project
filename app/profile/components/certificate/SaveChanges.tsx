@@ -6,16 +6,9 @@ import {
   getCurrentDate,
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
+import { Certification } from "./Interface";
 
 // Add interface for the certification type
-interface Certification {
-  id: string;
-  name: string;
-  issuer: string;
-  issueDate: string;
-  expirationDate?: string;
-  credentialUrl?: string;
-}
 
 export const saveChanges = async (
   editedData: Certification[] | null,

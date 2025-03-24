@@ -1,13 +1,5 @@
+import { Certification } from "./Interface";
 // Add new certification functions
-
-interface Certification {
-  id: string;
-  name: string;
-  issuer: string;
-  issueDate: string;
-  expirationDate?: string;
-  credentialUrl?: string;
-}
 
 export const handleAddNew = (
   startAddingNew: (certifications: Certification[]) => void,

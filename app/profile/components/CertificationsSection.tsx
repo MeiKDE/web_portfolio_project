@@ -75,7 +75,8 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   }, [isEditing, isAddingNew, data, setEditedData]);
 
-  // This function is used to handle the new certification CHANGE
+  // This function is for real-time form input handling CHANGE
+  // Called: On every input change in the form fields
   const handleNewCertificationChange = (
     field: keyof Omit<Certification, "id">,
     value: string
@@ -84,6 +85,8 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   // This function is used to SAVE a new certification
+  // Creating New certifications
+  // Called when saving the Add New Certification form
   const handleSaveNewCertification = (e: React.FormEvent) => {
     handleSaveNewItem({
       event: e,
@@ -126,7 +129,9 @@ export default function Certifications({ userId }: CertificationsProps) {
     });
   };
 
-  // SAVE certifications
+  // SAVE all edited certifications to the backend
+  // Updating existing ones
+  // Called when clicking the "Done" button in edit mode
   const handleSaveCertifications = () => {
     handleSaveEdits({
       endpoint: "/api/certifications",

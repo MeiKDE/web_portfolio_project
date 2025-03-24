@@ -1,13 +1,5 @@
 import { saveChanges } from "./SaveChanges";
-
-interface Certification {
-  id: string;
-  name: string;
-  issuer: string;
-  issueDate: string;
-  expirationDate?: string;
-  credentialUrl?: string;
-}
+import { Certification } from "./Interface";
 
 // Toggle edit mode
 export const handleEditToggle = (
