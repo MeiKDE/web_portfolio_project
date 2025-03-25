@@ -12,7 +12,6 @@ import {
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
 import { useEditableState } from "@/app/hooks/form/use-editable-state";
-import { handleEditToggle } from "./certificates/HandleEditToggle";
 import { handleCancelAdd } from "./certificates/HandleCancelAdd";
 import { Certification } from "./certificates/Interface";
 

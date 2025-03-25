@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatDateForDatabase } from "@/app/hooks/date-utils";
+import { z } from "zod";
 
 export function useEditableState<T>(initialData: T | null) {
   const [isEditing, setIsEditing] = useState(false);
@@ -11,6 +12,11 @@ export function useEditableState<T>(initialData: T | null) {
   const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
     {}
   );
+
+  // Keep validation states for backward compatibility
+  const [validationErrors, setValidationErrors] = useState<{
+    [key: string]: z.ZodIssue[] | null;
+  }>({});
 
   const startEditing = () => {
     console.log("ln11: startEditing");

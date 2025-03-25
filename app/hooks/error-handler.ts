@@ -46,7 +46,7 @@ export function handleApiError(error: unknown) {
       formattedErrors[field].push(err.message);
     });
 
-    return errorResponse("Validation failed", formattedErrors);
+    return errorResponse("Validation failed");
   }
 
   // Handle other types of errors
@@ -79,7 +79,6 @@ export class ApiError extends Error {
  */
 export function handleApiErrorInstance(error: ApiError) {
   return errorResponse(
-    error.statusCode,
     error.message +
       (error.details ? ` (Details: ${JSON.stringify(error.details)})` : "")
   );
