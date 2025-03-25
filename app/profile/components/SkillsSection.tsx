@@ -19,7 +19,6 @@ import { handleAddNew } from "./skills/HandleAddNew";
 import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
-import { skillSchema } from "@/app/hooks/validations";
 
 interface SkillsProps {
   userId: string;
@@ -83,8 +82,7 @@ export default function Skills({ userId }: SkillsProps) {
     }
   );
 
-  // Add useValidationHelpers for better form validation utilities
-  // such as getting field errors, touching fields, etc.
+  // Add useValidationHelpers to cache the form validation
   const {
     getFieldError,
     touchField,
@@ -98,6 +96,7 @@ export default function Skills({ userId }: SkillsProps) {
   useEffect(() => {
     if (data) {
       try {
+        // takes data from the backend as local state when not editing or adding new
         if (!isEditing && !isAddingNew) {
           setEditedData(data);
         }
@@ -151,7 +150,7 @@ export default function Skills({ userId }: SkillsProps) {
                 </>
               </Button>
             )}
-            {!isAddingNew && (
+            {!isAddingNew && !isEditing && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -170,57 +169,58 @@ export default function Skills({ userId }: SkillsProps) {
                 </>
               </Button>
             )}
+            {/* Add a separate Save button that appears when editing */}
+            {isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  handleSaveEdits({
+                    endpoint: `/api/skills`,
+                    validateFn: (data) => {
+                      try {
+                        // Validate each skill
+                        if (Array.isArray(data)) {
+                          data.forEach((skill) => {
+                            if (
+                              !skill.name ||
+                              !skill.category ||
+                              !skill.proficiencyLevel
+                            ) {
+                              throw new Error(
+                                "All required fields must be filled"
+                              );
+                            }
+                          });
+                        }
+                        return true;
+                      } catch (error) {
+                        console.error("Validation error:", error);
+                        alert("Please fill out all required fields correctly");
+                        return false;
+                      }
+                    },
+                    onSuccess: () => {
+                      mutate();
+                      setIsEditing(false);
+                      setSaveSuccess(true);
+                    },
+                    onError: (error: any) => {
+                      console.error("Error saving skills:", error);
+                      alert("Failed to save skills. Please try again.");
+                    },
+                  })
+                }
+                disabled={isSubmitting}
+              >
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSubmitting ? "Saving..." : "Save"}
+                </>
+              </Button>
+            )}
           </div>
         </div>
-
-        {/* Add a separate Save button that appears when editing */}
-        {isEditing && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              handleSaveEdits({
-                endpoint: `/api/skills`,
-                validateFn: (data) => {
-                  try {
-                    // Validate each skill
-                    if (Array.isArray(data)) {
-                      data.forEach((skill) => {
-                        if (
-                          !skill.name ||
-                          !skill.category ||
-                          !skill.proficiencyLevel
-                        ) {
-                          throw new Error("All required fields must be filled");
-                        }
-                      });
-                    }
-                    return true;
-                  } catch (error) {
-                    console.error("Validation error:", error);
-                    alert("Please fill out all required fields correctly");
-                    return false;
-                  }
-                },
-                onSuccess: () => {
-                  mutate();
-                  setIsEditing(false);
-                  setSaveSuccess(true);
-                },
-                onError: (error: any) => {
-                  console.error("Error saving skills:", error);
-                  alert("Failed to save skills. Please try again.");
-                },
-              })
-            }
-            disabled={isSubmitting}
-          >
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {isSubmitting ? "Saving..." : "Save"}
-            </>
-          </Button>
-        )}
 
         {/* Add validation error messages */}
         {isEditing &&
