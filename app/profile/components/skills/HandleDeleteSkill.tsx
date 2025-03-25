@@ -9,7 +9,9 @@ export const handleDeleteSkill = (
     confirmMessage: "Are you sure you want to delete this skill?",
     endpoint: `/api/skills/${id}`,
     filterFn: (skill: any) => skill.id !== id,
-    onSuccess: () => mutate(),
+    onSuccess: () => {
+      mutate();
+    },
     onError: (error: any) => {
       console.error("Error deleting skill:", error);
       alert("Failed to delete skill. Please try again.");

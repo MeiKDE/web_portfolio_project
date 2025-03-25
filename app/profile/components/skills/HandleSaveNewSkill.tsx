@@ -6,7 +6,8 @@ export const handleSaveNewSkill = (
   handleSaveNewItem: any,
   userId: string,
   mutate: () => void,
-  resetForm: () => void
+  resetForm: () => void,
+  cancelAddingNew: () => void
 ) => {
   e.preventDefault();
 
@@ -29,8 +30,9 @@ export const handleSaveNewSkill = (
     }),
     endpoint: `/api/users/${userId}/skills`,
     onSuccess: () => {
-      mutate();
-      resetForm();
+      mutate(); // Refresh the skills list
+      resetForm(); // Reset the form
+      cancelAddingNew(); // Close the form
     },
     onError: (error: any) => {
       console.error("Error adding skill:", error);

@@ -11,6 +11,8 @@ import {
 } from "@/app/lib/api/api-helpers";
 import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
 import { z } from "zod";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/lib/auth/auth-options";
 
 // Define schema for validation
 const skillUpdateSchema = z.object({
@@ -20,68 +22,145 @@ const skillUpdateSchema = z.object({
 });
 
 // UPDATE a skill
-export const PUT = withOwnership(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string } },
-    user
-  ) => {
-    try {
-      const data = await request.json();
+// export const PUT = withOwnership(
+//   async (
+//     request: NextRequest,
+//     { params }: { params: { id: string } },
+//     user
+//   ) => {
+//     try {
+//       const data = await request.json();
 
-      // Validate the data
-      const validationResult = skillUpdateSchema.safeParse(data);
+//       // Validate the data
+//       const validationResult = skillUpdateSchema.safeParse(data);
 
-      if (!validationResult.success) {
-        throw createApiError.badRequest(
-          "Invalid skill data",
-          validationResult.error.format()
-        );
-      }
+//       if (!validationResult.success) {
+//         throw createApiError.badRequest(
+//           "Invalid skill data",
+//           validationResult.error.format()
+//         );
+//       }
 
-      // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
-      const skill = await prisma.skill.update({
-        where: { id: params.id },
-        data: {
-          name: data.name,
-          proficiencyLevel: data.proficiencyLevel,
-          category: data.category,
-        },
-      });
+//       // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
+//       const skill = await prisma.skill.update({
+//         where: { id: params.id },
+//         data: {
+//           name: data.name,
+//           proficiencyLevel: data.proficiencyLevel,
+//           category: data.category,
+//         },
+//       });
 
-      // Map back to frontend format
-      return successResponse({
-        id: skill.id,
-        name: skill.name,
-        proficiency: skill.proficiencyLevel,
-        category: skill.category,
-      });
-    } catch (error) {
-      return handleApiError(error);
+//       // Map back to frontend format
+//       return successResponse({
+//         id: skill.id,
+//         name: skill.name,
+//         proficiency: skill.proficiencyLevel,
+//         category: skill.category,
+//       });
+//     } catch (error) {
+//       return handleApiError(error);
+//     }
+//   },
+//   "skill"
+// );
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { userId: string; id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return errorResponse("Unauthorized", 401);
     }
-  },
-  "skill"
-);
+
+    const { userId, id } = params;
+    const data = await req.json();
+
+    // Validate required fields
+    if (!data.name || !data.category || !data.proficiencyLevel) {
+      return errorResponse("Missing required fields", 400);
+    }
+
+    // Update the skill
+    const updatedSkill = await prisma.skill.update({
+      where: {
+        id: id,
+        userId: userId,
+      },
+      data: {
+        name: data.name,
+        category: data.category,
+        proficiencyLevel: data.proficiencyLevel,
+      },
+    });
+
+    return successResponse(updatedSkill);
+  } catch (error) {
+    console.error("Error updating skill:", error);
+    return errorResponse("Failed to update skill", 500);
+  }
+}
 
 // DELETE a skill
-export const DELETE = withOwnership(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string } },
-    user
-  ) => {
-    try {
-      await prisma.skill.delete({
-        where: { id: params.id },
-      });
+// export const DELETE = withOwnership(
+//   async (
+//     request: NextRequest,
+//     { params }: { params: { id: string } },
+//     user
+//   ) => {
+//     try {
+//       await prisma.skill.delete({
+//         where: { id: params.id },
+//       });
 
-      return successResponse({ message: "Skill deleted successfully" });
-    } catch (error) {
-      return handleApiError(error);
+//       return successResponse({ message: "Skill deleted successfully" });
+//     } catch (error) {
+//       return handleApiError(error);
+//     }
+//   },
+//   "skill"
+// );
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { userId: string; id: string } }
+) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return errorResponse("Unauthorized", 401);
     }
-  },
-  "skill"
-);
+
+    const { userId, id } = params;
+
+    // Verify the skill belongs to the user
+    const skill = await prisma.skill.findFirst({
+      where: {
+        id: id,
+        userId: userId,
+      },
+    });
+
+    if (!skill) {
+      return errorResponse("Skill not found or unauthorized", 404);
+    }
+
+    // Delete the skill
+    await prisma.skill.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    return successResponse({ message: "Skill deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting skill:", error);
+    return errorResponse("Failed to delete skill", 500);
+  }
+}
 
 // POST a new skill for a specific user
 export const POST = withAuth(

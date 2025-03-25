@@ -19,6 +19,7 @@ import { handleAddNew } from "./skills/HandleAddNew";
 import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
+import { skillSchema } from "@/app/hooks/validations";
 
 interface SkillsProps {
   userId: string;
@@ -58,7 +59,7 @@ export default function Skills({ userId }: SkillsProps) {
     `/api/users/${userId}/skills`
   );
 
-  // Use the form validation hook for the skill form
+  // Use validation hook to validate the form fields
   const {
     values,
     errors,
@@ -83,6 +84,7 @@ export default function Skills({ userId }: SkillsProps) {
   );
 
   // Add useValidationHelpers for better form validation utilities
+  // such as getting field errors, touching fields, etc.
   const {
     getFieldError,
     touchField,
@@ -105,6 +107,28 @@ export default function Skills({ userId }: SkillsProps) {
       }
     }
   }, [data, setEditedData, isEditing, isAddingNew]);
+
+  // Add this useEffect to ensure data is refreshed after saving
+  useEffect(() => {
+    if (saveSuccess) {
+      const refreshData = async () => {
+        await mutate();
+        setSaveSuccess(false);
+        setIsSubmitting(false);
+        setIsAddingNew(false);
+      };
+      refreshData();
+    }
+  }, [saveSuccess, mutate, setSaveSuccess, setIsSubmitting, setIsAddingNew]);
+
+  // Add debug effect
+  useEffect(() => {
+    console.log("Form state:", {
+      isAddingNew,
+      cancelAddingNew: !!cancelAddingNew,
+      resetForm: !!resetForm,
+    });
+  }, [isAddingNew, cancelAddingNew, resetForm]);
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
@@ -131,56 +155,117 @@ export default function Skills({ userId }: SkillsProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() =>
-                  handleEditToggle(
-                    isEditing,
-                    editedData,
-                    setIsSubmitting,
-                    setIsEditing,
-                    setSaveSuccess,
-                    mutate,
-                    startEditing,
-                    setIsAddingNew,
-                    handleSaveEdits
-                  )
-                }
-                disabled={isSubmitting}
+                onClick={() => {
+                  if (data) {
+                    startEditing();
+                    setEditedData(data);
+                  } else {
+                    startEditing();
+                  }
+                }}
               >
                 <>
-                  {isEditing ? (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      {isSubmitting ? "Saving..." : "Done"}
-                    </>
-                  ) : (
-                    <>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </>
-                  )}
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
                 </>
               </Button>
             )}
           </div>
         </div>
 
+        {/* Add a separate Save button that appears when editing */}
+        {isEditing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              handleSaveEdits({
+                endpoint: `/api/skills`,
+                validateFn: (data) => {
+                  try {
+                    // Validate each skill
+                    if (Array.isArray(data)) {
+                      data.forEach((skill) => {
+                        if (
+                          !skill.name ||
+                          !skill.category ||
+                          !skill.proficiencyLevel
+                        ) {
+                          throw new Error("All required fields must be filled");
+                        }
+                      });
+                    }
+                    return true;
+                  } catch (error) {
+                    console.error("Validation error:", error);
+                    alert("Please fill out all required fields correctly");
+                    return false;
+                  }
+                },
+                onSuccess: () => {
+                  mutate();
+                  setIsEditing(false);
+                  setSaveSuccess(true);
+                },
+                onError: (error: any) => {
+                  console.error("Error saving skills:", error);
+                  alert("Failed to save skills. Please try again.");
+                },
+              })
+            }
+            disabled={isSubmitting}
+          >
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Saving..." : "Save"}
+            </>
+          </Button>
+        )}
+
+        {/* Add validation error messages */}
+        {isEditing &&
+          editedData?.map((skill, index) => (
+            <div key={skill.id} className="text-sm text-red-500">
+              {!skill.name && <p>Name is required</p>}
+              {!skill.category && <p>Category is required</p>}
+              {(!skill.proficiencyLevel ||
+                skill.proficiencyLevel < 1 ||
+                skill.proficiencyLevel > 10) && (
+                <p>Proficiency level must be between 1 and 10</p>
+              )}
+            </div>
+          ))}
+
         {/* Add New Skill Form */}
         {isAddingNew && (
           <div className="mb-6 border p-4 rounded-md">
             <h4 className="font-medium mb-3">Add New Skill</h4>
             <form
-              onSubmit={(e) =>
-                handleSaveNewSkill(
-                  e,
-                  validateForm,
-                  values,
-                  touchField,
-                  handleSaveNewItem,
-                  userId,
-                  mutate,
-                  resetForm
-                )
-              }
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                try {
+                  await handleSaveNewSkill(
+                    e,
+                    validateForm,
+                    values,
+                    touchField,
+                    handleSaveNewItem,
+                    userId,
+                    mutate,
+                    resetForm,
+                    cancelAddingNew
+                  );
+                  // After successful save
+                  setIsSubmitting(false);
+                  setSaveSuccess(true);
+                  setIsAddingNew(false); // Close the form
+                  await mutate(); // Refresh the data immediately
+                } catch (error) {
+                  console.error("Error saving skill:", error);
+                  setIsSubmitting(false);
+                }
+              }}
               className="space-y-4"
             >
               <div className="mb-2">
@@ -278,7 +363,23 @@ export default function Skills({ userId }: SkillsProps) {
                 >
                   Cancel
                 </Button>
-                <Button size="sm" type="submit" disabled={isSubmitting}>
+                <Button
+                  size="sm"
+                  onClick={(e) =>
+                    handleSaveNewSkill(
+                      e,
+                      validateForm,
+                      values,
+                      touchField,
+                      handleSaveNewItem,
+                      userId,
+                      mutate,
+                      resetForm,
+                      cancelAddingNew
+                    )
+                  }
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Saving..." : "Save Skill"}
                 </Button>
               </div>
@@ -312,8 +413,11 @@ export default function Skills({ userId }: SkillsProps) {
                                 touchField
                               )
                             }
-                            className="font-medium mb-2"
-                            placeholder="Skill Name"
+                            className={`font-medium mb-2 ${
+                              !skill.name ? "border-red-500" : ""
+                            }`}
+                            placeholder="Skill Name *"
+                            required
                           />
                           <Input
                             type="text"
@@ -327,13 +431,16 @@ export default function Skills({ userId }: SkillsProps) {
                                 touchField
                               )
                             }
-                            className="text-sm mb-2"
-                            placeholder="Category"
+                            className={`text-sm mb-2 ${
+                              !skill.category ? "border-red-500" : ""
+                            }`}
+                            placeholder="Category *"
+                            required
                           />
                           <Input
                             type="number"
                             min="1"
-                            max="5"
+                            max="10"
                             value={skill.proficiencyLevel}
                             onChange={(e) =>
                               handleSkillInputChange(
@@ -344,8 +451,15 @@ export default function Skills({ userId }: SkillsProps) {
                                 touchField
                               )
                             }
-                            className="text-sm"
-                            placeholder="Proficiency Level"
+                            className={`text-sm ${
+                              !skill.proficiencyLevel ||
+                              skill.proficiencyLevel < 1 ||
+                              skill.proficiencyLevel > 10
+                                ? "border-red-500"
+                                : ""
+                            }`}
+                            placeholder="Proficiency Level (1-10) *"
+                            required
                           />
                         </div>
                         <div className="flex items-start">
