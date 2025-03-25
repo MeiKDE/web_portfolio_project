@@ -106,122 +106,6 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [data, setEditedData, isEditing, isAddingNew]);
 
-  // // Handler for toggling edit mode - connects old pattern to new hook
-  // const handleEditToggle = () => {
-  //   if (isEditing) {
-  //     handleSaveSkills();
-  //   } else {
-  //     startEditing();
-  //   }
-  // };
-
-  // // Handler for input changes in edit mode
-  // const handleSkillInputChange = (
-  //   id: string,
-  //   field: keyof Skill,
-  //   value: any
-  // ) => {
-  //   handleInputChange(
-  //     id,
-  //     field,
-  //     field === "proficiencyLevel" ? parseInt(value) : value
-  //   );
-
-  //   // Use the touchField from useValidationHelpers
-  //   touchField(field as string);
-  // };
-
-  // // Handler for new skill changes
-  // const handleNewSkillChange = (
-  //   field: keyof Omit<Skill, "id">,
-  //   value: string | number
-  // ) => {
-  //   handleNewItemChange(field, value);
-
-  //   // Add validation during typing
-  //   if (field in values) {
-  //     handleChange(field as keyof typeof values, value);
-  //   }
-  // };
-
-  // // Handler for adding new skill
-  // const handleAddNew = () => {
-  //   startAddingNew({
-  //     id: "new",
-  //     name: "",
-  //     proficiencyLevel: 3,
-  //     category: "Frontend",
-  //   } as any);
-
-  //   // Reset form validation
-  //   resetForm();
-  // };
-
-  // // Handler for canceling add
-  // const handleCancelAdd = () => {
-  //   cancelAddingNew();
-  //   resetForm();
-  // };
-
-  // // Handler for saving new skill
-  // const handleSaveNewSkill = (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   // Validate form before submission
-  //   if (!validateForm()) {
-  //     // Mark all fields as touched to show validation errors
-  //     Object.keys(values).forEach((key) => {
-  //       touchField(key);
-  //     });
-  //     return;
-  //   }
-
-  //   handleSaveNewItem({
-  //     event: e,
-  //     requiredFields: ["name", "category", "proficiencyLevel"],
-  //     formatData: (data) => ({
-  //       name: data.name.trim(),
-  //       category: data.category.trim(),
-  //       proficiencyLevel: parseInt(data.proficiencyLevel.toString()),
-  //     }),
-  //     endpoint: `/api/users/${userId}/skills`,
-  //     onSuccess: () => {
-  //       mutate();
-  //       resetForm();
-  //     },
-  //     onError: (error) => {
-  //       console.error("Error adding skill:", error);
-  //     },
-  //   });
-  // };
-
-  // // Handler for saving edited skills
-  // const handleSaveSkills = () => {
-  //   handleSaveEdits({
-  //     endpoint: "/api/skills",
-  //     onSuccess: () => mutate(),
-  //     onError: (error) => {
-  //       console.error("Error saving skills:", error);
-  //       alert("Failed to save skills. Please try again.");
-  //     },
-  //   });
-  // };
-
-  // // Handler for deleting a skill
-  // const handleDeleteSkill = async (id: string) => {
-  //   handleDeleteItem({
-  //     id,
-  //     confirmMessage: "Are you sure you want to delete this skill?",
-  //     endpoint: `/api/skills/${id}`,
-  //     filterFn: (skill) => skill.id !== id,
-  //     onSuccess: () => mutate(),
-  //     onError: (error) => {
-  //       console.error("Error deleting skill:", error);
-  //       alert("Failed to delete skill. Please try again.");
-  //     },
-  //   });
-  // };
-
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
 
@@ -297,6 +181,7 @@ export default function Skills({ userId }: SkillsProps) {
                   resetForm
                 )
               }
+              className="space-y-4"
             >
               <div className="mb-2">
                 <label className="text-sm text-muted-foreground">
