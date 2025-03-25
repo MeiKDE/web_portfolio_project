@@ -14,6 +14,10 @@ import {
 import { useEditableState } from "@/app/hooks/form/use-editable-state";
 import { handleCancelAdd } from "./certificates/HandleCancelAdd";
 import { Certification } from "./certificates/Interface";
+import { handleNewCertificationChange } from "./certificates/HandleNewCertificationChange";
+import { handleSaveNewCertification } from "./certificates/HandleSaveNewCertification";
+import { handleDeleteCertification } from "./certificates/HandleDeleteCertification";
+import { handleSaveCertifications } from "./certificates/HandleSaveCertifications";
 
 interface CertificationsProps {
   userId: string;
@@ -74,74 +78,74 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   }, [isEditing, isAddingNew, data, setEditedData]);
 
-  // This function is for real-time form input handling CHANGE
-  // Called: On every input change in the form fields
-  const handleNewCertificationChange = (
-    field: keyof Omit<Certification, "id">,
-    value: string
-  ) => {
-    handleNewItemChange(field, value);
-  };
+  // // This function is for real-time form input handling CHANGE
+  // // Called: On every input change in the form fields
+  // const handleNewCertificationChange = (
+  //   field: keyof Omit<Certification, "id">,
+  //   value: string
+  // ) => {
+  //   handleNewItemChange(field, value);
+  // };
 
-  // This function is used to SAVE a new certification
-  // Creating New certifications
-  // Called when saving the Add New Certification form
-  const handleSaveNewCertification = (e: React.FormEvent) => {
-    handleSaveNewItem({
-      event: e,
-      requiredFields: ["name", "issuer", "issueDate"],
-      formatData: (data) => ({
-        name: data?.name?.trim(),
-        issuer: data?.issuer?.trim(),
-        issueDate: data?.issueDate
-          ? formatDateForDatabase(data.issueDate as string)
-          : "",
-        expirationDate:
-          data?.expirationDate && (data.expirationDate as string).trim() !== ""
-            ? formatDateForDatabase(data.expirationDate as string)
-            : null,
-        credentialUrl:
-          data?.credentialUrl && (data.credentialUrl as string).trim() !== ""
-            ? (data.credentialUrl as string).trim()
-            : null,
-      }),
-      endpoint: "/api/certifications/",
-      onSuccess: () => mutate(), // Refresh data on success
-      onError: (error) => console.error("Error adding certification:", error),
-    });
-  };
+  // // This function is used to SAVE a new certification
+  // // Creating New certifications
+  // // Called when saving the Add New Certification form
+  // const handleSaveNewCertification = (e: React.FormEvent) => {
+  //   handleSaveNewItem({
+  //     event: e,
+  //     requiredFields: ["name", "issuer", "issueDate"],
+  //     formatData: (data) => ({
+  //       name: data?.name?.trim(),
+  //       issuer: data?.issuer?.trim(),
+  //       issueDate: data?.issueDate
+  //         ? formatDateForDatabase(data.issueDate as string)
+  //         : "",
+  //       expirationDate:
+  //         data?.expirationDate && (data.expirationDate as string).trim() !== ""
+  //           ? formatDateForDatabase(data.expirationDate as string)
+  //           : null,
+  //       credentialUrl:
+  //         data?.credentialUrl && (data.credentialUrl as string).trim() !== ""
+  //           ? (data.credentialUrl as string).trim()
+  //           : null,
+  //     }),
+  //     endpoint: "/api/certifications/",
+  //     onSuccess: () => mutate(), // Refresh data on success
+  //     onError: (error) => console.error("Error adding certification:", error),
+  //   });
+  // };
 
-  // DELETE certification
-  const handleDeleteCertification = (id: string) => {
-    handleDeleteItem({
-      id,
-      confirmMessage: "Are you sure you want to delete this certification?",
-      endpoint: `/api/certifications/${id}`,
-      filterFn: (cert) => cert.id !== id,
-      onSuccess: () => {
-        mutate();
-      },
-      onError: (error) => {
-        console.error("Error deleting certification:", error);
-        alert("Failed to delete certification. Please try again.");
-      },
-    });
-  };
+  // // DELETE certification
+  // const handleDeleteCertification = (id: string) => {
+  //   handleDeleteItem({
+  //     id,
+  //     confirmMessage: "Are you sure you want to delete this certification?",
+  //     endpoint: `/api/certifications/${id}`,
+  //     filterFn: (cert) => cert.id !== id,
+  //     onSuccess: () => {
+  //       mutate();
+  //     },
+  //     onError: (error) => {
+  //       console.error("Error deleting certification:", error);
+  //       alert("Failed to delete certification. Please try again.");
+  //     },
+  //   });
+  // };
 
   // SAVE all edited certifications to the backend
   // Updating existing ones
   // Called when clicking the "Done" button in edit mode
-  const handleSaveCertifications = () => {
-    handleSaveEdits({
-      endpoint: "/api/certifications",
-      dateFields: ["issueDate", "expirationDate"],
-      onSuccess: () => mutate(),
-      onError: (error) => {
-        console.error("Error saving certifications:", error);
-        alert("Failed to save certifications. Please try again.");
-      },
-    });
-  };
+  // const handleSaveCertifications = () => {
+  //   handleSaveEdits({
+  //     endpoint: "/api/certifications",
+  //     dateFields: ["issueDate", "expirationDate"],
+  //     onSuccess: () => mutate(),
+  //     onError: (error) => {
+  //       console.error("Error saving certifications:", error);
+  //       alert("Failed to save certifications. Please try again.");
+  //     },
+  //   });
+  // };
 
   if (isLoading) return <div>Loading certifications...</div>;
   if (error) return <div>Error loading certification information</div>;
@@ -180,7 +184,9 @@ export default function Certifications({ userId }: CertificationsProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleSaveCertifications}
+                onClick={() =>
+                  handleSaveCertifications(handleSaveEdits, mutate)
+                }
                 disabled={isSubmitting}
               >
                 <>
@@ -224,7 +230,11 @@ export default function Certifications({ userId }: CertificationsProps) {
                   <Input
                     value={newItemData?.name || ""}
                     onChange={(e) =>
-                      handleNewCertificationChange("name", e.target.value)
+                      handleNewCertificationChange(
+                        "name",
+                        e.target.value,
+                        handleNewItemChange
+                      )
                     }
                     className={`mt-1 ${
                       newItemErrors.name ? "border-red-500" : ""
@@ -245,7 +255,11 @@ export default function Certifications({ userId }: CertificationsProps) {
                   <Input
                     value={newItemData?.issuer || ""}
                     onChange={(e) =>
-                      handleNewCertificationChange("issuer", e.target.value)
+                      handleNewCertificationChange(
+                        "issuer",
+                        e.target.value,
+                        handleNewItemChange
+                      )
                     }
                     className={`mt-1 ${
                       newItemErrors.issuer ? "border-red-500" : ""
@@ -270,7 +284,8 @@ export default function Certifications({ userId }: CertificationsProps) {
                       onChange={(e) =>
                         handleNewCertificationChange(
                           "issueDate",
-                          e.target.value
+                          e.target.value,
+                          handleNewItemChange
                         )
                       }
                       className={`mt-1 ${
@@ -294,7 +309,8 @@ export default function Certifications({ userId }: CertificationsProps) {
                       onChange={(e) =>
                         handleNewCertificationChange(
                           "expirationDate",
-                          e.target.value
+                          e.target.value,
+                          handleNewItemChange
                         )
                       }
                       className="mt-1"
@@ -313,7 +329,8 @@ export default function Certifications({ userId }: CertificationsProps) {
                     onChange={(e) =>
                       handleNewCertificationChange(
                         "credentialUrl",
-                        e.target.value
+                        e.target.value,
+                        handleNewItemChange
                       )
                     }
                     className="mt-1"
@@ -336,7 +353,14 @@ export default function Certifications({ userId }: CertificationsProps) {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleSaveNewCertification}
+                    onClick={(e) =>
+                      handleSaveNewCertification(
+                        e,
+                        handleSaveNewItem,
+                        formatDateForDatabase,
+                        mutate
+                      )
+                    }
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "Saving..." : "Save Certification"}
@@ -480,7 +504,11 @@ export default function Certifications({ userId }: CertificationsProps) {
                           size="icon"
                           className="absolute top-0 right-0 text-red-500"
                           onClick={() =>
-                            handleDeleteCertification(certification.id)
+                            handleDeleteCertification(
+                              certification.id,
+                              handleDeleteItem,
+                              mutate
+                            )
                           }
                         >
                           <X className="h-4 w-4" />
