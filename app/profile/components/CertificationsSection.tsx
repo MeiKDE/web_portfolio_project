@@ -10,10 +10,10 @@ import {
   getCurrentDate,
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
-import { Certification } from "./certificates/Interface";
-import { handleDeleteCertification } from "./certificates/HandleDeleteCertification";
-import { handleSaveCertifications } from "./certificates/HandleSaveCertifications";
-import { NewCertification } from "./certificates/add_new_certificate/NewCertification";
+import { Certification } from "./certifications/Interface";
+import { handleDeleteCertification } from "./certifications/HandleDeleteCertification";
+import { handleSaveCertifications } from "./certifications/HandleSaveCertifications";
+import { NewCertification } from "./certifications/add_new_certificate/NewCertification";
 
 interface CertificationsProps {
   userId: string;
