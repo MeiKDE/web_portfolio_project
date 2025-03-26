@@ -8,13 +8,16 @@ import { Certification } from "./Interface";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
+  isSubmitting: boolean;
+  setIsSubmitting: (isSubmitting: boolean) => void;
 }
 
 export function NewCertification({
   mutate,
   cancelAddingNew,
+  isSubmitting,
+  setIsSubmitting,
 }: NewCertificationProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<Certification>>({
     name: "",
     issuer: "",

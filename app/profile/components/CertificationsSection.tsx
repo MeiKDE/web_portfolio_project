@@ -31,9 +31,6 @@ export default function Certifications({ userId }: CertificationsProps) {
   const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
     {}
   );
-  // const [validationErrors, setValidationErrors] = useState<{
-  //   [key: string]: z.ZodIssue[] | null;
-  // }>({});
 
   const startEditing = () => {
     console.log("ln11: startEditing");
@@ -42,16 +39,11 @@ export default function Certifications({ userId }: CertificationsProps) {
       setEditedData(formatCertificationsForUI(data));
     }
   };
-
   const startAddingNew = (defaultNewItem: Certification[]) => {
     setIsAddingNew(true);
     setEditedData(defaultNewItem);
     setNewItemData(defaultNewItem);
   };
-  // const handleNewItemChange = (field: string, value: any) => {
-  //   setNewItemData((prev: any) => ({ ...prev, [field]: value }));
-  // };
-
   const handleDeleteItem = async ({
     id,
     confirmMessage = "Are you sure you want to delete this item?",
@@ -95,7 +87,6 @@ export default function Certifications({ userId }: CertificationsProps) {
       onError?.(error); // Call error callback if provided
     }
   };
-
   // Helper function to format item for API
   const formatItemForApi = (item: any, dateFields: string[] = []) => {
     const formatted = { ...item };
@@ -111,7 +102,6 @@ export default function Certifications({ userId }: CertificationsProps) {
 
     return formatted;
   };
-
   const handleSaveEdits = async ({
     endpoint,
     dateFields = [],
@@ -180,36 +170,11 @@ export default function Certifications({ userId }: CertificationsProps) {
       setIsSubmitting(false);
     }
   };
-
-  // const cancelEditing = () => {
-  //   setIsEditing(false);
-  //   setIsAddingNew(false);
-  //   if (data) {
-  //     setEditedData(formatCertificationsForUI(data));
-  //   }
-  // };
-
   const cancelAddingNew = () => {
     setIsAddingNew(false);
     setNewItemData(null);
     setNewItemErrors({});
   };
-
-  const validateNewItem = (requiredFields: string[]) => {
-    const errors: { [key: string]: string } = {};
-
-    if (newItemData) {
-      for (const field of requiredFields) {
-        if (!newItemData[field]) {
-          errors[field] = `${field} is required.`;
-        }
-      }
-    }
-
-    setNewItemErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const handleInputChange = (id: string | null, field: string, value: any) => {
     setEditedData((prev) => {
       if (!prev) return prev;
@@ -232,7 +197,6 @@ export default function Certifications({ userId }: CertificationsProps) {
       return [{ ...(prev as any), [field]: value }] as Certification[];
     });
   };
-
   // const handleSaveNewItem = async ({
   //   event,
   //   requiredFields,
@@ -286,7 +250,6 @@ export default function Certifications({ userId }: CertificationsProps) {
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
     `/api/users/${userId}/certifications`
   );
-
   // Update local state when data is fetched - ensure this happens correctly
   useEffect(() => {
     if (data && data.length > 0) {
@@ -299,7 +262,6 @@ export default function Certifications({ userId }: CertificationsProps) {
       setEditedData([]);
     }
   }, [data, setEditedData, isEditing, isAddingNew]);
-
   // Also ensure data is correctly reset when exiting edit/add modes
   useEffect(() => {
     if (!isEditing && !isAddingNew && data) {
@@ -383,6 +345,8 @@ export default function Certifications({ userId }: CertificationsProps) {
           <NewCertification
             mutate={mutate}
             cancelAddingNew={cancelAddingNew}
+            isSubmitting={isSubmitting}
+            setIsSubmitting={setIsSubmitting}
           ></NewCertification>
         )}
 
