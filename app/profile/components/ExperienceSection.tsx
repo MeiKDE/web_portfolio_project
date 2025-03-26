@@ -28,6 +28,7 @@ import {
   getCurrentDate,
   calculateDuration,
 } from "@/app/hooks/date-utils";
+import { AddButton } from "./ui/AddButton";
 
 interface Experience {
   id: string;
@@ -602,12 +603,7 @@ export default function Experiences({ userId }: ExperienceProps) {
 
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <Button variant="ghost" size="sm" onClick={toggleAddForm}>
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </>
-              </Button>
+              <AddButton onClick={toggleAddForm} />
             )}
 
             {isEditing ? (

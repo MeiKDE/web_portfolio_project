@@ -19,7 +19,7 @@ import { handleAddNew } from "./skills/HandleAddNew";
 import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
-
+import { AddButton } from "./ui/AddButton";
 interface SkillsProps {
   userId: string;
 }
@@ -139,16 +139,9 @@ export default function Skills({ userId }: SkillsProps) {
           <h3 className="text-xl font-semibold">Skills</h3>
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <AddButton
                 onClick={() => handleAddNew(startAddingNew, resetForm)}
-              >
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </>
-              </Button>
+              />
             )}
             {!isAddingNew && !isEditing && (
               <Button

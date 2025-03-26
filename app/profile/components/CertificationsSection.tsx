@@ -14,6 +14,7 @@ import { Certification } from "./certifications/Interface";
 import { handleDeleteCertification } from "./certifications/HandleDeleteCertification";
 import { handleSaveCertifications } from "./certifications/HandleSaveCertifications";
 import { NewCertification } from "./certifications/add_new_certificate/NewCertification";
+import { AddButton } from "./ui/AddButton";
 
 interface CertificationsProps {
   userId: string;
@@ -271,6 +272,18 @@ export default function Certifications({ userId }: CertificationsProps) {
   if (isLoading) return <div>Loading certifications...</div>;
   if (error) return <div>Error loading certification information</div>;
 
+  const onClickAddNew = () =>
+    startAddingNew([
+      {
+        id: "new",
+        name: "",
+        issuer: "",
+        issueDate: getCurrentDate(),
+        expirationDate: "",
+        credentialUrl: "",
+      },
+    ]);
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -278,27 +291,7 @@ export default function Certifications({ userId }: CertificationsProps) {
           <h3 className="text-xl font-semibold">Certifications</h3>
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  startAddingNew([
-                    {
-                      id: "new",
-                      name: "",
-                      issuer: "",
-                      issueDate: getCurrentDate(),
-                      expirationDate: "",
-                      credentialUrl: "",
-                    },
-                  ])
-                }
-              >
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </>
-              </Button>
+              <AddButton onClick={onClickAddNew} />
             )}
 
             {isEditing ? (

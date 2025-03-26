@@ -9,7 +9,7 @@ import useSWR from "swr";
 import { z } from "zod";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
-
+import { AddButton } from "./ui/AddButton";
 interface Education {
   id: string;
   institution: string;
@@ -554,12 +554,7 @@ export default function Educations({ userId }: EducationProps) {
           <div className="flex gap-2">
             {!editable ? (
               <>
-                <Button variant="ghost" size="sm" onClick={handleAddEducation}>
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </>
-                </Button>
+                <AddButton onClick={handleAddEducation} />
                 <Button variant="ghost" size="sm" onClick={handleEditToggle}>
                   <>
                     <Edit className="h-4 w-4 mr-2" />
