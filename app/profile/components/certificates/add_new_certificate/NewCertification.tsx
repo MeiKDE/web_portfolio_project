@@ -6,7 +6,8 @@ import { getCurrentDate, formatDateForDatabase } from "@/app/hooks/date-utils";
 import { Certification } from "../Interface";
 import { CertificateNameInput } from "./CertificateNameInput";
 import { IssuingOrganizationInput } from "./IssuingOrganizationInput";
-
+import { IssueDateInput } from "./IssueDateInput";
+import { ExpirationDateInput } from "./ExpirationDateInput";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -125,35 +126,17 @@ export function NewCertification({
       />
 
       <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="block text-sm text-gray-600 mb-1">
-            Issue Date*
-          </label>
-          <Input
-            type="date"
-            value={formData.issueDate || ""}
-            onChange={(e) => handleInputChange("issueDate", e.target.value)}
-            max={getCurrentDate()}
-            className={errors.issueDate ? "border-red-500" : ""}
-          />
-          {errors.issueDate && (
-            <p className="text-red-500 text-sm mt-1">{errors.issueDate}</p>
-          )}
-        </div>
+        <IssueDateInput
+          formData={formData}
+          errors={errors}
+          handleInputChange={handleInputChange}
+        />
 
-        <div className="flex-1">
-          <label className="block text-sm text-gray-600 mb-1">
-            Expiration Date
-          </label>
-          <Input
-            type="date"
-            value={formData.expirationDate || ""}
-            onChange={(e) =>
-              handleInputChange("expirationDate", e.target.value)
-            }
-            min={formData.issueDate}
-          />
-        </div>
+        <ExpirationDateInput
+          formData={formData}
+          errors={errors}
+          handleInputChange={handleInputChange}
+        />
       </div>
 
       <div>
