@@ -87,20 +87,20 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   };
   // Helper function to format item for API
-  const formatItemForApi = (item: any, dateFields: string[] = []) => {
-    const formatted = { ...item };
+  // const formatItemForApi = (item: any, dateFields: string[] = []) => {
+  //   const formatted = { ...item };
 
-    // Process specified date fields
-    for (const field of dateFields) {
-      if (formatted[field]) {
-        formatted[field] = new Date(formatted[field]).toISOString();
-      } else if (formatted[field] === "") {
-        formatted[field] = null;
-      }
-    }
+  //   // Process specified date fields
+  //   for (const field of dateFields) {
+  //     if (formatted[field]) {
+  //       formatted[field] = new Date(formatted[field]).toISOString();
+  //     } else if (formatted[field] === "") {
+  //       formatted[field] = null;
+  //     }
+  //   }
 
-    return formatted;
-  };
+  //   return formatted;
+  // };
   const handleSaveEdits = async ({
     endpoint,
     dateFields = [],
