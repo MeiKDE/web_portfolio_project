@@ -1,5 +1,5 @@
 // Handler for deleting a skill
-export const handleDeleteSkill = async (
+export const DeleteSkill = async (
   id: string,
   handleDeleteItem: (id: string) => Promise<void>,
   mutate: () => Promise<any>

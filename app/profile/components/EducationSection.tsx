@@ -353,7 +353,7 @@ export default function Educations({ userId }: EducationProps) {
     }
   };
 
-  const handleCancelAdd = () => {
+  const CancelAdd = () => {
     // If we're adding a new entry, remove it and exit edit mode
     if (editedEducation.length > educationData.length) {
       setEditedEducation(JSON.parse(JSON.stringify(educationData)));
@@ -767,7 +767,7 @@ export default function Educations({ userId }: EducationProps) {
                 />
 
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" size="sm" onClick={handleCancelAdd}>
+                  <Button variant="outline" size="sm" onClick={CancelAdd}>
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleSaveNewEducation}>

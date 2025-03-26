@@ -1,5 +1,5 @@
 //this function is used to handle CHANGES to the new skill item
-export const handleNewSkillChange = (
+export const NewSkillChange = (
   field: string,
   value: any,
   setNewItemData: (data: any) => void,

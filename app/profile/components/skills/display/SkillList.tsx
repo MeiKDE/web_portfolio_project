@@ -8,16 +8,16 @@ import { useState } from "react";
 export function SkillList({
   editedData,
   isEditing,
-  handleSkillInputChange,
+  SkillInputChange,
   handleInputChange,
   touchField,
-  handleDeleteSkill,
+  DeleteSkill,
   handleDeleteItem,
   mutate,
 }: {
   editedData: Skill[];
   isEditing: boolean;
-  handleSkillInputChange: (
+  SkillInputChange: (
     id: string,
     field: string,
     value: any,
@@ -26,7 +26,7 @@ export function SkillList({
   ) => void;
   handleInputChange: (field: string, value: any) => void;
   touchField: (field: string) => void;
-  handleDeleteSkill: (
+  DeleteSkill: (
     id: string,
     handleDeleteItem: (id: string) => Promise<void>,
     mutate: () => Promise<any>
@@ -40,7 +40,7 @@ export function SkillList({
     try {
       console.log("Initiating delete for skill:", skillId);
       setIsDeleting(skillId);
-      await handleDeleteSkill(skillId, handleDeleteItem, mutate);
+      await DeleteSkill(skillId, handleDeleteItem, mutate);
       await mutate();
     } catch (error) {
       console.error("Error in onDeleteClick:", error);
@@ -62,7 +62,7 @@ export function SkillList({
                   type="text"
                   value={skill.name}
                   onChange={(e) =>
-                    handleSkillInputChange(
+                    SkillInputChange(
                       skill.id,
                       "name",
                       e.target.value,
@@ -80,7 +80,7 @@ export function SkillList({
                   type="text"
                   value={skill.category}
                   onChange={(e) =>
-                    handleSkillInputChange(
+                    SkillInputChange(
                       skill.id,
                       "category",
                       e.target.value,
@@ -100,7 +100,7 @@ export function SkillList({
                   max="10"
                   value={skill.proficiencyLevel}
                   onChange={(e) =>
-                    handleSkillInputChange(
+                    SkillInputChange(
                       skill.id,
                       "proficiencyLevel",
                       parseInt(e.target.value),

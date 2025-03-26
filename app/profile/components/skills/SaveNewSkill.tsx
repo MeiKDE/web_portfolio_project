@@ -1,4 +1,4 @@
-export const handleSaveNewSkill = async (
+export const SaveNewSkill = async (
   e: React.FormEvent,
   validateForm: () => boolean,
   values: any,

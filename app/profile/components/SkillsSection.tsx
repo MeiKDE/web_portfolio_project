@@ -4,17 +4,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
-import { handleNewSkillChange } from "./skills/HandleNewSkillChange";
-import { handleCancelAdd } from "./skills/HandleCancelAdd";
-import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
-import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
-import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
+import { NewSkillChange } from "./skills/NewSkillChange";
+import { CancelAdd } from "./skills/CancelAdd";
+import { SaveNewSkill } from "./skills/SaveNewSkill";
+import { SkillInputChange } from "./skills/SkillInputChange";
+import { DeleteSkill } from "./skills/DeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FieldValidation } from "./skills/add_new_skill/FormValidation";
-import { NewSkill } from "./skills/add_new_skill/NewSkill";
-import { SkillList } from "./skills/display_skills/SkillList";
+import { FieldValidation } from "./skills/add_new/FormValidation";
+import { NewSkill } from "./skills/add_new/NewSkill";
+import { SkillList } from "./skills/display/SkillList";
 
 interface SkillsProps {
   userId: string;
@@ -323,9 +323,9 @@ export default function Skills({ userId }: SkillsProps) {
             handleChange={handleChange}
             touchField={touchField}
             getInputClassName={getInputClassName}
-            handleNewSkillChange={handleNewSkillChange}
-            handleCancelAdd={handleCancelAdd}
-            handleSaveNewSkill={handleSaveNewSkill}
+            NewSkillChange={NewSkillChange}
+            CancelAdd={CancelAdd}
+            SaveNewSkill={SaveNewSkill}
             setNewItemData={setNewItemData}
             mutate={mutate}
             resetForm={resetForm}
@@ -345,10 +345,10 @@ export default function Skills({ userId }: SkillsProps) {
               <SkillList
                 editedData={editedData}
                 isEditing={isEditing}
-                handleSkillInputChange={handleSkillInputChange}
+                SkillInputChange={SkillInputChange}
                 handleInputChange={handleChange}
                 touchField={touchField}
-                handleDeleteSkill={handleDeleteSkill}
+                DeleteSkill={DeleteSkill}
                 handleDeleteItem={handleDeleteItem}
                 mutate={mutate}
               />

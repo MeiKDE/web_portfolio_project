@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 interface CancelSaveButtonsProps {
   cancelAddingNew: () => void;
   isSubmitting: boolean;
-  handleCancelAdd: (cancelAddingNew: () => void, resetForm: () => void) => void;
+  CancelAdd: (cancelAddingNew: () => void, resetForm: () => void) => void;
   resetForm: () => void;
 }
 
 export function CancelSaveButtons({
   cancelAddingNew,
   isSubmitting,
-  handleCancelAdd,
+  CancelAdd,
   resetForm,
 }: CancelSaveButtonsProps) {
   return (
@@ -18,7 +18,7 @@ export function CancelSaveButtons({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => handleCancelAdd(cancelAddingNew, resetForm)}
+        onClick={() => CancelAdd(cancelAddingNew, resetForm)}
         type="button"
       >
         Cancel

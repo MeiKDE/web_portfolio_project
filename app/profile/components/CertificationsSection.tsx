@@ -9,11 +9,11 @@ import {
 import { Certification } from "./certifications/Interface";
 import { DeleteCertification } from "./certifications/DeleteCertification";
 import { SaveCertifications } from "./certifications/SaveCertifications";
-import { NewCertification } from "./certifications/add_new_certification/NewCertification";
+import { NewCertification } from "./certifications/add_new/NewCertification";
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
 import { EditButton } from "./ui/EditButton";
-import { CertificationList } from "./certifications/display_certifications/CertificationList";
+import { CertificationList } from "./certifications/display/CertificationList";
 
 interface CertificationsProps {
   userId: string;

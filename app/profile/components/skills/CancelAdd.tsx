@@ -1,9 +1,9 @@
 // Add console logs to debug
-export const handleCancelAdd = (
+export const CancelAdd = (
   cancelAddingNew: () => void,
   resetForm: () => void
 ) => {
-  console.log("handleCancelAdd called");
+  console.log("CancelAdd called");
   console.log("cancelAddingNew:", !!cancelAddingNew);
   console.log("resetForm:", !!resetForm);
 
@@ -14,6 +14,6 @@ export const handleCancelAdd = (
     resetForm();
     console.log("resetForm executed");
   } catch (error) {
-    console.error("Error in handleCancelAdd:", error);
+    console.error("Error in CancelAdd:", error);
   }
 };

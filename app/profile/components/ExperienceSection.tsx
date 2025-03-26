@@ -297,7 +297,7 @@ export default function Experiences({ userId }: ExperienceProps) {
     });
   };
 
-  const handleCancelAdd = () => {
+  const CancelAdd = () => {
     setIsAddingNew(false);
   };
 
@@ -783,7 +783,7 @@ export default function Experiences({ userId }: ExperienceProps) {
                   placeholder="Describe your responsibilities and achievements..."
                 />
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" size="sm" onClick={handleCancelAdd}>
+                  <Button variant="outline" size="sm" onClick={CancelAdd}>
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleFormSubmit}>

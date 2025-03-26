@@ -12,15 +12,15 @@ interface NewSkillProps {
   handleChange: (field: string, value: any) => void;
   touchField: (field: string) => void;
   getInputClassName: (id: string, field: string, baseClass: string) => string;
-  handleNewSkillChange: (
+  NewSkillChange: (
     field: string,
     value: any,
     setNewItemData: any,
     handleChange: any,
     values: any
   ) => void;
-  handleCancelAdd: (cancelAddingNew: () => void, resetForm: () => void) => void;
-  handleSaveNewSkill: (
+  CancelAdd: (cancelAddingNew: () => void, resetForm: () => void) => void;
+  SaveNewSkill: (
     e: React.FormEvent,
     validateForm: () => boolean,
     values: any,
@@ -51,9 +51,9 @@ export function NewSkill({
   handleChange,
   touchField,
   getInputClassName,
-  handleNewSkillChange,
-  handleCancelAdd,
-  handleSaveNewSkill,
+  NewSkillChange,
+  CancelAdd,
+  SaveNewSkill,
   setNewItemData,
   mutate,
   resetForm,
@@ -88,7 +88,7 @@ export function NewSkill({
 
           setIsSubmitting(true);
           try {
-            await handleSaveNewSkill(
+            await SaveNewSkill(
               e,
               validateForm,
               values,
@@ -116,7 +116,7 @@ export function NewSkill({
             type="text"
             value={values.name}
             onChange={(e) =>
-              handleNewSkillChange(
+              NewSkillChange(
                 "name",
                 e.target.value,
                 setNewItemData,
@@ -139,7 +139,7 @@ export function NewSkill({
             type="text"
             value={values.category}
             onChange={(e) =>
-              handleNewSkillChange(
+              NewSkillChange(
                 "category",
                 e.target.value,
                 setNewItemData,
@@ -168,7 +168,7 @@ export function NewSkill({
             max="10"
             value={values.proficiencyLevel}
             onChange={(e) =>
-              handleNewSkillChange(
+              NewSkillChange(
                 "proficiencyLevel",
                 parseInt(e.target.value),
                 setNewItemData,
@@ -198,7 +198,7 @@ export function NewSkill({
         <CancelSaveButtons
           cancelAddingNew={cancelAddingNew}
           isSubmitting={isSubmitting}
-          handleCancelAdd={handleCancelAdd}
+          CancelAdd={CancelAdd}
           resetForm={resetForm}
         />
       </form>
