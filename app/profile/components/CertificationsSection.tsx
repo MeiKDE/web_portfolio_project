@@ -25,11 +25,11 @@ export default function Certifications({ userId }: CertificationsProps) {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editedData, setEditedData] = useState<Certification[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [newItemData, setNewItemData] = useState<any>(null);
-  const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
-    {}
-  );
+  // const [saveSuccess, setSaveSuccess] = useState(false);
+  // const [newItemData, setNewItemData] = useState<any>(null);
+  // const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
+  //   {}
+  // );
 
   const startEditing = () => {
     console.log("ln11: startEditing");
@@ -41,7 +41,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   const startAddingNew = (defaultNewItem: Certification[]) => {
     setIsAddingNew(true);
     setEditedData(defaultNewItem);
-    setNewItemData(defaultNewItem);
+    // setNewItemData(defaultNewItem);
   };
   const handleDeleteItem = async ({
     id,
@@ -160,7 +160,7 @@ export default function Certifications({ userId }: CertificationsProps) {
       }
 
       setIsEditing(false);
-      setSaveSuccess(true);
+      // setSaveSuccess(true);
       onSuccess?.(); // Call success callback if provided
     } catch (error) {
       console.error("Error saving changes:", error);
@@ -171,8 +171,8 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
   const cancelAddingNew = () => {
     setIsAddingNew(false);
-    setNewItemData(null);
-    setNewItemErrors({});
+    // setNewItemData(null);
+    // setNewItemErrors({});
   };
   const handleInputChange = (id: string | null, field: string, value: any) => {
     setEditedData((prev) => {

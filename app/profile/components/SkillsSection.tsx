@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,8 @@ import {
   useFormValidation,
   useValidationHelpers,
 } from "@/app/hooks/form/use-form-validation";
-import { useEditableState } from "@/app/hooks/form/use-editable-state";
 import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
-import { handleEditToggle } from "./skills/HandleEditToggle";
 import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
 import { handleNewSkillChange } from "./skills/HandleNewSkillChange";
 import { handleAddNew } from "./skills/HandleAddNew";
@@ -22,39 +20,20 @@ import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { formatCertificationsForUI } from "@/app/hooks/date-utils";
 interface SkillsProps {
   userId: string;
 }
 
 export default function Skills({ userId }: SkillsProps) {
-  // Replace individual state variables with useEditableState hook
-  const {
-    isEditing, // replaces editable
-    isAddingNew, // replaces isAddingNew
-    editedData, // replaces editedSkills
-    isSubmitting, // replaces isSubmitting
-    saveSuccess,
-    newItemData, // replaces newSkill
-    newItemErrors,
-    setIsEditing,
-    setIsAddingNew,
-    setEditedData,
-    setIsSubmitting,
-    setSaveSuccess,
-    setNewItemData,
-    setNewItemErrors,
-    startEditing,
-    cancelEditing,
-    startAddingNew,
-    cancelAddingNew,
-    handleNewItemChange,
-    validateNewItem,
-    handleInputChange,
-    handleSaveNewItem,
-    handleDeleteItem,
-    handleSaveEdits,
-  } = useEditableState<Skill[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editedData, setEditedData] = useState<Skill[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [newItemData, setNewItemData] = useState<any>(null);
+  const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
+    {}
+  );
 
   // Fetch skills data
   const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
@@ -127,10 +106,64 @@ export default function Skills({ userId }: SkillsProps) {
   useEffect(() => {
     console.log("Form state:", {
       isAddingNew,
-      cancelAddingNew: !!cancelAddingNew,
       resetForm: !!resetForm,
     });
-  }, [isAddingNew, cancelAddingNew, resetForm]);
+  }, [isAddingNew, resetForm]);
+
+  const cancelAddingNew = () => {
+    setIsAddingNew(false);
+    setNewItemData(null);
+    setNewItemErrors({});
+  };
+
+  const handleNewItemChange = (field: string, value: any) => {
+    setNewItemData((prev: Record<string, any> | null) => {
+      // Make sure prev is an object before spreading
+      const prevData = prev || {};
+      return { ...prevData, [field]: value };
+    });
+  };
+
+  const handleDeleteItem = async (options: {
+    id: string;
+    confirmMessage?: string;
+    endpoint: string;
+    filterFn: (item: any) => boolean;
+    onSuccess?: () => void;
+    onError?: (error: any) => void;
+  }) => {
+    if (options.confirmMessage && !window.confirm(options.confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(options.endpoint, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Failed to delete item: ${errorData.error || response.statusText}`
+        );
+      }
+
+      // Update local state if needed
+      setEditedData((prevData) => {
+        if (Array.isArray(prevData)) {
+          return prevData.filter(options.filterFn);
+        }
+        return prevData;
+      });
+
+      options.onSuccess?.();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      options.onError?.(error);
+    }
+  };
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
@@ -171,10 +204,103 @@ export default function Skills({ userId }: SkillsProps) {
 
   const onClickEdit = () => {
     if (data) {
-      startEditing();
+      setIsEditing(true);
       setEditedData(data);
     } else {
-      startEditing();
+      setIsEditing(true);
+    }
+  };
+
+  const startAddingNew = () => {
+    setIsAddingNew(true);
+    setNewItemData(null);
+    setNewItemErrors({});
+  };
+
+  const handleInputChange = (id: string | null, field: string, value: any) => {
+    setEditedData((prev) => {
+      if (!prev) return prev;
+
+      if (Array.isArray(prev)) {
+        return prev.map((item: any) =>
+          item.id === id ? { ...item, [field]: value } : item
+        ) as Skill[];
+      }
+
+      if (
+        typeof prev === "object" &&
+        prev !== null &&
+        "id" in prev &&
+        id === (prev as any).id
+      ) {
+        return {
+          ...(prev as Record<string, any>),
+          [field]: value,
+        } as unknown as Skill[];
+      }
+
+      return {
+        ...(prev as Record<string, any>),
+        [field]: value,
+      } as unknown as Skill[];
+    });
+  };
+
+  const handleSaveEdits = async ({
+    endpoint,
+    validateFn,
+    onSuccess,
+    onError,
+  }: {
+    endpoint: string;
+    validateFn?: (data: any) => boolean | string | null;
+    onSuccess?: () => void;
+    onError?: (error: any) => void;
+  }) => {
+    try {
+      if (validateFn && editedData) {
+        const validationResult = validateFn(editedData);
+        if (validationResult !== true && validationResult !== null) {
+          onError?.(new Error(`Validation failed: ${validationResult}`));
+          return;
+        }
+      }
+
+      setIsSubmitting(true);
+
+      if (!editedData) {
+        console.warn("No data to update");
+        return;
+      }
+
+      const itemsToUpdate = Array.isArray(editedData)
+        ? editedData
+        : [editedData];
+
+      for (const item of itemsToUpdate) {
+        const response = await fetch(`${endpoint}/${item.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(item),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Failed to update item: ${errorData.error || response.statusText}`
+          );
+        }
+      }
+
+      setIsEditing(false);
+      setSaveSuccess(true);
+      onSuccess?.();
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      onError?.(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -228,7 +354,7 @@ export default function Skills({ userId }: SkillsProps) {
                     validateForm,
                     values,
                     touchField,
-                    handleSaveNewItem,
+                    setNewItemData,
                     userId,
                     mutate,
                     resetForm,
@@ -257,7 +383,7 @@ export default function Skills({ userId }: SkillsProps) {
                     handleNewSkillChange(
                       "name",
                       e.target.value,
-                      handleNewItemChange,
+                      setNewItemData,
                       handleChange,
                       values
                     )
@@ -284,7 +410,7 @@ export default function Skills({ userId }: SkillsProps) {
                     handleNewSkillChange(
                       "category",
                       e.target.value,
-                      handleNewItemChange,
+                      setNewItemData,
                       handleChange,
                       values
                     )
@@ -313,7 +439,7 @@ export default function Skills({ userId }: SkillsProps) {
                     handleNewSkillChange(
                       "proficiencyLevel",
                       parseInt(e.target.value),
-                      handleNewItemChange,
+                      setNewItemData,
                       handleChange,
                       values
                     )
@@ -349,7 +475,7 @@ export default function Skills({ userId }: SkillsProps) {
                       validateForm,
                       values,
                       touchField,
-                      handleSaveNewItem,
+                      setNewItemData,
                       userId,
                       mutate,
                       resetForm,
