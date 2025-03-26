@@ -8,6 +8,7 @@ import { CertificateNameInput } from "./CertificateNameInput";
 import { IssuingOrganizationInput } from "./IssuingOrganizationInput";
 import { IssueDateInput } from "./IssueDateInput";
 import { ExpirationDateInput } from "./ExpirationDateInput";
+import { CredentialUrlInput } from "./CredentialUrlInput";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -139,14 +140,11 @@ export function NewCertification({
         />
       </div>
 
-      <div>
-        <Input
-          type="url"
-          value={formData.credentialUrl || ""}
-          onChange={(e) => handleInputChange("credentialUrl", e.target.value)}
-          placeholder="Credential URL (optional)"
-        />
-      </div>
+      <CredentialUrlInput
+        formData={formData}
+        errors={errors}
+        handleInputChange={handleInputChange}
+      />
 
       {errors.submit && <p className="text-red-500 text-sm">{errors.submit}</p>}
 
