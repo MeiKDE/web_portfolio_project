@@ -1,5 +1,5 @@
 // DELETE certification
-export const handleDeleteCertification = (
+export const DeleteCertification = (
   id: string,
   handleDeleteItem: (options: any) => Promise<void>,
   mutate: () => void

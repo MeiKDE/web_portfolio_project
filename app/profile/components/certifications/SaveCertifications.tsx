@@ -1,7 +1,7 @@
 // SAVE all edited certifications to the backend
 // Updating existing ones
 // Called when clicking the "Done" button in edit mode
-export const handleSaveCertifications = (
+export const SaveCertifications = (
   handleSaveEdits: (options: any) => void,
   mutate: () => void
 ) => {

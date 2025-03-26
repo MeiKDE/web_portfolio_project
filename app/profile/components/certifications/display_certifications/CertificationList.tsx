@@ -11,7 +11,7 @@ export function CertificationList({
   editedData,
   isEditing,
   handleCertificationInputChange,
-  handleDeleteCertification,
+  DeleteCertification,
   handleDeleteItem,
   mutate,
   getCurrentDate,
@@ -25,7 +25,7 @@ export function CertificationList({
     handleInputChange: (field: string, value: any) => void,
     touchField: (field: string) => void
   ) => void;
-  handleDeleteCertification: (
+  DeleteCertification: (
     id: string,
     handleDeleteItem: (options: any) => Promise<void>,
     mutate: () => void
@@ -56,11 +56,7 @@ export function CertificationList({
     try {
       console.log("Initiating delete for certification:", certificationId);
       setIsDeleting(certificationId);
-      await handleDeleteCertification(
-        certificationId,
-        handleDeleteItem,
-        mutate
-      );
+      await DeleteCertification(certificationId, handleDeleteItem, mutate);
     } catch (error) {
       console.error("Error in onDeleteClick:", error);
       alert("Failed to delete certification. Please try again.");

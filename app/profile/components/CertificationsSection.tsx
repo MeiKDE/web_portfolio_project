@@ -7,8 +7,8 @@ import {
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
 import { Certification } from "./certifications/Interface";
-import { handleDeleteCertification } from "./certifications/HandleDeleteCertification";
-import { handleSaveCertifications } from "./certifications/HandleSaveCertifications";
+import { DeleteCertification } from "./certifications/DeleteCertification";
+import { SaveCertifications } from "./certifications/SaveCertifications";
 import { NewCertification } from "./certifications/add_new_certification/NewCertification";
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
@@ -231,7 +231,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     ]);
 
   const onClickDone = () => {
-    handleSaveCertifications(handleSaveEdits, mutate);
+    SaveCertifications(handleSaveEdits, mutate);
   };
 
   const onClickEdit = () => {
@@ -248,7 +248,7 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   const onClickHandler = (id: string) => {
-    handleDeleteCertification(id, handleDeleteItem, mutate);
+    DeleteCertification(id, handleDeleteItem, mutate);
   };
 
   return (
@@ -298,7 +298,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                 ) => {
                   onChangeHandler(id, field, value);
                 }}
-                handleDeleteCertification={handleDeleteCertification}
+                DeleteCertification={DeleteCertification}
                 handleDeleteItem={handleDeleteItem}
                 mutate={mutate}
                 getCurrentDate={getCurrentDate}
