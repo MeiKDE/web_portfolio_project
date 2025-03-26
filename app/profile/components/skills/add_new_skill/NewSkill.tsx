@@ -1,5 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { CancelSaveButtons } from "./CancelSaveButtons";
+import { FieldValidation } from "./Field_Validation";
+import { Skill } from "../Interface";
 
 interface NewSkillProps {
   userId: string;
@@ -60,17 +62,27 @@ export function NewSkill({
   setSaveSuccess,
   setIsAddingNew,
 }: NewSkillProps) {
+  // Create a skill object for validation
+  const skillToValidate: Skill = {
+    id: "", // temporary id for new skill
+    name: values.name,
+    category: values.category,
+    proficiencyLevel: values.proficiencyLevel,
+  };
+
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Skill</h4>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+
+          // Show validation messages
+          touchField("name");
+          touchField("category");
+          touchField("proficiencyLevel");
+
           if (!values.name || !values.category || !values.proficiencyLevel) {
-            // Mark all fields as touched to show validation errors
-            touchField("name");
-            touchField("category");
-            touchField("proficiencyLevel");
             return;
           }
 
@@ -102,7 +114,7 @@ export function NewSkill({
           <label className="text-sm text-muted-foreground">Skill Name*</label>
           <Input
             type="text"
-            value={newItemData?.name ?? ""}
+            value={values.name}
             onChange={(e) =>
               handleNewSkillChange(
                 "name",
@@ -113,11 +125,11 @@ export function NewSkill({
               )
             }
             onBlur={() => touchField("name")}
-            className={getInputClassName("new", "name", "mt-1")}
+            className={getInputClassName("name", "name", "mt-1")}
             placeholder="e.g., JavaScript, React, Agile"
           />
-          {formErrors["new"] && (
-            <p className="text-red-500 text-xs mt-1">{formErrors["new"]}</p>
+          {formErrors["name"] && (
+            <p className="text-red-500 text-xs mt-1">{formErrors["name"]}</p>
           )}
         </div>
 
@@ -125,7 +137,7 @@ export function NewSkill({
           <label className="text-sm text-muted-foreground">Category*</label>
           <Input
             type="text"
-            value={newItemData?.category ?? ""}
+            value={values.category}
             onChange={(e) =>
               handleNewSkillChange(
                 "category",
@@ -136,23 +148,25 @@ export function NewSkill({
               )
             }
             onBlur={() => touchField("category")}
-            className={getInputClassName("new", "category", "mt-1")}
+            className={getInputClassName("category", "category", "mt-1")}
             placeholder="e.g., Frontend, Backend, DevOps"
           />
-          {formErrors["new"] && (
-            <p className="text-red-500 text-xs mt-1">{formErrors["new"]}</p>
+          {formErrors["category"] && (
+            <p className="text-red-500 text-xs mt-1">
+              {formErrors["category"]}
+            </p>
           )}
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
-            Proficiency Level* (1-5)
+            Proficiency Level* (1-10)
           </label>
           <Input
             type="number"
             min="1"
-            max="5"
-            value={newItemData?.proficiencyLevel ?? 3}
+            max="10"
+            value={values.proficiencyLevel}
             onChange={(e) =>
               handleNewSkillChange(
                 "proficiencyLevel",
@@ -163,12 +177,21 @@ export function NewSkill({
               )
             }
             onBlur={() => touchField("proficiencyLevel")}
-            className={getInputClassName("new", "proficiencyLevel", "mt-1")}
+            className={getInputClassName(
+              "proficiencyLevel",
+              "proficiencyLevel",
+              "mt-1"
+            )}
           />
-          {formErrors["new"] && (
-            <p className="text-red-500 text-xs mt-1">{formErrors["new"]}</p>
+          {formErrors["proficiencyLevel"] && (
+            <p className="text-red-500 text-xs mt-1">
+              {formErrors["proficiencyLevel"]}
+            </p>
           )}
         </div>
+
+        {/* Add FieldValidation component */}
+        <FieldValidation skill={skillToValidate} />
 
         <CancelSaveButtons
           cancelAddingNew={cancelAddingNew}

@@ -69,22 +69,30 @@ export default function Skills({ userId }: SkillsProps) {
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
-    if (!values.name?.trim()) {
+    // Create a skill object for validation
+    const skillToValidate: Skill = {
+      id: "", // temporary id for new skill
+      name: values.name,
+      category: values.category,
+      proficiencyLevel: values.proficiencyLevel,
+    };
+
+    if (!skillToValidate.name?.trim()) {
       newErrors.name = "Skill name is required";
       isValid = false;
     }
 
-    if (!values.category?.trim()) {
+    if (!skillToValidate.category?.trim()) {
       newErrors.category = "Category is required";
       isValid = false;
     }
 
     if (
-      !values.proficiencyLevel ||
-      values.proficiencyLevel < 1 ||
-      values.proficiencyLevel > 5
+      !skillToValidate.proficiencyLevel ||
+      skillToValidate.proficiencyLevel < 1 ||
+      skillToValidate.proficiencyLevel > 10
     ) {
-      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 5";
+      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 10";
       isValid = false;
     }
 
