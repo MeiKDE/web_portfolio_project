@@ -25,6 +25,7 @@ export const GET = withAuth(
     user
   ) => {
     try {
+      console.log("Fetching skills for user:", params.userId);
       const userId = params.userId;
 
       // Fetch the skills for the specified user

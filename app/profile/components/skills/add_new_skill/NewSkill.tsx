@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { CancelSaveButtons } from "./CancelSaveButtons";
 
 interface NewSkillProps {
   userId: string;
@@ -25,12 +25,12 @@ interface NewSkillProps {
     touchField: (field: string) => void,
     setNewItemData: any,
     userId: string,
-    mutate: () => void,
+    mutate: () => Promise<any>,
     resetForm: () => void,
     cancelAddingNew: () => void
-  ) => void;
+  ) => Promise<void>;
   setNewItemData: (data: any) => void;
-  mutate: () => void;
+  mutate: () => Promise<any>;
   resetForm: () => void;
   cancelAddingNew: () => void;
   validateForm: () => boolean;
@@ -66,6 +66,14 @@ export function NewSkill({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          if (!values.name || !values.category || !values.proficiencyLevel) {
+            // Mark all fields as touched to show validation errors
+            touchField("name");
+            touchField("category");
+            touchField("proficiencyLevel");
+            return;
+          }
+
           setIsSubmitting(true);
           try {
             await handleSaveNewSkill(
@@ -162,35 +170,19 @@ export function NewSkill({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleCancelAdd(cancelAddingNew, resetForm)}
-            type="button"
-          >
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={(e) =>
-              handleSaveNewSkill(
-                e,
-                validateForm,
-                values,
-                touchField,
-                setNewItemData,
-                userId,
-                mutate,
-                resetForm,
-                cancelAddingNew
-              )
-            }
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Saving..." : "Save Skill"}
-          </Button>
-        </div>
+        <CancelSaveButtons
+          cancelAddingNew={cancelAddingNew}
+          isSubmitting={isSubmitting}
+          handleCancelAdd={handleCancelAdd}
+          handleSaveNewSkill={handleSaveNewSkill}
+          resetForm={resetForm}
+          validateForm={validateForm}
+          values={values}
+          touchField={touchField}
+          setNewItemData={setNewItemData}
+          userId={userId}
+          mutate={mutate}
+        />
       </form>
     </div>
   );

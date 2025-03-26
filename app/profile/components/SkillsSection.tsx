@@ -9,14 +9,13 @@ import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
 import { handleNewSkillChange } from "./skills/HandleNewSkillChange";
-import { handleAddNew } from "./skills/HandleAddNew";
 import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FieldValidation } from "./skills/add_new_skill/field_validation";
+import { FieldValidation } from "./skills/add_new_skill/Field_Validation";
 import { NewSkill } from "./skills/add_new_skill/NewSkill";
 
 interface SkillsProps {
@@ -25,7 +24,6 @@ interface SkillsProps {
 
 export default function Skills({ userId }: SkillsProps) {
   const [isEditing, setIsEditing] = useState(false);
-
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editedData, setEditedData] = useState<Skill[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,41 +103,43 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
-  const handleBlur = (field: string) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }));
-    const item = editedData.find((item) => item.id === "new");
-    if (item) {
-      const error = validateField(field, item[field as keyof Skill]);
-      setFormErrors((prev) => ({
-        ...prev,
-        [field]: error || "",
-      }));
-    }
-  };
+  // const handleBlur = (field: string) => {
+  //   setTouchedFields((prev) => ({ ...prev, [field]: true }));
+  //   const item = editedData.find((item) => item.id === "new");
+  //   if (item) {
+  //     const error = validateField(field, item[field as keyof Skill]);
+  //     setFormErrors((prev) => ({
+  //       ...prev,
+  //       [field]: error || "",
+  //     }));
+  //   }
+  // };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
 
-    editedData.forEach((item) => {
-      ["name", "proficiencyLevel", "category"].forEach((field) => {
-        const error = validateField(field, item[field as keyof Skill]);
-        if (error) {
-          newErrors[field] = error;
-          isValid = false;
-        }
-      });
-    });
+    if (!values.name?.trim()) {
+      newErrors.name = "Skill name is required";
+      isValid = false;
+    }
+
+    if (!values.category?.trim()) {
+      newErrors.category = "Category is required";
+      isValid = false;
+    }
+
+    if (
+      !values.proficiencyLevel ||
+      values.proficiencyLevel < 1 ||
+      values.proficiencyLevel > 5
+    ) {
+      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 5";
+      isValid = false;
+    }
 
     setFormErrors(newErrors);
     return isValid;
-  };
-
-  const startEditing = () => {
-    setIsEditing(true);
-    if (data) {
-      setEditedData(data);
-    }
   };
 
   const cancelAddingNew = () => {
@@ -237,8 +237,6 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [isAddingNew, newItemData]);
 
-  //const onClickAddNew = () => handleAddNew(startAddingNew, resetForm);
-
   const onClickAddNew = () => {
     setIsAddingNew(true);
     setNewItemData({
@@ -293,23 +291,6 @@ export default function Skills({ userId }: SkillsProps) {
     } else {
       setIsEditing(true);
     }
-  };
-
-  // const startAddingNew = () => {
-  //   setIsAddingNew(true);
-  //   setNewItemData(null);
-  //   setFormErrors({});
-  //   setTouchedFields({});
-  // };
-
-  const startAddingNew = () => {
-    setIsAddingNew(true);
-    setNewItemData({
-      name: "",
-      category: "Frontend",
-      proficiencyLevel: 3,
-    });
-    setFormErrors({});
   };
 
   const handleSaveEdits = async ({
