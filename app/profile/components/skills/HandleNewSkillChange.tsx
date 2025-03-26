@@ -1,3 +1,4 @@
+//this function is used to handle CHANGES to the new skill item
 export const handleNewSkillChange = (
   field: string,
   value: any,

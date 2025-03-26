@@ -13,7 +13,7 @@ import { NewCertification } from "./certifications/add_new_certification/NewCert
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
 import { EditButton } from "./ui/EditButton";
-import CertificationList from "./certifications/display_certifications/CertificationList";
+import { CertificationList } from "./certifications/display_certifications/CertificationList";
 
 interface CertificationsProps {
   userId: string;
@@ -25,11 +25,6 @@ export default function Certifications({ userId }: CertificationsProps) {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editedData, setEditedData] = useState<Certification[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // const [saveSuccess, setSaveSuccess] = useState(false);
-  // const [newItemData, setNewItemData] = useState<any>(null);
-  // const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
-  //   {}
-  // );
 
   const startEditing = () => {
     console.log("ln11: startEditing");
@@ -87,20 +82,20 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   };
   // Helper function to format item for API
-  // const formatItemForApi = (item: any, dateFields: string[] = []) => {
-  //   const formatted = { ...item };
+  const formatItemForApi = (item: any, dateFields: string[] = []) => {
+    const formatted = { ...item };
 
-  //   // Process specified date fields
-  //   for (const field of dateFields) {
-  //     if (formatted[field]) {
-  //       formatted[field] = new Date(formatted[field]).toISOString();
-  //     } else if (formatted[field] === "") {
-  //       formatted[field] = null;
-  //     }
-  //   }
+    // Process specified date fields
+    for (const field of dateFields) {
+      if (formatted[field]) {
+        formatted[field] = new Date(formatted[field]).toISOString();
+      } else if (formatted[field] === "") {
+        formatted[field] = null;
+      }
+    }
 
-  //   return formatted;
-  // };
+    return formatted;
+  };
   const handleSaveEdits = async ({
     endpoint,
     dateFields = [],
@@ -291,18 +286,23 @@ export default function Certifications({ userId }: CertificationsProps) {
         {!isLoading && !error ? (
           <>
             {editedData && editedData.length > 0 ? (
-              <div className="space-y-4">
-                {editedData.map((certification) => (
-                  <CertificationList
-                    key={certification.id}
-                    certification={certification}
-                    isEditing={isEditing}
-                    onChangeHandler={onChangeHandler}
-                    onClickHandler={onClickHandler}
-                    getCurrentDate={getCurrentDate}
-                  />
-                ))}
-              </div>
+              <CertificationList
+                editedData={editedData}
+                isEditing={isEditing}
+                handleCertificationInputChange={(
+                  id,
+                  field,
+                  value,
+                  handleInputChange,
+                  touchField
+                ) => {
+                  onChangeHandler(id, field, value);
+                }}
+                handleDeleteCertification={handleDeleteCertification}
+                handleDeleteItem={handleDeleteItem}
+                mutate={mutate}
+                getCurrentDate={getCurrentDate}
+              />
             ) : (
               !isAddingNew && (
                 <div className="text-center py-4 text-muted-foreground">

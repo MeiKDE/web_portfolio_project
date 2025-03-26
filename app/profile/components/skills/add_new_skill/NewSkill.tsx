@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { CancelSaveButtons } from "./CancelSaveButtons";
-import { FieldValidation } from "./Field_Validation";
+import { FieldValidation } from "./FormValidation";
 import { Skill } from "../Interface";
 
 interface NewSkillProps {

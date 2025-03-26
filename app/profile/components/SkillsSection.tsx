@@ -12,7 +12,7 @@ import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FieldValidation } from "./skills/add_new_skill/Field_Validation";
+import { FieldValidation } from "./skills/add_new_skill/FormValidation";
 import { NewSkill } from "./skills/add_new_skill/NewSkill";
 import { SkillList } from "./skills/display_skills/SkillList";
 
