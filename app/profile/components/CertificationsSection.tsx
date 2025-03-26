@@ -13,10 +13,12 @@ import {
 import { Certification } from "./certifications/Interface";
 import { handleDeleteCertification } from "./certifications/HandleDeleteCertification";
 import { handleSaveCertifications } from "./certifications/HandleSaveCertifications";
-import { NewCertification } from "./certifications/add_new_certificate/NewCertification";
+import { NewCertification } from "./certifications/add_new_certification/NewCertification";
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
 import { EditButton } from "./ui/EditButton";
+import CertificationList from "./certifications/display_certifications/CertificationList";
+
 interface CertificationsProps {
   userId: string;
 }
@@ -198,54 +200,6 @@ export default function Certifications({ userId }: CertificationsProps) {
       return [{ ...(prev as any), [field]: value }] as Certification[];
     });
   };
-  // const handleSaveNewItem = async ({
-  //   event,
-  //   requiredFields,
-  //   formatData,
-  //   endpoint,
-  //   onSuccess,
-  //   onError,
-  // }: {
-  //   event: React.FormEvent;
-  //   requiredFields: string[];
-  //   formatData: (data: any) => any;
-  //   endpoint: string;
-  //   onSuccess?: () => void;
-  //   onError?: (error: any) => void;
-  // }) => {
-  //   event.preventDefault();
-
-  //   if (!validateNewItem(requiredFields)) {
-  //     return;
-  //   }
-
-  //   try {
-  //     setIsSubmitting(true);
-  //     const formattedData = formatData(newItemData);
-
-  //     const response = await fetch(endpoint, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       credentials: "include",
-  //       body: JSON.stringify(formattedData),
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(
-  //         `Failed to add item: ${errorData.error || response.statusText}`
-  //       );
-  //     }
-
-  //     cancelAddingNew();
-  //     onSuccess?.();
-  //   } catch (error) {
-  //     console.error("Error adding item:", error);
-  //     onError?.(error);
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
 
   // Fetch certifications data
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
@@ -298,6 +252,14 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   };
 
+  const onChangeHandler = (id: string, field: string, value: any) => {
+    handleInputChange(id, field, value);
+  };
+
+  const onClickHandler = (id: string) => {
+    handleDeleteCertification(id, handleDeleteItem, mutate);
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -307,7 +269,6 @@ export default function Certifications({ userId }: CertificationsProps) {
             {!isAddingNew && !isEditing && (
               <AddButton onClick={onClickAddNew} />
             )}
-
             {isEditing ? (
               <DoneButton onClick={onClickDone} isSubmitting={isSubmitting} />
             ) : (
@@ -336,145 +297,14 @@ export default function Certifications({ userId }: CertificationsProps) {
             {editedData && editedData.length > 0 ? (
               <div className="space-y-4">
                 {editedData.map((certification) => (
-                  <div
+                  <CertificationList
                     key={certification.id}
-                    className="relative border-b pb-4 last:border-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
-                        <CheckCircle className="h-4 w-4" />
-                      </Badge>
-                      <div className="flex-grow">
-                        {isEditing ? (
-                          // Show input fields when editing
-                          <>
-                            <Input
-                              type="text"
-                              value={certification.name}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  certification.id,
-                                  "name",
-                                  e.target.value
-                                )
-                              }
-                              className="font-medium mb-2 w-full"
-                              placeholder="Certification Name"
-                            />
-                            <Input
-                              type="text"
-                              value={certification.issuer}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  certification.id,
-                                  "issuer",
-                                  e.target.value
-                                )
-                              }
-                              className="text-sm text-muted-foreground mb-2 w-full"
-                              placeholder="Issuing Organization"
-                            />
-                            <div className="flex gap-2 mb-2">
-                              <div className="w-1/2">
-                                <label className="text-xs text-muted-foreground">
-                                  Issue Date
-                                </label>
-                                <Input
-                                  type="date"
-                                  value={certification.issueDate}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      certification.id,
-                                      "issueDate",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="text-sm text-muted-foreground"
-                                  max={getCurrentDate()}
-                                />
-                              </div>
-                              <div className="w-1/2">
-                                <label className="text-xs text-muted-foreground">
-                                  Expiration Date
-                                </label>
-                                <Input
-                                  type="date"
-                                  value={certification.expirationDate || ""}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      certification.id,
-                                      "expirationDate",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="text-sm text-muted-foreground"
-                                  max={getCurrentDate()}
-                                />
-                              </div>
-                            </div>
-                            <Input
-                              type="url"
-                              value={certification.credentialUrl || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  certification.id,
-                                  "credentialUrl",
-                                  e.target.value
-                                )
-                              }
-                              className="text-sm text-muted-foreground mb-2 w-full"
-                              placeholder="Credential URL"
-                            />
-                          </>
-                        ) : (
-                          // Show plain text when not editing
-                          <>
-                            <h4 className="font-medium">
-                              {certification.name}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {certification.issuer}
-                            </p>
-                            <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                              <span>Issued: {certification.issueDate}</span>
-                              {certification.expirationDate && (
-                                <span>
-                                  Expires: {certification.expirationDate}
-                                </span>
-                              )}
-                            </div>
-                            {certification.credentialUrl && (
-                              <a
-                                href={certification.credentialUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-500 hover:underline mt-1 inline-block"
-                              >
-                                View Credential
-                              </a>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {isEditing && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-0 right-0 text-red-500"
-                          onClick={() =>
-                            handleDeleteCertification(
-                              certification.id,
-                              handleDeleteItem,
-                              mutate
-                            )
-                          }
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                    certification={certification}
+                    isEditing={isEditing}
+                    onChangeHandler={onChangeHandler}
+                    onClickHandler={onClickHandler}
+                    getCurrentDate={getCurrentDate}
+                  />
                 ))}
               </div>
             ) : (
