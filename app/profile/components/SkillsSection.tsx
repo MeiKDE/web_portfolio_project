@@ -1,22 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Lightbulb, Edit, Save, Plus, X } from "lucide-react";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
-import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
 import { handleNewSkillChange } from "./skills/HandleNewSkillChange";
 import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
+import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
 import { FieldValidation } from "./skills/add_new_skill/Field_Validation";
 import { NewSkill } from "./skills/add_new_skill/NewSkill";
+import { SkillList } from "./skills/display_skills/SkillList";
 
 interface SkillsProps {
   userId: string;
@@ -67,54 +65,6 @@ export default function Skills({ userId }: SkillsProps) {
     return `${baseClass} ${hasError ? "border-red-500" : ""}`;
   };
 
-  const validateField = (field: string, value: any) => {
-    let error = null;
-    switch (field) {
-      case "name":
-        error = !value ? "Skill name is required" : null;
-        break;
-      case "proficiencyLevel":
-        error = value < 1 ? "Proficiency level is required" : null;
-        break;
-      case "category":
-        error = !value ? "Category is required" : null;
-        break;
-      default:
-        break;
-    }
-    return error;
-  };
-
-  const handleInputChange = (id: string | null, field: string, value: any) => {
-    setEditedData((prev) => {
-      if (!prev) return prev;
-      return prev.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      );
-    });
-
-    // Validate field if it's been touched
-    if (touchedFields[field]) {
-      const error = validateField(field, value);
-      setFormErrors((prev) => ({
-        ...prev,
-        [field]: error || "",
-      }));
-    }
-  };
-
-  // const handleBlur = (field: string) => {
-  //   setTouchedFields((prev) => ({ ...prev, [field]: true }));
-  //   const item = editedData.find((item) => item.id === "new");
-  //   if (item) {
-  //     const error = validateField(field, item[field as keyof Skill]);
-  //     setFormErrors((prev) => ({
-  //       ...prev,
-  //       [field]: error || "",
-  //     }));
-  //   }
-  // };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     let isValid = true;
@@ -149,61 +99,18 @@ export default function Skills({ userId }: SkillsProps) {
     setTouchedFields({});
   };
 
-  const handleDeleteItem = async ({
-    id,
-    confirmMessage,
-    endpoint,
-    filterFn,
-    onSuccess,
-    onError,
-  }: {
-    id: string;
-    confirmMessage?: string;
-    endpoint: string;
-    filterFn?: (item: any) => boolean;
-    onSuccess?: () => void;
-    onError?: (error: any) => void;
-  }) => {
-    if (confirmMessage && !confirm(confirmMessage)) return;
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Failed to delete item: ${errorData.error || response.statusText}`
-        );
-      }
-
-      if (Array.isArray(editedData) && filterFn) {
-        setEditedData(editedData.filter(filterFn));
-      }
-
-      onSuccess?.();
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      onError?.(error);
-    }
-  };
-
   // Update local state when data is fetched
   useEffect(() => {
     if (data) {
       try {
-        // takes data from the backend as local state when not editing or adding new
-        if (!isEditing && !isAddingNew) {
-          setEditedData(data);
-        }
+        // Always update editedData when data changes
+        setEditedData(data);
       } catch (error) {
         console.error("Error processing skills data:", error);
         setEditedData([]);
       }
     }
-  }, [data, setEditedData, isEditing, isAddingNew]);
+  }, [data]); // Only depend on data changes
 
   // Add this useEffect to ensure data is refreshed after saving
   useEffect(() => {
@@ -351,6 +258,20 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
+  const handleDeleteItem = async (id: string) => {
+    try {
+      // Update local state immediately
+      setEditedData((prevData) => prevData.filter((skill) => skill.id !== id));
+
+      // Refresh the data from the server
+      await mutate();
+    } catch (error) {
+      console.error("Error refreshing data after deletion:", error);
+      // Revert local state if there's an error
+      await mutate();
+    }
+  };
+
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
 
@@ -411,119 +332,16 @@ export default function Skills({ userId }: SkillsProps) {
         {!isLoading && !error && (
           <>
             {editedData && editedData.length > 0 ? (
-              <div className="space-y-4">
-                {editedData.map((skill) => (
-                  <div
-                    key={skill.id}
-                    className="relative border-b pb-4 last:border-0"
-                  >
-                    {/* Skill content - editable or readonly */}
-                    {isEditing ? (
-                      <div className="flex gap-2">
-                        <div className="w-full">
-                          <Input
-                            type="text"
-                            value={skill.name}
-                            onChange={(e) =>
-                              handleSkillInputChange(
-                                skill.id,
-                                "name",
-                                e.target.value,
-                                handleInputChange,
-                                touchField
-                              )
-                            }
-                            className={`font-medium mb-2 ${
-                              !skill.name ? "border-red-500" : ""
-                            }`}
-                            placeholder="Skill Name *"
-                            required
-                          />
-                          <Input
-                            type="text"
-                            value={skill.category}
-                            onChange={(e) =>
-                              handleSkillInputChange(
-                                skill.id,
-                                "category",
-                                e.target.value,
-                                handleInputChange,
-                                touchField
-                              )
-                            }
-                            className={`text-sm mb-2 ${
-                              !skill.category ? "border-red-500" : ""
-                            }`}
-                            placeholder="Category *"
-                            required
-                          />
-                          <Input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={skill.proficiencyLevel}
-                            onChange={(e) =>
-                              handleSkillInputChange(
-                                skill.id,
-                                "proficiencyLevel",
-                                parseInt(e.target.value),
-                                handleInputChange,
-                                touchField
-                              )
-                            }
-                            className={`text-sm ${
-                              !skill.proficiencyLevel ||
-                              skill.proficiencyLevel < 1 ||
-                              skill.proficiencyLevel > 10
-                                ? "border-red-500"
-                                : ""
-                            }`}
-                            placeholder="Proficiency Level (1-10) *"
-                            required
-                          />
-                        </div>
-                        <div className="flex items-start">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              handleDeleteSkill(
-                                skill.id,
-                                handleDeleteItem,
-                                mutate
-                              )
-                            }
-                            className="h-8 w-8 text-red-500"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">{skill.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {skill.category}
-                          </p>
-                          <div className="flex mt-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Lightbulb
-                                key={i}
-                                className={`h-4 w-4 mr-1 ${
-                                  i < skill.proficiencyLevel
-                                    ? "text-yellow-500 fill-yellow-500"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <SkillList
+                editedData={editedData}
+                isEditing={isEditing}
+                handleSkillInputChange={handleSkillInputChange}
+                handleInputChange={handleChange}
+                touchField={touchField}
+                handleDeleteSkill={handleDeleteSkill}
+                handleDeleteItem={handleDeleteItem}
+                mutate={mutate}
+              />
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 No skills added yet.

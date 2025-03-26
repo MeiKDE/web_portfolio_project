@@ -104,63 +104,64 @@ export async function PUT(
 }
 
 // DELETE a skill
-// export const DELETE = withOwnership(
-//   async (
-//     request: NextRequest,
-//     { params }: { params: { id: string } },
-//     user
-//   ) => {
-//     try {
-//       await prisma.skill.delete({
-//         where: { id: params.id },
-//       });
+export const DELETE = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
+    try {
+      const skillId = params.id;
+      console.log("Attempting to delete skill:", {
+        skillId,
+        userId: user.id,
+      });
 
-//       return successResponse({ message: "Skill deleted successfully" });
-//     } catch (error) {
-//       return handleApiError(error);
-//     }
-//   },
-//   "skill"
-// );
+      // First, check if the skill exists
+      const skill = await prisma.skill.findUnique({
+        where: { id: skillId },
+        select: {
+          id: true,
+          userId: true,
+        },
+      });
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { userId: string; id: string } }
-) {
-  try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return errorResponse("Unauthorized", 401);
+      console.log("Found skill:", skill);
+
+      if (!skill) {
+        console.log("Skill not found in database");
+        return errorResponse("Skill not found", 404);
+      }
+
+      // Check if the skill belongs to the authenticated user
+      if (skill.userId !== user.id) {
+        console.log("Unauthorized: skill belongs to different user", {
+          skillUserId: skill.userId,
+          requestingUserId: user.id,
+        });
+        return errorResponse("Unauthorized to delete this skill", 403);
+      }
+
+      // Delete the skill
+      const deletedSkill = await prisma.skill.delete({
+        where: { id: skillId },
+      });
+
+      console.log("Successfully deleted skill:", deletedSkill);
+
+      return successResponse({
+        message: "Skill deleted successfully",
+        deletedSkill,
+      });
+    } catch (error) {
+      console.error("Error in DELETE /api/skills/[id]:", error);
+      return errorResponse(
+        error instanceof Error ? error.message : "Failed to delete skill",
+        500
+      );
     }
-
-    const { userId, id } = params;
-
-    // Verify the skill belongs to the user
-    const skill = await prisma.skill.findFirst({
-      where: {
-        id: id,
-        userId: userId,
-      },
-    });
-
-    if (!skill) {
-      return errorResponse("Skill not found or unauthorized", 404);
-    }
-
-    // Delete the skill
-    await prisma.skill.delete({
-      where: {
-        id: id,
-      },
-    });
-
-    return successResponse({ message: "Skill deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting skill:", error);
-    return errorResponse("Failed to delete skill", 500);
   }
-}
+);
 
 // POST a new skill for a specific user
 export const POST = withAuth(
