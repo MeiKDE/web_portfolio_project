@@ -7,7 +7,6 @@ interface NewSkillProps {
   userId: string;
   values: Record<string, any>;
   formErrors: Record<string, string>;
-  newItemData: any;
   isSubmitting: boolean;
   handleChange: (field: string, value: any) => void;
   touchField: (field: string) => void;
@@ -39,13 +38,13 @@ interface NewSkillProps {
   setIsSubmitting: (isSubmitting: boolean) => void;
   setSaveSuccess: (success: boolean) => void;
   setIsAddingNew: (isAddingNew: boolean) => void;
+  touchedFields: Record<string, boolean>;
 }
 
 export function NewSkill({
   userId,
   values,
   formErrors,
-  newItemData,
   isSubmitting,
   handleChange,
   touchField,
@@ -61,10 +60,10 @@ export function NewSkill({
   setIsSubmitting,
   setSaveSuccess,
   setIsAddingNew,
+  touchedFields,
 }: NewSkillProps) {
-  // Create a skill object for validation
   const skillToValidate: Skill = {
-    id: "", // temporary id for new skill
+    id: "",
     name: values.name,
     category: values.category,
     proficiencyLevel: values.proficiencyLevel,
@@ -76,13 +75,11 @@ export function NewSkill({
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-
-          // Show validation messages
           touchField("name");
           touchField("category");
           touchField("proficiencyLevel");
 
-          if (!values.name || !values.category || !values.proficiencyLevel) {
+          if (!validateForm()) {
             return;
           }
 
@@ -190,21 +187,16 @@ export function NewSkill({
           )}
         </div>
 
-        {/* Add FieldValidation component */}
-        <FieldValidation skill={skillToValidate} />
+        <FieldValidation
+          skill={skillToValidate}
+          touchedFields={touchedFields}
+        />
 
         <CancelSaveButtons
           cancelAddingNew={cancelAddingNew}
           isSubmitting={isSubmitting}
           handleCancelAdd={handleCancelAdd}
-          handleSaveNewSkill={handleSaveNewSkill}
           resetForm={resetForm}
-          validateForm={validateForm}
-          values={values}
-          touchField={touchField}
-          setNewItemData={setNewItemData}
-          userId={userId}
-          mutate={mutate}
         />
       </form>
     </div>
