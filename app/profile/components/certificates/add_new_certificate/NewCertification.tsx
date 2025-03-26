@@ -6,7 +6,7 @@ import { IssueDateInput } from "./IssueDateInput";
 import { ExpirationDateInput } from "./ExpirationDateInput";
 import { CredentialUrlInput } from "./CredentialUrlInput";
 import { useFormValidation } from "./FormValidation";
-
+import { CancelAddButtons } from "./CancelAddButtons";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -63,19 +63,10 @@ export function NewCertification({
 
       {errors.submit && <p className="text-red-500 text-sm">{errors.submit}</p>}
 
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={cancelAddingNew}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding..." : "Add Certification"}
-        </Button>
-      </div>
+      <CancelAddButtons
+        cancelAddingNew={cancelAddingNew}
+        isSubmitting={isSubmitting}
+      />
     </form>
   );
 }
