@@ -1,10 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Edit, CheckCircle, Save, Plus, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import {
   getCurrentDate,
@@ -281,7 +277,7 @@ export default function Certifications({ userId }: CertificationsProps) {
           </div>
         </div>
 
-        {/* Add New Certification Form */}
+        {/* Add New Certification Entry */}
         {isAddingNew && (
           <NewCertification
             mutate={mutate}
@@ -291,7 +287,7 @@ export default function Certifications({ userId }: CertificationsProps) {
           ></NewCertification>
         )}
 
-        {/* Certifications List - ensure we show all items when not in edit/add mode */}
+        {/* Certifications List - show all items by default */}
         {!isLoading && !error ? (
           <>
             {editedData && editedData.length > 0 ? (
