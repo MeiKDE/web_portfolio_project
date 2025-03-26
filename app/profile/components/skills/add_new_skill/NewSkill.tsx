@@ -7,6 +7,7 @@ interface NewSkillProps {
   userId: string;
   values: Record<string, any>;
   formErrors: Record<string, string>;
+  newItemData: any;
   isSubmitting: boolean;
   handleChange: (field: string, value: any) => void;
   touchField: (field: string) => void;
@@ -45,6 +46,7 @@ export function NewSkill({
   userId,
   values,
   formErrors,
+  newItemData,
   isSubmitting,
   handleChange,
   touchField,
@@ -64,6 +66,7 @@ export function NewSkill({
 }: NewSkillProps) {
   const skillToValidate: Skill = {
     id: "",
+    userId: userId,
     name: values.name,
     category: values.category,
     proficiencyLevel: values.proficiencyLevel,

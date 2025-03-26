@@ -5,7 +5,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { handleNewSkillChange } from "./skills/HandleNewSkillChange";
-import { handleCancelAdd } from "./skills/HandleChancelAdd";
+import { handleCancelAdd } from "./skills/HandleCancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleSkillInputChange } from "./skills/HandleSkillInputChange";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
@@ -72,6 +72,7 @@ export default function Skills({ userId }: SkillsProps) {
     // Create a skill object for validation
     const skillToValidate: Skill = {
       id: "", // temporary id for new skill
+      userId: userId,
       name: values.name,
       category: values.category,
       proficiencyLevel: values.proficiencyLevel,
@@ -333,6 +334,7 @@ export default function Skills({ userId }: SkillsProps) {
             setIsSubmitting={setIsSubmitting}
             setSaveSuccess={setSaveSuccess}
             setIsAddingNew={setIsAddingNew}
+            touchedFields={touchedFields}
           />
         )}
 
