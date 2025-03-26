@@ -555,6 +555,7 @@ export default function Educations({ userId }: EducationProps) {
             {!editable ? (
               <>
                 <AddButton onClick={handleAddEducation} />
+
                 <Button variant="ghost" size="sm" onClick={handleEditToggle}>
                   <>
                     <Edit className="h-4 w-4 mr-2" />

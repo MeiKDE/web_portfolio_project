@@ -15,7 +15,8 @@ import { handleDeleteCertification } from "./certifications/HandleDeleteCertific
 import { handleSaveCertifications } from "./certifications/HandleSaveCertifications";
 import { NewCertification } from "./certifications/add_new_certificate/NewCertification";
 import { AddButton } from "./ui/AddButton";
-
+import { DoneButton } from "./ui/DoneButton";
+import { EditButton } from "./ui/EditButton";
 interface CertificationsProps {
   userId: string;
 }
@@ -284,6 +285,19 @@ export default function Certifications({ userId }: CertificationsProps) {
       },
     ]);
 
+  const onClickDone = () => {
+    handleSaveCertifications(handleSaveEdits, mutate);
+  };
+
+  const onClickEdit = () => {
+    if (data) {
+      startEditing();
+      setEditedData(formatCertificationsForUI(data));
+    } else {
+      startEditing();
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -295,38 +309,12 @@ export default function Certifications({ userId }: CertificationsProps) {
             )}
 
             {isEditing ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  handleSaveCertifications(handleSaveEdits, mutate)
-                }
-                disabled={isSubmitting}
-              >
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Saving..." : "Done"}
-                </>
-              </Button>
+              <DoneButton onClick={onClickDone} isSubmitting={isSubmitting} />
             ) : (
               !isAddingNew && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (data) {
-                      startEditing();
-                      setEditedData(formatCertificationsForUI(data));
-                    } else {
-                      startEditing();
-                    }
-                  }}
-                >
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </>
-                </Button>
+                <>
+                  <EditButton onClick={onClickEdit} />
+                </>
               )
             )}
           </div>
