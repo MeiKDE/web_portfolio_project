@@ -20,6 +20,9 @@ import { handleCancelAdd } from "./skills/HandleChancelAdd";
 import { handleSaveNewSkill } from "./skills/HandleSaveNewSkill";
 import { handleDeleteSkill } from "./skills/HandleDeleteSkill";
 import { AddButton } from "./ui/AddButton";
+import { EditButton } from "./ui/EditButton";
+import { DoneButton } from "./ui/DoneButton";
+import { formatCertificationsForUI } from "@/app/hooks/date-utils";
 interface SkillsProps {
   userId: string;
 }
@@ -132,6 +135,49 @@ export default function Skills({ userId }: SkillsProps) {
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
 
+  const onClickAddNew = () => handleAddNew(startAddingNew, resetForm);
+
+  const onClickDone = () => {
+    handleSaveEdits({
+      endpoint: `/api/skills`,
+      validateFn: (data) => {
+        try {
+          // Validate each skill
+          if (Array.isArray(data)) {
+            data.forEach((skill) => {
+              if (!skill.name || !skill.category || !skill.proficiencyLevel) {
+                throw new Error("All required fields must be filled");
+              }
+            });
+          }
+          return true;
+        } catch (error) {
+          console.error("Validation error:", error);
+          alert("Please fill out all required fields correctly");
+          return false;
+        }
+      },
+      onSuccess: () => {
+        mutate();
+        setIsEditing(false);
+        setSaveSuccess(true);
+      },
+      onError: (error: any) => {
+        console.error("Error saving skills:", error);
+        alert("Failed to save skills. Please try again.");
+      },
+    });
+  };
+
+  const onClickEdit = () => {
+    if (data) {
+      startEditing();
+      setEditedData(data);
+    } else {
+      startEditing();
+    }
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -139,78 +185,17 @@ export default function Skills({ userId }: SkillsProps) {
           <h3 className="text-xl font-semibold">Skills</h3>
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <AddButton
-                onClick={() => handleAddNew(startAddingNew, resetForm)}
-              />
+              <AddButton onClick={onClickAddNew} />
             )}
-            {!isAddingNew && !isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (data) {
-                    startEditing();
-                    setEditedData(data);
-                  } else {
-                    startEditing();
-                  }
-                }}
-              >
+
+            {isEditing ? (
+              <DoneButton onClick={onClickDone} isSubmitting={isSubmitting} />
+            ) : (
+              !isAddingNew && (
                 <>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
+                  <EditButton onClick={onClickEdit} />
                 </>
-              </Button>
-            )}
-            {/* Add a separate Save button that appears when editing */}
-            {isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  handleSaveEdits({
-                    endpoint: `/api/skills`,
-                    validateFn: (data) => {
-                      try {
-                        // Validate each skill
-                        if (Array.isArray(data)) {
-                          data.forEach((skill) => {
-                            if (
-                              !skill.name ||
-                              !skill.category ||
-                              !skill.proficiencyLevel
-                            ) {
-                              throw new Error(
-                                "All required fields must be filled"
-                              );
-                            }
-                          });
-                        }
-                        return true;
-                      } catch (error) {
-                        console.error("Validation error:", error);
-                        alert("Please fill out all required fields correctly");
-                        return false;
-                      }
-                    },
-                    onSuccess: () => {
-                      mutate();
-                      setIsEditing(false);
-                      setSaveSuccess(true);
-                    },
-                    onError: (error: any) => {
-                      console.error("Error saving skills:", error);
-                      alert("Failed to save skills. Please try again.");
-                    },
-                  })
-                }
-                disabled={isSubmitting}
-              >
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Saving..." : "Save"}
-                </>
-              </Button>
+              )
             )}
           </div>
         </div>

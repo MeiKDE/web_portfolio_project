@@ -29,6 +29,8 @@ import {
   calculateDuration,
 } from "@/app/hooks/date-utils";
 import { AddButton } from "./ui/AddButton";
+import { EditButton } from "./ui/EditButton";
+import { DoneButton } from "./ui/DoneButton";
 
 interface Experience {
   id: string;
@@ -248,40 +250,6 @@ export default function Experiences({ userId }: ExperienceProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleEditToggle = () => {
-    // Explicitly close the add form when toggling edit mode
-    setIsAddingNew(false);
-
-    if (isEditing) {
-      // Validate all experiences before saving
-      let hasErrors = false;
-
-      editedExperiences.forEach((exp) => {
-        if (!validateData()) {
-          hasErrors = true;
-        }
-      });
-
-      if (hasErrors) {
-        alert("Please fill out all required fields before saving.");
-        return;
-      }
-
-      saveChanges();
-    } else {
-      setEditedExperiences(
-        experienceData.map((exp) => ({
-          ...exp,
-          startDate: exp.startDate ? formatDateForInput(exp.startDate) : "",
-          endDate: exp.endDate ? formatDateForInput(exp.endDate) : "",
-        }))
-      );
-      // Reset validation errors when entering edit mode
-      resetForm();
-    }
-    setIsEditing(!isEditing);
   };
 
   const handleInputChange = (
@@ -566,10 +534,10 @@ export default function Experiences({ userId }: ExperienceProps) {
   };
 
   // Simplified toggleAddForm without references to edit mode
-  const toggleAddForm = () => {
-    setIsAddingNew(!isAddingNew);
-    setValidationError("");
-  };
+  // const toggleAddForm = () => {
+  //   setIsAddingNew(!isAddingNew);
+  //   setValidationError("");
+  // };
 
   // When canceling an edit, just reset the edit state
   const cancelEdit = () => {
@@ -592,6 +560,79 @@ export default function Experiences({ userId }: ExperienceProps) {
   if (isError) return <div>Error loading experiences: {isError.message}</div>;
   if (localError) return <div>Error: {localError}</div>;
 
+  const onClickAddNew = () => {
+    setIsAddingNew(!isAddingNew);
+    setValidationError("");
+  };
+
+  const onClickDone = () => {
+    // Explicitly close the add form when toggling edit mode
+    setIsAddingNew(false);
+
+    if (isEditing) {
+      // Validate all experiences before saving
+      let hasErrors = false;
+
+      editedExperiences.forEach((exp) => {
+        if (!validateData()) {
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        alert("Please fill out all required fields before saving.");
+        return;
+      }
+
+      saveChanges();
+    } else {
+      setEditedExperiences(
+        experienceData.map((exp) => ({
+          ...exp,
+          startDate: exp.startDate ? formatDateForInput(exp.startDate) : "",
+          endDate: exp.endDate ? formatDateForInput(exp.endDate) : "",
+        }))
+      );
+      // Reset validation errors when entering edit mode
+      resetForm();
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const onClickEdit = () => {
+    // Explicitly close the add form when toggling edit mode
+    setIsAddingNew(false);
+
+    if (isEditing) {
+      // Validate all experiences before saving
+      let hasErrors = false;
+
+      editedExperiences.forEach((exp) => {
+        if (!validateData()) {
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        alert("Please fill out all required fields before saving.");
+        return;
+      }
+
+      saveChanges();
+    } else {
+      setEditedExperiences(
+        experienceData.map((exp) => ({
+          ...exp,
+          startDate: exp.startDate ? formatDateForInput(exp.startDate) : "",
+          endDate: exp.endDate ? formatDateForInput(exp.endDate) : "",
+        }))
+      );
+      // Reset validation errors when entering edit mode
+      resetForm();
+    }
+    setIsEditing(!isEditing);
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -603,29 +644,16 @@ export default function Experiences({ userId }: ExperienceProps) {
 
           <div className="flex gap-2">
             {!isAddingNew && !isEditing && (
-              <AddButton onClick={toggleAddForm} />
+              <AddButton onClick={onClickAddNew} />
             )}
 
             {isEditing ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEditToggle}
-                disabled={isSubmitting}
-              >
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Saving..." : "Done"}
-                </>
-              </Button>
+              <DoneButton onClick={onClickDone} isSubmitting={isSubmitting} />
             ) : (
               !isAddingNew && (
-                <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </>
-                </Button>
+                <>
+                  <EditButton onClick={onClickEdit} />
+                </>
               )
             )}
           </div>
