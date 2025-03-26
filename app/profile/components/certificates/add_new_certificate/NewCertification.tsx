@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCurrentDate, formatDateForDatabase } from "@/app/hooks/date-utils";
-import { Certification } from "./Interface";
-
+import { Certification } from "../Interface";
+import { CertificateName } from "./CertificateName";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -18,6 +18,7 @@ export function NewCertification({
   isSubmitting,
   setIsSubmitting,
 }: NewCertificationProps) {
+  // Initialize form data
   const [formData, setFormData] = useState<Partial<Certification>>({
     name: "",
     issuer: "",
@@ -25,8 +26,11 @@ export function NewCertification({
     expirationDate: "",
     credentialUrl: "",
   });
+
+  // Initialize errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Handle input changes
   const handleInputChange = (field: keyof Certification, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user types
@@ -35,6 +39,7 @@ export function NewCertification({
     }
   };
 
+  // Validate form
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -52,6 +57,7 @@ export function NewCertification({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -104,18 +110,11 @@ export function NewCertification({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-      <div>
-        <Input
-          type="text"
-          value={formData.name || ""}
-          onChange={(e) => handleInputChange("name", e.target.value)}
-          placeholder="Certification Name*"
-          className={errors.name ? "border-red-500" : ""}
-        />
-        {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-        )}
-      </div>
+      <CertificateName
+        formData={formData}
+        errors={errors}
+        handleInputChange={handleInputChange}
+      />
 
       <div>
         <Input

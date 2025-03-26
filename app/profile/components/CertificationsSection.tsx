@@ -13,8 +13,7 @@ import {
 import { Certification } from "./certificates/Interface";
 import { handleDeleteCertification } from "./certificates/HandleDeleteCertification";
 import { handleSaveCertifications } from "./certificates/HandleSaveCertifications";
-import { NewCertification } from "./certificates/NewCertification";
-import { z } from "zod";
+import { NewCertification } from "./certificates/add_new_certificate/NewCertification";
 
 interface CertificationsProps {
   userId: string;
