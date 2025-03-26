@@ -8,7 +8,7 @@ interface CertificateNameProps {
   handleInputChange: (field: keyof Certification, value: string) => void;
 }
 
-export function CertificateName({
+export function CertificateNameInput({
   formData,
   errors,
   handleInputChange,

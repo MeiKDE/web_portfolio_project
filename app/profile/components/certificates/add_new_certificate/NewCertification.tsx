@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getCurrentDate, formatDateForDatabase } from "@/app/hooks/date-utils";
 import { Certification } from "../Interface";
-import { CertificateName } from "./CertificateName";
+import { CertificateNameInput } from "./CertificateNameInput";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -110,7 +110,7 @@ export function NewCertification({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-      <CertificateName
+      <CertificateNameInput
         formData={formData}
         errors={errors}
         handleInputChange={handleInputChange}
