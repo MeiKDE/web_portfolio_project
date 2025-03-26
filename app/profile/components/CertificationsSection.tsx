@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,17 +7,14 @@ import { Edit, CheckCircle, Save, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import {
-  formatDateForDatabase,
   getCurrentDate,
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
-import { useEditableState } from "@/app/hooks/form/use-editable-state";
-import { handleCancelAdd } from "./certificates/HandleCancelAdd";
 import { Certification } from "./certificates/Interface";
-import { handleNewCertificationChange } from "./certificates/HandleNewCertificationChange";
-import { handleSaveNewCertification } from "./certificates/HandleSaveNewCertification";
 import { handleDeleteCertification } from "./certificates/HandleDeleteCertification";
 import { handleSaveCertifications } from "./certificates/HandleSaveCertifications";
+import { NewCertification } from "./certificates/NewCertification";
+import { z } from "zod";
 
 interface CertificationsProps {
   userId: string;
@@ -25,33 +22,265 @@ interface CertificationsProps {
 
 // This function is used to display the certifications section in the profile page
 export default function Certifications({ userId }: CertificationsProps) {
-  // this is the hook that is used to handle the editable STATE of the certifications section
-  const {
-    isEditing,
-    isAddingNew,
-    editedData,
-    isSubmitting,
-    saveSuccess,
-    newItemData,
-    newItemErrors,
-    setIsEditing,
-    setIsAddingNew,
-    setEditedData,
-    setIsSubmitting,
-    setSaveSuccess,
-    setNewItemData,
-    setNewItemErrors,
-    startEditing,
-    cancelEditing,
-    startAddingNew,
-    cancelAddingNew,
-    handleNewItemChange,
-    validateNewItem,
-    handleInputChange,
-    handleSaveNewItem,
-    handleDeleteItem,
-    handleSaveEdits,
-  } = useEditableState<Certification[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editedData, setEditedData] = useState<Certification[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [newItemData, setNewItemData] = useState<any>(null);
+  const [newItemErrors, setNewItemErrors] = useState<{ [key: string]: string }>(
+    {}
+  );
+  // const [validationErrors, setValidationErrors] = useState<{
+  //   [key: string]: z.ZodIssue[] | null;
+  // }>({});
+
+  const startEditing = () => {
+    console.log("ln11: startEditing");
+    setIsEditing(true);
+    if (data) {
+      setEditedData(formatCertificationsForUI(data));
+    }
+  };
+
+  const startAddingNew = (defaultNewItem: Certification[]) => {
+    setIsAddingNew(true);
+    setEditedData(defaultNewItem);
+    setNewItemData(defaultNewItem);
+  };
+  // const handleNewItemChange = (field: string, value: any) => {
+  //   setNewItemData((prev: any) => ({ ...prev, [field]: value }));
+  // };
+
+  const handleDeleteItem = async ({
+    id,
+    confirmMessage = "Are you sure you want to delete this item?",
+    endpoint,
+    filterFn,
+    onSuccess,
+    onError,
+  }: {
+    id: string;
+    confirmMessage?: string;
+    endpoint: string;
+    filterFn?: (item: any) => boolean;
+    onSuccess?: () => void;
+    onError?: (error: any) => void;
+  }) => {
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Failed to delete item: ${errorData.error || response.statusText}`
+        );
+      }
+
+      // Remove from local state
+      if (Array.isArray(editedData) && filterFn) {
+        setEditedData(editedData.filter(filterFn) as Certification[]);
+      }
+
+      onSuccess?.(); // Call success callback if provided
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      onError?.(error); // Call error callback if provided
+    }
+  };
+
+  // Helper function to format item for API
+  const formatItemForApi = (item: any, dateFields: string[] = []) => {
+    const formatted = { ...item };
+
+    // Process specified date fields
+    for (const field of dateFields) {
+      if (formatted[field]) {
+        formatted[field] = new Date(formatted[field]).toISOString();
+      } else if (formatted[field] === "") {
+        formatted[field] = null;
+      }
+    }
+
+    return formatted;
+  };
+
+  const handleSaveEdits = async ({
+    endpoint,
+    dateFields = [],
+    validateFn,
+    onSuccess,
+    onError,
+  }: {
+    endpoint: string;
+    dateFields?: string[];
+    validateFn?: (data: any) => boolean | string | null;
+    onSuccess?: () => void;
+    onError?: (error: any) => void;
+  }) => {
+    try {
+      // Optional validation check
+      if (validateFn && editedData) {
+        const validationResult = validateFn(editedData);
+        if (validationResult !== true && validationResult !== null) {
+          console.error("Validation errors:", validationResult);
+          onError?.(new Error(`Validation failed: ${validationResult}`));
+          return;
+        }
+      }
+
+      setIsSubmitting(true);
+
+      if (!editedData) {
+        console.warn("No data to update");
+        return;
+      }
+
+      // Handle both array and single object cases
+      const itemsToUpdate = Array.isArray(editedData)
+        ? editedData
+        : [editedData];
+
+      for (const item of itemsToUpdate) {
+        // Format the item for API, particularly handling date fields
+        const formattedItem = formatItemForApi(item, dateFields);
+
+        const itemId = item.id;
+        const itemEndpoint = itemId ? `${endpoint}/${itemId}` : endpoint;
+
+        const response = await fetch(itemEndpoint, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formattedItem),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            `Failed to update item: ${errorData.error || response.statusText}`
+          );
+        }
+      }
+
+      setIsEditing(false);
+      setSaveSuccess(true);
+      onSuccess?.(); // Call success callback if provided
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      onError?.(error); // Call error callback if provided
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // const cancelEditing = () => {
+  //   setIsEditing(false);
+  //   setIsAddingNew(false);
+  //   if (data) {
+  //     setEditedData(formatCertificationsForUI(data));
+  //   }
+  // };
+
+  const cancelAddingNew = () => {
+    setIsAddingNew(false);
+    setNewItemData(null);
+    setNewItemErrors({});
+  };
+
+  const validateNewItem = (requiredFields: string[]) => {
+    const errors: { [key: string]: string } = {};
+
+    if (newItemData) {
+      for (const field of requiredFields) {
+        if (!newItemData[field]) {
+          errors[field] = `${field} is required.`;
+        }
+      }
+    }
+
+    setNewItemErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (id: string | null, field: string, value: any) => {
+    setEditedData((prev) => {
+      if (!prev) return prev;
+
+      if (Array.isArray(prev)) {
+        return prev.map((item: any) =>
+          item.id === id ? { ...item, [field]: value } : item
+        ) as Certification[];
+      }
+
+      if (
+        typeof prev === "object" &&
+        prev !== null &&
+        "id" in prev &&
+        id === (prev as any).id
+      ) {
+        return [{ ...(prev as any), [field]: value }] as Certification[];
+      }
+
+      return [{ ...(prev as any), [field]: value }] as Certification[];
+    });
+  };
+
+  // const handleSaveNewItem = async ({
+  //   event,
+  //   requiredFields,
+  //   formatData,
+  //   endpoint,
+  //   onSuccess,
+  //   onError,
+  // }: {
+  //   event: React.FormEvent;
+  //   requiredFields: string[];
+  //   formatData: (data: any) => any;
+  //   endpoint: string;
+  //   onSuccess?: () => void;
+  //   onError?: (error: any) => void;
+  // }) => {
+  //   event.preventDefault();
+
+  //   if (!validateNewItem(requiredFields)) {
+  //     return;
+  //   }
+
+  //   try {
+  //     setIsSubmitting(true);
+  //     const formattedData = formatData(newItemData);
+
+  //     const response = await fetch(endpoint, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       credentials: "include",
+  //       body: JSON.stringify(formattedData),
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(
+  //         `Failed to add item: ${errorData.error || response.statusText}`
+  //       );
+  //     }
+
+  //     cancelAddingNew();
+  //     onSuccess?.();
+  //   } catch (error) {
+  //     console.error("Error adding item:", error);
+  //     onError?.(error);
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   // Fetch certifications data
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
@@ -77,75 +306,6 @@ export default function Certifications({ userId }: CertificationsProps) {
       setEditedData(formatCertificationsForUI(data));
     }
   }, [isEditing, isAddingNew, data, setEditedData]);
-
-  // // This function is for real-time form input handling CHANGE
-  // // Called: On every input change in the form fields
-  // const handleNewCertificationChange = (
-  //   field: keyof Omit<Certification, "id">,
-  //   value: string
-  // ) => {
-  //   handleNewItemChange(field, value);
-  // };
-
-  // // This function is used to SAVE a new certification
-  // // Creating New certifications
-  // // Called when saving the Add New Certification form
-  // const handleSaveNewCertification = (e: React.FormEvent) => {
-  //   handleSaveNewItem({
-  //     event: e,
-  //     requiredFields: ["name", "issuer", "issueDate"],
-  //     formatData: (data) => ({
-  //       name: data?.name?.trim(),
-  //       issuer: data?.issuer?.trim(),
-  //       issueDate: data?.issueDate
-  //         ? formatDateForDatabase(data.issueDate as string)
-  //         : "",
-  //       expirationDate:
-  //         data?.expirationDate && (data.expirationDate as string).trim() !== ""
-  //           ? formatDateForDatabase(data.expirationDate as string)
-  //           : null,
-  //       credentialUrl:
-  //         data?.credentialUrl && (data.credentialUrl as string).trim() !== ""
-  //           ? (data.credentialUrl as string).trim()
-  //           : null,
-  //     }),
-  //     endpoint: "/api/certifications/",
-  //     onSuccess: () => mutate(), // Refresh data on success
-  //     onError: (error) => console.error("Error adding certification:", error),
-  //   });
-  // };
-
-  // // DELETE certification
-  // const handleDeleteCertification = (id: string) => {
-  //   handleDeleteItem({
-  //     id,
-  //     confirmMessage: "Are you sure you want to delete this certification?",
-  //     endpoint: `/api/certifications/${id}`,
-  //     filterFn: (cert) => cert.id !== id,
-  //     onSuccess: () => {
-  //       mutate();
-  //     },
-  //     onError: (error) => {
-  //       console.error("Error deleting certification:", error);
-  //       alert("Failed to delete certification. Please try again.");
-  //     },
-  //   });
-  // };
-
-  // SAVE all edited certifications to the backend
-  // Updating existing ones
-  // Called when clicking the "Done" button in edit mode
-  // const handleSaveCertifications = () => {
-  //   handleSaveEdits({
-  //     endpoint: "/api/certifications",
-  //     dateFields: ["issueDate", "expirationDate"],
-  //     onSuccess: () => mutate(),
-  //     onError: (error) => {
-  //       console.error("Error saving certifications:", error);
-  //       alert("Failed to save certifications. Please try again.");
-  //     },
-  //   });
-  // };
 
   if (isLoading) return <div>Loading certifications...</div>;
   if (error) return <div>Error loading certification information</div>;
@@ -220,155 +380,10 @@ export default function Certifications({ userId }: CertificationsProps) {
 
         {/* Add New Certification Form */}
         {isAddingNew && (
-          <div className="mb-6 border-b pb-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex-grow">
-                <div className="mb-2">
-                  <label className="text-sm text-muted-foreground">
-                    Certification Name*
-                  </label>
-                  <Input
-                    value={newItemData?.name || ""}
-                    onChange={(e) =>
-                      handleNewCertificationChange(
-                        "name",
-                        e.target.value,
-                        handleNewItemChange
-                      )
-                    }
-                    className={`mt-1 ${
-                      newItemErrors.name ? "border-red-500" : ""
-                    }`}
-                    placeholder="e.g. AWS Certified Solutions Architect"
-                  />
-                  {newItemErrors.name && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {newItemErrors.name}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mb-2">
-                  <label className="text-sm text-muted-foreground">
-                    Issuing Organization*
-                  </label>
-                  <Input
-                    value={newItemData?.issuer || ""}
-                    onChange={(e) =>
-                      handleNewCertificationChange(
-                        "issuer",
-                        e.target.value,
-                        handleNewItemChange
-                      )
-                    }
-                    className={`mt-1 ${
-                      newItemErrors.issuer ? "border-red-500" : ""
-                    }`}
-                    placeholder="e.g. Amazon Web Services"
-                  />
-                  {newItemErrors.issuer && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {newItemErrors.issuer}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 mb-2">
-                  <div className="w-1/2">
-                    <label className="text-sm text-muted-foreground">
-                      Issue Date*
-                    </label>
-                    <Input
-                      type="date"
-                      value={newItemData?.issueDate || ""}
-                      onChange={(e) =>
-                        handleNewCertificationChange(
-                          "issueDate",
-                          e.target.value,
-                          handleNewItemChange
-                        )
-                      }
-                      className={`mt-1 ${
-                        newItemErrors.issueDate ? "border-red-500" : ""
-                      }`}
-                      max={getCurrentDate()}
-                    />
-                    {newItemErrors.issueDate && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {newItemErrors.issueDate}
-                      </p>
-                    )}
-                  </div>
-                  <div className="w-1/2">
-                    <label className="text-sm text-muted-foreground">
-                      Expiration Date (Optional)
-                    </label>
-                    <Input
-                      type="date"
-                      value={newItemData?.expirationDate || ""}
-                      onChange={(e) =>
-                        handleNewCertificationChange(
-                          "expirationDate",
-                          e.target.value,
-                          handleNewItemChange
-                        )
-                      }
-                      className="mt-1"
-                      max={getCurrentDate()}
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <label className="text-sm text-muted-foreground">
-                    Credential URL (Optional)
-                  </label>
-                  <Input
-                    type="url"
-                    value={newItemData?.credentialUrl || ""}
-                    onChange={(e) =>
-                      handleNewCertificationChange(
-                        "credentialUrl",
-                        e.target.value,
-                        handleNewItemChange
-                      )
-                    }
-                    className="mt-1"
-                    placeholder="https://www.example.com/credential/123"
-                  />
-                  {newItemErrors.credentialUrl && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {newItemErrors.credentialUrl}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCancelAdd(cancelAddingNew)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={(e) =>
-                      handleSaveNewCertification(
-                        e,
-                        handleSaveNewItem,
-                        formatDateForDatabase,
-                        mutate
-                      )
-                    }
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Saving..." : "Save Certification"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <NewCertification
+            mutate={mutate}
+            cancelAddingNew={cancelAddingNew}
+          ></NewCertification>
         )}
 
         {/* Certifications List - ensure we show all items when not in edit/add mode */}
