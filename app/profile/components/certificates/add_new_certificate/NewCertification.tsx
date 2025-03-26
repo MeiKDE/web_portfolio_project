@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { getCurrentDate, formatDateForDatabase } from "@/app/hooks/date-utils";
 import { Certification } from "../Interface";
 import { CertificateNameInput } from "./CertificateNameInput";
+import { IssuingOrganizationInput } from "./IssuingOrganizationInput";
+
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -116,18 +118,11 @@ export function NewCertification({
         handleInputChange={handleInputChange}
       />
 
-      <div>
-        <Input
-          type="text"
-          value={formData.issuer || ""}
-          onChange={(e) => handleInputChange("issuer", e.target.value)}
-          placeholder="Issuing Organization*"
-          className={errors.issuer ? "border-red-500" : ""}
-        />
-        {errors.issuer && (
-          <p className="text-red-500 text-sm mt-1">{errors.issuer}</p>
-        )}
-      </div>
+      <IssuingOrganizationInput
+        formData={formData}
+        errors={errors}
+        handleInputChange={handleInputChange}
+      />
 
       <div className="flex gap-4">
         <div className="flex-1">
