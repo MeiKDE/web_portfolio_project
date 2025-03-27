@@ -162,7 +162,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Lightbulb } from "lucide-react";
 import { Skill } from "../Interface";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SkillListProps {
   editedData: Skill[];
@@ -172,6 +172,11 @@ export function SkillList({ editedData }: SkillListProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localData, setLocalData] = useState<Skill[]>(editedData);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // This state is important as it takes editedData from parent component
+  useEffect(() => {
+    setLocalData(editedData);
+  }, [editedData]);
 
   // Internal implementation of required functions
   const handleInputChange = (field: string, value: any) => {

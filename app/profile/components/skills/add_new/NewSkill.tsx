@@ -10,11 +10,7 @@ interface NewSkillProps {
 }
 
 export function NewSkill({ userId, onSave }: NewSkillProps) {
-  // const [isEditing, setIsEditing] = useState(false);
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  // const [editedData, setEditedData] = useState<Skill[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
     {}
   );
@@ -56,18 +52,21 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
     let isValid = true;
 
     // Validate name
+    // if name is empty, set the error and isValid to false
     if (!values.name || values.name.trim() === "") {
       errors.name = "Name is required";
       isValid = false;
     }
 
     // Validate category
+    // if category is empty, set the error and isValid to false
     if (!values.category || values.category.trim() === "") {
       errors.category = "Category is required";
       isValid = false;
     }
 
     // Validate proficiency level
+    // if proficiency level is not a number, set the error and isValid to false
     const proficiencyLevel = parseInt(String(values.proficiencyLevel));
     if (
       isNaN(proficiencyLevel) ||
@@ -78,23 +77,28 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
       isValid = false;
     }
 
+    // if the form is not valid, set the form errors
     if (!isValid) {
       setFormErrors(errors);
       return;
     }
 
+    // set the form as submitting
     setIsSubmitting(true);
+
     try {
       const postData = {
         name: values.name.trim(),
         category: values.category.trim(),
         proficiencyLevel: parseInt(values.proficiencyLevel.toString()),
       };
-      e.preventDefault();
       await SaveNewSkill(postData);
       resetForm();
+      await onSave(); // Call this to hide the form and refresh data
     } catch (error) {
       console.error("Error saving skill:", error);
+    } finally {
+      setIsSubmitting(false); //reset the isSubmitting to false
     }
   };
 
@@ -108,8 +112,8 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
             type="text"
             value={values.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            onBlur={() => setTouchedFields((prev) => ({ ...prev, name: true }))}
-            className={getInputClassName("name", "name", "mt-1")}
+            onBlur={() => setTouchedFields((prev) => ({ ...prev, name: true }))} // set the field as touched
+            className={getInputClassName("name", "name", "mt-1")} // get the input error class name
             placeholder="e.g., JavaScript, React, Agile"
           />
           {formErrors["name"] && (
@@ -123,10 +127,10 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
             type="text"
             value={values.category}
             onChange={(e) => handleChange("category", e.target.value)}
-            onBlur={() =>
-              setTouchedFields((prev) => ({ ...prev, category: true }))
+            onBlur={
+              () => setTouchedFields((prev) => ({ ...prev, category: true })) // set the field as touched
             }
-            className={getInputClassName("category", "category", "mt-1")}
+            className={getInputClassName("category", "category", "mt-1")} // get the input error class name
             placeholder="e.g., Frontend, Backend, DevOps"
           />
           {formErrors["category"] && (
@@ -146,14 +150,18 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
             max="10"
             value={values.proficiencyLevel}
             onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
-            onBlur={() =>
-              setTouchedFields((prev) => ({ ...prev, proficiencyLevel: true }))
+            onBlur={
+              () =>
+                setTouchedFields((prev) => ({
+                  ...prev,
+                  proficiencyLevel: true,
+                })) // set the field as touched
             }
             className={getInputClassName(
               "proficiencyLevel",
               "proficiencyLevel",
               "mt-1"
-            )}
+            )} // get the input error class name
           />
           {formErrors["proficiencyLevel"] && (
             <p className="text-red-500 text-xs mt-1">

@@ -38,6 +38,7 @@ export default function Skills({ userId }: SkillsProps) {
     if (data) {
       try {
         // Always update editedData when data changes
+        console.log("refreshed data", data);
         setEditedData(data);
       } catch (error) {
         console.error("Error processing skills data:", error);
@@ -57,11 +58,11 @@ export default function Skills({ userId }: SkillsProps) {
         await mutate();
         setSaveSuccess(false);
         setIsSubmitting(false);
-        setIsAddingNew(false);
+        setIsAddingNew(false); // This will hide the form
       };
       refreshData();
     }
-  }, [saveSuccess, mutate, setSaveSuccess, setIsSubmitting, setIsAddingNew]);
+  }, [saveSuccess, mutate]);
 
   const onClickAddNew = () => {
     setIsAddingNew(true);
@@ -70,7 +71,6 @@ export default function Skills({ userId }: SkillsProps) {
       proficiencyLevel: 3,
       category: "Frontend",
     });
-    //setFormErrors({}); // this is used to clear the form errors
   };
 
   const onClickDone = () => {
@@ -178,9 +178,12 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
-  const onSave = () => {
+  const onSave = async () => {
+    console.log("onSave function called");
     setIsAddingNew(false);
-    mutate();
+    console.log("setIsAddingNew");
+    await mutate(); // refresh the data
+    console.log("mutate");
   };
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;

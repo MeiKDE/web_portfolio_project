@@ -1,9 +1,7 @@
 // Create new skill
 // Create new certification
-
 import { NextRequest } from "next/server";
 import prisma from "@/app/lib/db/prisma";
-import { certificationSchema } from "@/app/hooks/validations";
 import {
   withOwnership,
   successResponse,
@@ -11,16 +9,39 @@ import {
 } from "@/app/lib/api/api-helpers";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
+import { z } from "zod";
 
-// CREATE a new certification
+// Define schema for validation
+const skillSchema = z.object({
+  name: z.string().min(1, "Skill name is required"),
+  category: z.string().optional(),
+  proficiencyLevel: z.number().int().min(1).max(5),
+});
+
+// CREATE a new skill
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return errorResponse("Unauthorized", 401);
   }
 
-  const body = await request.json();
-  const { name, category, proficiencyLevel } = body;
+  // Get the skill data from the request
+  const data = await request.json();
+
+  // Validate the data
+  const validationResult = skillSchema.safeParse(data);
+
+  if (!validationResult.success) {
+    return errorResponse(
+      "Invalid skill data: " + JSON.stringify(validationResult.error.format()),
+      400
+    );
+  }
+  const { name, category, proficiencyLevel } = validationResult.data;
+
+  console.log("name", name);
+  console.log("category", category);
+  console.log("proficiencyLevel", proficiencyLevel);
 
   const skill = await prisma.skill.create({
     data: {

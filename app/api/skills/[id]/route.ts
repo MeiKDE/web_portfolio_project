@@ -9,7 +9,6 @@ import {
   errorResponse,
   withAuth,
 } from "@/app/lib/api/api-helpers";
-import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
 import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
@@ -20,50 +19,6 @@ const skillUpdateSchema = z.object({
   proficiencyLevel: z.number().int().min(1).max(5),
   category: z.string().optional(),
 });
-
-// UPDATE a skill
-// export const PUT = withOwnership(
-//   async (
-//     request: NextRequest,
-//     { params }: { params: { id: string } },
-//     user
-//   ) => {
-//     try {
-//       const data = await request.json();
-
-//       // Validate the data
-//       const validationResult = skillUpdateSchema.safeParse(data);
-
-//       if (!validationResult.success) {
-//         throw createApiError.badRequest(
-//           "Invalid skill data",
-//           validationResult.error.format()
-//         );
-//       }
-
-//       // Map the incoming 'proficiency' field to 'proficiencyLevel' for Prisma
-//       const skill = await prisma.skill.update({
-//         where: { id: params.id },
-//         data: {
-//           name: data.name,
-//           proficiencyLevel: data.proficiencyLevel,
-//           category: data.category,
-//         },
-//       });
-
-//       // Map back to frontend format
-//       return successResponse({
-//         id: skill.id,
-//         name: skill.name,
-//         proficiency: skill.proficiencyLevel,
-//         category: skill.category,
-//       });
-//     } catch (error) {
-//       return handleApiError(error);
-//     }
-//   },
-//   "skill"
-// );
 
 export async function PUT(
   req: NextRequest,
