@@ -3,14 +3,12 @@ import { Certification } from "../Interface";
 import { useState } from "react";
 
 interface FormValidationProps {
-  mutate: () => void;
   cancelAddingNew: () => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
 }
 
 // Initialize form data with custom hook
 export const useFormValidation = ({
-  mutate,
   cancelAddingNew,
   setIsSubmitting,
 }: FormValidationProps) => {
@@ -82,7 +80,7 @@ export const useFormValidation = ({
         throw new Error(errorData.message || "Failed to create certification");
       }
 
-      await mutate();
+      //await mutate();
       cancelAddingNew();
     } catch (error) {
       console.error("Error adding certification:", error);

@@ -7,25 +7,24 @@ import { CredentialUrlInput } from "./CredentialUrlInput";
 import { useFormValidation } from "./FormValidation";
 import { CancelSave } from "./CancelSave";
 interface NewCertificationProps {
-  mutate: () => void;
   cancelAddingNew: () => void;
   isSubmitting: boolean;
   setIsSubmitting: (isSubmitting: boolean) => void;
+  onSave: () => void;
 }
 
 export function NewCertification({
-  mutate,
   cancelAddingNew,
   isSubmitting,
   setIsSubmitting,
+  onSave,
 }: NewCertificationProps) {
   const { formData, errors, handleInputChange, handleSubmit } =
     useFormValidation({
-      mutate,
       cancelAddingNew,
       setIsSubmitting,
+      onSave,
     });
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-6">
       <CertificateNameInput
@@ -65,6 +64,7 @@ export function NewCertification({
       <CancelSave
         cancelAddingNew={cancelAddingNew}
         isSubmitting={isSubmitting}
+        onSave={onSave}
       />
     </form>
   );

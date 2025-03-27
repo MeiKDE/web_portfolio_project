@@ -22,65 +22,55 @@ interface CertificationsProps {
 // This function is used to display the certifications section in the profile page
 export default function Certifications({ userId }: CertificationsProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
   const [editedData, setEditedData] = useState<Certification[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const startEditing = () => {
-    console.log("ln11: startEditing");
+  // used to edit the certifications
+  const onClickEdit = () => {
+    console.log("ln11: onClickEdit");
     setIsEditing(true);
     if (data) {
       setEditedData(formatCertificationsForUI(data));
     }
   };
-  const startAddingNew = (defaultNewItem: Certification[]) => {
-    setIsAddingNew(true);
+
+  // used to add a new certification
+  const startAddingNewItem = (defaultNewItem: Certification[]) => {
+    setIsAddingNewItem(true);
     setEditedData(defaultNewItem);
-    // setNewItemData(defaultNewItem);
   };
-  const handleDeleteItem = async ({
-    id,
-    confirmMessage = "Are you sure you want to delete this item?",
-    endpoint,
-    filterFn,
-    onSuccess,
-    onError,
-  }: {
-    id: string;
-    confirmMessage?: string;
-    endpoint: string;
-    filterFn?: (item: any) => boolean;
-    onSuccess?: () => void;
-    onError?: (error: any) => void;
-  }) => {
+
+  const handleDeleteItem = async (id: string) => {
+    const confirmMessage = "Are you sure you want to delete this item?";
+    const endpoint = `/api/certifications/${id}`;
+    //const filterFn = (item: any) => item.id !== id; //filter function to remove the item from the list
+    const onSuccess = async () => {
+      await mutate(); //refresh the data
+    };
+    const onError = (error: any) => {
+      console.error("Error deleting item:", error);
+    };
+
+    // if reject confirm message, then return
+    // which stops the function from executing further
     if (!confirm(confirmMessage)) {
       return;
     }
-
+    // else, try to delete the item
     try {
       const response = await fetch(endpoint, {
         method: "DELETE",
         credentials: "include",
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Failed to delete item: ${errorData.error || response.statusText}`
-        );
-      }
-
-      // Remove from local state
-      if (Array.isArray(editedData) && filterFn) {
-        setEditedData(editedData.filter(filterFn) as Certification[]);
-      }
-
-      onSuccess?.(); // Call success callback if provided
+      onSuccess(); //refresh the data
     } catch (error) {
-      console.error("Error deleting item:", error);
-      onError?.(error); // Call error callback if provided
+      onError(error); //log the error
     }
   };
+
+  // TODO: Check if this is needed
+  // TODO: Review code from this point onwards
   // Helper function to format item for API
   const formatItemForApi = (item: any, dateFields: string[] = []) => {
     const formatted = { ...item };
@@ -93,9 +83,9 @@ export default function Certifications({ userId }: CertificationsProps) {
         formatted[field] = null;
       }
     }
-
     return formatted;
   };
+
   const handleSaveEdits = async ({
     endpoint,
     dateFields = [],
@@ -165,9 +155,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     }
   };
   const cancelAddingNew = () => {
-    setIsAddingNew(false);
-    // setNewItemData(null);
-    // setNewItemErrors({});
+    setIsAddingNewItem(false);
   };
   const handleInputChange = (id: string | null, field: string, value: any) => {
     setEditedData((prev) => {
@@ -200,26 +188,34 @@ export default function Certifications({ userId }: CertificationsProps) {
   useEffect(() => {
     if (data && data.length > 0) {
       // Make sure to set the formatted data when not in editing or adding mode
-      if (!isEditing && !isAddingNew) {
+      if (!isEditing && !isAddingNewItem) {
         setEditedData(formatCertificationsForUI(data));
       }
     } else if (data && data.length === 0) {
       // If there's no data, set an empty array
       setEditedData([]);
     }
-  }, [data, setEditedData, isEditing, isAddingNew]);
+  }, [data, setEditedData, isEditing, isAddingNewItem]);
   // Also ensure data is correctly reset when exiting edit/add modes
   useEffect(() => {
-    if (!isEditing && !isAddingNew && data) {
+    if (!isEditing && !isAddingNewItem && data) {
       setEditedData(formatCertificationsForUI(data));
     }
-  }, [isEditing, isAddingNew, data, setEditedData]);
+  }, [isEditing, isAddingNewItem, data, setEditedData]);
 
   if (isLoading) return <div>Loading certifications...</div>;
   if (error) return <div>Error loading certification information</div>;
 
+  const onSave = async () => {
+    console.log("onSave function called");
+    setIsAddingNewItem(false);
+    console.log("setIsAddingNewItem");
+    await mutate(); // refresh the data
+    console.log("mutate");
+  };
+
   const onClickAddNew = () =>
-    startAddingNew([
+    startAddingNewItem([
       {
         id: "new",
         name: "",
@@ -234,22 +230,17 @@ export default function Certifications({ userId }: CertificationsProps) {
     SaveCertifications(handleSaveEdits, mutate);
   };
 
-  const onClickEdit = () => {
-    if (data) {
-      startEditing();
-      setEditedData(formatCertificationsForUI(data));
-    } else {
-      startEditing();
-    }
-  };
+  // const onClickEdit = () => {
+  //   startEditing();
+  // };
 
   const onChangeHandler = (id: string, field: string, value: any) => {
     handleInputChange(id, field, value);
   };
 
-  const onClickHandler = (id: string) => {
-    DeleteCertification(id, handleDeleteItem, mutate);
-  };
+  // const onClickHandler = (id: string) => {
+  //   DeleteCertification(id, handleDeleteItem, mutate);
+  // };
 
   return (
     <Card>
@@ -257,13 +248,13 @@ export default function Certifications({ userId }: CertificationsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Certifications</h3>
           <div className="flex gap-2">
-            {!isAddingNew && !isEditing && (
+            {!isAddingNewItem && !isEditing && (
               <AddButton onClick={onClickAddNew} />
             )}
             {isEditing ? (
               <DoneButton onClick={onClickDone} isSubmitting={isSubmitting} />
             ) : (
-              !isAddingNew && (
+              !isAddingNewItem && (
                 <>
                   <EditButton onClick={onClickEdit} />
                 </>
@@ -273,12 +264,12 @@ export default function Certifications({ userId }: CertificationsProps) {
         </div>
 
         {/* Add New Certification Entry */}
-        {isAddingNew && (
+        {isAddingNewItem && (
           <NewCertification
-            mutate={mutate}
             cancelAddingNew={cancelAddingNew}
             isSubmitting={isSubmitting}
             setIsSubmitting={setIsSubmitting}
+            onSave={onSave}
           ></NewCertification>
         )}
 
@@ -304,7 +295,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                 getCurrentDate={getCurrentDate}
               />
             ) : (
-              !isAddingNew && (
+              !isAddingNewItem && (
                 <div className="text-center py-4 text-muted-foreground">
                   No certifications found. Add your certifications to showcase
                   your professional credentials.
