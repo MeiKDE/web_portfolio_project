@@ -178,6 +178,10 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
+  const onSave = () => {
+    setIsAddingNew(false);
+    mutate();
+  };
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skill information</div>;
 
@@ -210,7 +214,7 @@ export default function Skills({ userId }: SkillsProps) {
           ))}
 
         {/* Add New Skill Entry */}
-        {isAddingNew && <NewSkill userId={userId} />}
+        {isAddingNew && <NewSkill userId={userId} onSave={onSave} />}
 
         {/* Skills List */}
         {!isLoading && !error && (

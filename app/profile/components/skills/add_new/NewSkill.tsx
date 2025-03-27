@@ -1,20 +1,18 @@
 import { Input } from "@/components/ui/input";
-import { CancelSaveButtons } from "./CancelSaveButtons";
-import { Skill } from "../Interface";
+import { CancelSave } from "./CancelSave";
 import { useState } from "react";
 import { SaveNewSkill } from "../SaveNewSkill";
-import { useFetchData } from "@/app/hooks/data/use-fetch-data";
-import { CancelAdd } from "../CancelAdd";
 import { FormValidation } from "./FormValidation";
 
 interface NewSkillProps {
   userId: string;
+  onSave: () => void;
 }
 
-export function NewSkill({ userId }: NewSkillProps) {
-  const [isEditing, setIsEditing] = useState(false);
+export function NewSkill({ userId, onSave }: NewSkillProps) {
+  // const [isEditing, setIsEditing] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [editedData, setEditedData] = useState<Skill[]>([]);
+  // const [editedData, setEditedData] = useState<Skill[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
@@ -28,112 +26,75 @@ export function NewSkill({ userId }: NewSkillProps) {
     category: "Frontend",
   });
 
-  const skillToValidate: Skill = {
-    id: "",
-    userId: userId,
-    name: values.name || "",
-    category: values.category || "",
-    proficiencyLevel: values.proficiencyLevel || 3,
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    let isValid = true;
-
-    // Create a skill object for validation
-    const skillToValidate: Skill = {
-      id: "",
-      userId: userId,
-      name: values.name,
-      category: values.category,
-      proficiencyLevel: parseInt(String(values.proficiencyLevel)),
-    };
-
-    if (!skillToValidate.name?.trim()) {
-      newErrors.name = "Skill name is required";
-      isValid = false;
-    }
-
-    if (!skillToValidate.category?.trim()) {
-      newErrors.category = "Category is required";
-      isValid = false;
-    }
-
-    if (
-      !skillToValidate.proficiencyLevel ||
-      skillToValidate.proficiencyLevel < 1 ||
-      skillToValidate.proficiencyLevel > 10
-    ) {
-      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 10";
-      isValid = false;
-    }
-
-    setFormErrors(newErrors);
-    return isValid;
-  };
-
-  const touchField = (field: string) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
-    `/api/users/${userId}/skills`
-  );
-
   const resetForm = () => {
     setValues({
       name: "",
       proficiencyLevel: 3,
       category: "Frontend",
     });
-    setTouchedFields({});
-    setFormErrors({});
-  };
-
-  const cancelAddingNew = () => {
-    setIsAddingNew(false);
-    setFormErrors({});
-    setTouchedFields({});
+    setTouchedFields({}); // Reset touched fields
+    setFormErrors({}); // Reset form errors
   };
 
   const handleChange = (field: string, value: any) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
+    setValues((prev) => ({ ...prev, [field]: value })); // update prev values with new value
   };
 
+  // Get the input error class name
   const getInputClassName = (id: string, field: string, baseClass: string) => {
+    // Check if the field has been touched and if it has an error
     const hasError = touchedFields[field] && formErrors[field];
     return `${baseClass} ${hasError ? "border-red-500" : ""}`;
   };
 
+  // Submit the form
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // touchField("name");
-    // touchField("category");
-    // touchField("proficiencyLevel");
+    // Validate raw input values
+    const errors: Record<string, string> = {};
+    let isValid = true;
 
-    if (!validateForm()) {
+    // Validate name
+    if (!values.name || values.name.trim() === "") {
+      errors.name = "Name is required";
+      isValid = false;
+    }
+
+    // Validate category
+    if (!values.category || values.category.trim() === "") {
+      errors.category = "Category is required";
+      isValid = false;
+    }
+
+    // Validate proficiency level
+    const proficiencyLevel = parseInt(String(values.proficiencyLevel));
+    if (
+      isNaN(proficiencyLevel) ||
+      proficiencyLevel < 1 ||
+      proficiencyLevel > 5
+    ) {
+      errors.proficiencyLevel = "Proficiency level must be between 1 and 5";
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setFormErrors(errors);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await SaveNewSkill(
-        e,
-        validateForm,
-        values,
-        touchField,
-        mutate,
-        resetForm,
-        cancelAddingNew
-      );
-      setIsSubmitting(false);
-      setSaveSuccess(true);
-      setIsAddingNew(false);
-      await mutate();
+      const postData = {
+        name: values.name.trim(),
+        category: values.category.trim(),
+        proficiencyLevel: parseInt(values.proficiencyLevel.toString()),
+      };
+      e.preventDefault();
+      await SaveNewSkill(postData);
+      resetForm();
     } catch (error) {
       console.error("Error saving skill:", error);
-      setIsSubmitting(false);
     }
   };
 
@@ -147,7 +108,7 @@ export function NewSkill({ userId }: NewSkillProps) {
             type="text"
             value={values.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            onBlur={() => touchField("name")}
+            onBlur={() => setTouchedFields((prev) => ({ ...prev, name: true }))}
             className={getInputClassName("name", "name", "mt-1")}
             placeholder="e.g., JavaScript, React, Agile"
           />
@@ -162,7 +123,9 @@ export function NewSkill({ userId }: NewSkillProps) {
             type="text"
             value={values.category}
             onChange={(e) => handleChange("category", e.target.value)}
-            onBlur={() => touchField("category")}
+            onBlur={() =>
+              setTouchedFields((prev) => ({ ...prev, category: true }))
+            }
             className={getInputClassName("category", "category", "mt-1")}
             placeholder="e.g., Frontend, Backend, DevOps"
           />
@@ -183,7 +146,9 @@ export function NewSkill({ userId }: NewSkillProps) {
             max="10"
             value={values.proficiencyLevel}
             onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
-            onBlur={() => touchField("proficiencyLevel")}
+            onBlur={() =>
+              setTouchedFields((prev) => ({ ...prev, proficiencyLevel: true }))
+            }
             className={getInputClassName(
               "proficiencyLevel",
               "proficiencyLevel",
@@ -197,14 +162,19 @@ export function NewSkill({ userId }: NewSkillProps) {
           )}
         </div>
 
-        <FormValidation skill={skillToValidate} touchedFields={touchedFields} />
-
-        <CancelSaveButtons
-          cancelAddingNew={cancelAddingNew}
-          isSubmitting={isSubmitting}
-          CancelAdd={CancelAdd}
-          resetForm={resetForm}
+        {/* Create a skill object for validation */}
+        <FormValidation
+          skill={{
+            id: "",
+            userId,
+            name: values.name || "",
+            category: values.category || "",
+            proficiencyLevel: parseInt(String(values.proficiencyLevel)) || 3,
+          }}
+          touchedFields={touchedFields}
         />
+
+        <CancelSave isSubmitting={isSubmitting} resetForm={resetForm} />
       </form>
     </div>
   );

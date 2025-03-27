@@ -1,9 +1,40 @@
 import { Skill } from "../Interface";
+import { successResponse, errorResponse } from "@/app/lib/api/api-helpers";
+import { handleApiError } from "@/app/lib/api/error-handler";
 
 interface FormValidationProps {
   skill: Skill;
   touchedFields?: Record<string, boolean>;
 }
+
+// Add a validation function that can be exported
+export const validateSkill = (
+  skill: Skill
+): { isValid: boolean; errors: Record<string, string> } => {
+  const errors: Record<string, string> = {};
+  let isValid = true;
+
+  if (!skill.name) {
+    errors.name = "Name is required";
+    isValid = false;
+  }
+
+  if (!skill.category) {
+    errors.category = "Category is required";
+    isValid = false;
+  }
+
+  if (
+    !skill.proficiencyLevel ||
+    skill.proficiencyLevel < 1 ||
+    skill.proficiencyLevel > 5
+  ) {
+    errors.proficiencyLevel = "Proficiency level must be between 1 and 5";
+    isValid = false;
+  }
+
+  return { isValid, errors };
+};
 
 export const FormValidation = ({
   skill,
@@ -16,8 +47,8 @@ export const FormValidation = ({
       {touchedFields.proficiencyLevel &&
         (!skill.proficiencyLevel ||
           skill.proficiencyLevel < 1 ||
-          skill.proficiencyLevel > 10) && (
-          <p>Proficiency level must be between 1 and 10</p>
+          skill.proficiencyLevel > 5) && (
+          <p>Proficiency level must be between 1 and 5</p>
         )}
     </div>
   );

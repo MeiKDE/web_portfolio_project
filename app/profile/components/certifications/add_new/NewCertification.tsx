@@ -5,7 +5,7 @@ import { IssueDateInput } from "./IssueDateInput";
 import { ExpirationDateInput } from "./ExpirationDateInput";
 import { CredentialUrlInput } from "./CredentialUrlInput";
 import { useFormValidation } from "./FormValidation";
-import { CancelSaveButtons } from "./CancelSaveButtons";
+import { CancelSave } from "./CancelSave";
 interface NewCertificationProps {
   mutate: () => void;
   cancelAddingNew: () => void;
@@ -62,7 +62,7 @@ export function NewCertification({
 
       {errors.submit && <p className="text-red-500 text-sm">{errors.submit}</p>}
 
-      <CancelSaveButtons
+      <CancelSave
         cancelAddingNew={cancelAddingNew}
         isSubmitting={isSubmitting}
       />

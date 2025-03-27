@@ -1,53 +1,33 @@
+import { z } from "zod";
+
+const skillSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  category: z.string().min(1, "Category is required"),
+  proficiencyLevel: z.number().min(1).max(5),
+});
+
+interface SkillFormValues {
+  name: string;
+  category: string;
+  proficiencyLevel: number;
+}
+
 export const SaveNewSkill = async (
-  e: React.FormEvent,
-  validateForm: () => boolean,
-  values: any,
-  touchField: (field: string) => void,
-  mutate: () => Promise<any>,
-  resetForm: () => void,
-  cancelAddingNew: () => void
-) => {
-  e.preventDefault();
-
-  console.log("Attempting to save skill with values:", values);
-
-  if (!validateForm()) {
-    console.log("Form validation failed");
-    Object.keys(values).forEach((key) => {
-      touchField(key);
-    });
-    return;
-  }
-
+  postData: SkillFormValues
+): Promise<void> => {
   try {
-    const requestBody = {
-      name: values.name.trim(),
-      category: values.category.trim(),
-      proficiencyLevel: parseInt(values.proficiencyLevel.toString()),
-    };
-
-    console.log("ln31: Sending request with body:", requestBody);
-
-    // Create a new skill, userId is not needed for this endpoint
     const response = await fetch(`/api/skills`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(postData),
     });
 
-    console.log("ln42: Response:", response);
-    console.log("ln43: Response body:", response.body);
-    console.log("ln44: Response status:", response.status);
-    console.log(
-      "Response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
+    const contentType = response.headers.get("content-type");
 
     if (!response.ok) {
-      const contentType = response.headers.get("content-type");
       let errorMessage = "Failed to create skill";
 
       if (contentType?.includes("application/json")) {
@@ -57,29 +37,16 @@ export const SaveNewSkill = async (
         } catch (parseError) {
           console.error("Failed to parse error response:", parseError);
         }
-      } else {
-        const textError = await response.text();
-        console.error("Non-JSON error response:", textError);
       }
 
       throw new Error(errorMessage);
     }
 
-    // Don't try to parse the response if it's empty
+    // Only parse response if there's content
     const contentLength = response.headers.get("content-length");
     if (contentLength && parseInt(contentLength) > 0) {
       await response.json();
     }
-
-    // Check if mutate is a function before calling
-    if (typeof mutate === "function") {
-      await mutate();
-    } else {
-      console.warn("Mutate is not a function:", mutate);
-    }
-
-    resetForm();
-    cancelAddingNew();
   } catch (error) {
     console.error("Save error:", error);
     throw error;
