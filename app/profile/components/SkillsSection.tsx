@@ -4,17 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Skill } from "./skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
-import { NewSkillChange } from "./skills/NewSkillChange";
-import { CancelAdd } from "./skills/CancelAdd";
-import { SaveNewSkill } from "./skills/SaveNewSkill";
-import { SkillInputChange } from "./skills/SkillInputChange";
-import { DeleteSkill } from "./skills/DeleteSkill";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FieldValidation } from "./skills/add_new/FormValidation";
+import { FormValidation } from "./skills/add_new/FormValidation";
 import { NewSkill } from "./skills/add_new/NewSkill";
-import { SkillList } from "./skills/display/SkillList";
+import { SkillList } from "./skills/display/List";
 
 interface SkillsProps {
   userId: string;
@@ -26,11 +21,7 @@ export default function Skills({ userId }: SkillsProps) {
   const [editedData, setEditedData] = useState<Skill[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [newItemData, setNewItemData] = useState<any>(null);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
-    {}
-  );
+
   const [values, setValues] = useState<Record<string, any>>({
     name: "",
     proficiencyLevel: 3,
@@ -41,72 +32,6 @@ export default function Skills({ userId }: SkillsProps) {
   const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
     `/api/users/${userId}/skills`
   );
-
-  const resetForm = () => {
-    setValues({
-      name: "",
-      proficiencyLevel: 3,
-      category: "Frontend",
-    });
-    setTouchedFields({});
-    setFormErrors({});
-  };
-
-  const touchField = (field: string) => {
-    setTouchedFields((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const handleChange = (field: string, value: any) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const getInputClassName = (id: string, field: string, baseClass: string) => {
-    const hasError = touchedFields[field] && formErrors[field];
-    return `${baseClass} ${hasError ? "border-red-500" : ""}`;
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    let isValid = true;
-
-    // Create a skill object for validation
-    const skillToValidate: Skill = {
-      id: "", // temporary id for new skill
-      userId: userId,
-      name: values.name,
-      category: values.category,
-      proficiencyLevel: values.proficiencyLevel,
-    };
-
-    if (!skillToValidate.name?.trim()) {
-      newErrors.name = "Skill name is required";
-      isValid = false;
-    }
-
-    if (!skillToValidate.category?.trim()) {
-      newErrors.category = "Category is required";
-      isValid = false;
-    }
-
-    if (
-      !skillToValidate.proficiencyLevel ||
-      skillToValidate.proficiencyLevel < 1 ||
-      skillToValidate.proficiencyLevel > 10
-    ) {
-      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 10";
-      isValid = false;
-    }
-
-    setFormErrors(newErrors);
-    return isValid;
-  };
-
-  const cancelAddingNew = () => {
-    setIsAddingNew(false);
-    setNewItemData(null);
-    setFormErrors({});
-    setTouchedFields({});
-  };
 
   // Update local state when data is fetched
   useEffect(() => {
@@ -121,7 +46,11 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [data]); // Only depend on data changes
 
-  // Add this useEffect to ensure data is refreshed after saving
+  //this is used to refresh the data after saving a new skill
+  // setting saveSuccess to false will trigger this useEffect
+  // saveSuccess is set to false when the data is refreshed
+  //isSubmitting is set to false when the data is refreshed
+  //isAddingNew is set to false when the data is refreshed
   useEffect(() => {
     if (saveSuccess) {
       const refreshData = async () => {
@@ -134,38 +63,14 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [saveSuccess, mutate, setSaveSuccess, setIsSubmitting, setIsAddingNew]);
 
-  // Add debug effect
-  useEffect(() => {
-    console.log("Form state:", {
-      isAddingNew,
-      resetForm: !!resetForm,
-    });
-  }, [isAddingNew, resetForm]);
-
-  // Add useEffect to sync newItemData with values
-  useEffect(() => {
-    if (isAddingNew && !newItemData) {
-      setNewItemData({
-        name: "",
-        proficiencyLevel: 3,
-        category: "Frontend",
-      });
-    }
-  }, [isAddingNew, newItemData]);
-
   const onClickAddNew = () => {
     setIsAddingNew(true);
-    setNewItemData({
-      name: "",
-      proficiencyLevel: 3,
-      category: "Frontend",
-    });
     setValues({
       name: "",
       proficiencyLevel: 3,
       category: "Frontend",
     });
-    setFormErrors({});
+    //setFormErrors({}); // this is used to clear the form errors
   };
 
   const onClickDone = () => {
@@ -189,9 +94,9 @@ export default function Skills({ userId }: SkillsProps) {
         }
       },
       onSuccess: () => {
-        mutate();
-        setIsEditing(false);
-        setSaveSuccess(true);
+        mutate(); // refresh the data
+        setIsEditing(false); // to false because the data is not being edited
+        setSaveSuccess(true); // to true because the data is saved successfully
       },
       onError: (error: any) => {
         console.error("Error saving skills:", error);
@@ -209,11 +114,12 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
+  // this is used to save and update the data
   const handleSaveEdits = async ({
     endpoint,
-    validateFn,
-    onSuccess,
-    onError,
+    validateFn, // returns true if the data is valid
+    onSuccess, // called when the data is saved successfully
+    onError, // called when the data is not saved successfully
   }: {
     endpoint: string;
     validateFn?: (data: any) => boolean | string | null;
@@ -222,20 +128,26 @@ export default function Skills({ userId }: SkillsProps) {
   }) => {
     try {
       if (validateFn && editedData) {
-        const validationResult = validateFn(editedData);
+        const validationResult = validateFn(editedData); // validate the data
+
+        // if the data is not valid, call the onError function
         if (validationResult !== true && validationResult !== null) {
           onError?.(new Error(`Validation failed: ${validationResult}`));
           return;
         }
       }
-
+      // setting to true because the data is being updated
+      // and will trigger the useEffect that refreshes the data
       setIsSubmitting(true);
 
+      // if there is no data to update
       if (!editedData) {
         console.warn("No data to update");
         return;
       }
 
+      // if the data is an array, use the array
+      // if the data is not an array, make it an array
       const itemsToUpdate = Array.isArray(editedData)
         ? editedData
         : [editedData];
@@ -248,6 +160,7 @@ export default function Skills({ userId }: SkillsProps) {
           body: JSON.stringify(item),
         });
 
+        // update the data
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(
@@ -255,29 +168,13 @@ export default function Skills({ userId }: SkillsProps) {
           );
         }
       }
-
-      setIsEditing(false);
-      setSaveSuccess(true);
-      onSuccess?.();
+      // reset the form after saving the data
+      onSuccess?.(); // call the onSuccess function to refresh the data
     } catch (error) {
       console.error("Error saving changes:", error);
-      onError?.(error);
+      onError?.(error); // call the onError function to display an error message
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteItem = async (id: string) => {
-    try {
-      // Update local state immediately
-      setEditedData((prevData) => prevData.filter((skill) => skill.id !== id));
-
-      // Refresh the data from the server
-      await mutate();
-    } catch (error) {
-      console.error("Error refreshing data after deletion:", error);
-      // Revert local state if there's an error
-      await mutate();
+      setIsSubmitting(false); // to false because the data is not being updated
     }
   };
 
@@ -309,49 +206,17 @@ export default function Skills({ userId }: SkillsProps) {
         {/* Add validation error messages */}
         {isEditing &&
           editedData?.map((skill, index) => (
-            <FieldValidation key={skill.id} skill={skill} />
+            <FormValidation key={skill.id} skill={skill} />
           ))}
 
         {/* Add New Skill Entry */}
-        {isAddingNew && (
-          <NewSkill
-            userId={userId}
-            values={values}
-            formErrors={formErrors}
-            newItemData={newItemData}
-            isSubmitting={isSubmitting}
-            handleChange={handleChange}
-            touchField={touchField}
-            getInputClassName={getInputClassName}
-            NewSkillChange={NewSkillChange}
-            CancelAdd={CancelAdd}
-            SaveNewSkill={SaveNewSkill}
-            setNewItemData={setNewItemData}
-            mutate={mutate}
-            resetForm={resetForm}
-            cancelAddingNew={cancelAddingNew}
-            validateForm={validateForm}
-            setIsSubmitting={setIsSubmitting}
-            setSaveSuccess={setSaveSuccess}
-            setIsAddingNew={setIsAddingNew}
-            touchedFields={touchedFields}
-          />
-        )}
+        {isAddingNew && <NewSkill userId={userId} />}
 
         {/* Skills List */}
         {!isLoading && !error && (
           <>
             {editedData && editedData.length > 0 ? (
-              <SkillList
-                editedData={editedData}
-                isEditing={isEditing}
-                SkillInputChange={SkillInputChange}
-                handleInputChange={handleChange}
-                touchField={touchField}
-                DeleteSkill={DeleteSkill}
-                handleDeleteItem={handleDeleteItem}
-                mutate={mutate}
-              />
+              <SkillList editedData={editedData} />
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 No skills added yet.

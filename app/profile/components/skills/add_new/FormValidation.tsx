@@ -1,14 +1,14 @@
 import { Skill } from "../Interface";
 
-interface FieldValidationProps {
+interface FormValidationProps {
   skill: Skill;
   touchedFields?: Record<string, boolean>;
 }
 
-export const FieldValidation = ({
+export const FormValidation = ({
   skill,
   touchedFields = {},
-}: FieldValidationProps) => {
+}: FormValidationProps) => {
   return (
     <div className="text-sm text-red-500">
       {touchedFields.name && !skill.name && <p>Name is required</p>}

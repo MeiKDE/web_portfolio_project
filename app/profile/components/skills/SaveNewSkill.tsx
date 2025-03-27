@@ -3,8 +3,6 @@ export const SaveNewSkill = async (
   validateForm: () => boolean,
   values: any,
   touchField: (field: string) => void,
-  setNewItemData: (data: any) => void,
-  userId: string,
   mutate: () => Promise<any>,
   resetForm: () => void,
   cancelAddingNew: () => void

@@ -13,7 +13,7 @@ import { NewCertification } from "./certifications/add_new/NewCertification";
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
 import { EditButton } from "./ui/EditButton";
-import { CertificationList } from "./certifications/display/CertificationList";
+import { CertificationList } from "./certifications/display/List";
 
 interface CertificationsProps {
   userId: string;

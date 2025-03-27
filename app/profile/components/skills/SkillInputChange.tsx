@@ -3,8 +3,7 @@ export const SkillInputChange = <T extends string>(
   id: string,
   field: T,
   value: any,
-  handleInputChange: (id: string, field: string, value: any) => void,
-  touchField: (field: T) => void
+  handleInputChange: (id: string, field: string, value: any) => void
 ) => {
   // Process number values
   const processedValue =
@@ -14,7 +13,4 @@ export const SkillInputChange = <T extends string>(
 
   // Update in the editable state hook
   handleInputChange(id, field, processedValue);
-
-  // Mark field as touched for validation
-  touchField(field);
 };

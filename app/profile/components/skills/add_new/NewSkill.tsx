@@ -1,129 +1,152 @@
 import { Input } from "@/components/ui/input";
 import { CancelSaveButtons } from "./CancelSaveButtons";
-import { FieldValidation } from "./FormValidation";
 import { Skill } from "../Interface";
+import { useState } from "react";
+import { SaveNewSkill } from "../SaveNewSkill";
+import { useFetchData } from "@/app/hooks/data/use-fetch-data";
+import { CancelAdd } from "../CancelAdd";
+import { FormValidation } from "./FormValidation";
 
 interface NewSkillProps {
   userId: string;
-  values: Record<string, any>;
-  formErrors: Record<string, string>;
-  newItemData: any;
-  isSubmitting: boolean;
-  handleChange: (field: string, value: any) => void;
-  touchField: (field: string) => void;
-  getInputClassName: (id: string, field: string, baseClass: string) => string;
-  NewSkillChange: (
-    field: string,
-    value: any,
-    setNewItemData: any,
-    handleChange: any,
-    values: any
-  ) => void;
-  CancelAdd: (cancelAddingNew: () => void, resetForm: () => void) => void;
-  SaveNewSkill: (
-    e: React.FormEvent,
-    validateForm: () => boolean,
-    values: any,
-    touchField: (field: string) => void,
-    setNewItemData: any,
-    userId: string,
-    mutate: () => Promise<any>,
-    resetForm: () => void,
-    cancelAddingNew: () => void
-  ) => Promise<void>;
-  setNewItemData: (data: any) => void;
-  mutate: () => Promise<any>;
-  resetForm: () => void;
-  cancelAddingNew: () => void;
-  validateForm: () => boolean;
-  setIsSubmitting: (isSubmitting: boolean) => void;
-  setSaveSuccess: (success: boolean) => void;
-  setIsAddingNew: (isAddingNew: boolean) => void;
-  touchedFields: Record<string, boolean>;
 }
 
-export function NewSkill({
-  userId,
-  values,
-  formErrors,
-  newItemData,
-  isSubmitting,
-  handleChange,
-  touchField,
-  getInputClassName,
-  NewSkillChange,
-  CancelAdd,
-  SaveNewSkill,
-  setNewItemData,
-  mutate,
-  resetForm,
-  cancelAddingNew,
-  validateForm,
-  setIsSubmitting,
-  setSaveSuccess,
-  setIsAddingNew,
-  touchedFields,
-}: NewSkillProps) {
+export function NewSkill({ userId }: NewSkillProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editedData, setEditedData] = useState<Skill[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const [values, setValues] = useState<Record<string, any>>({
+    name: "",
+    proficiencyLevel: 3,
+    category: "Frontend",
+  });
+
   const skillToValidate: Skill = {
     id: "",
     userId: userId,
-    name: values.name,
-    category: values.category,
-    proficiencyLevel: values.proficiencyLevel,
+    name: values.name || "",
+    category: values.category || "",
+    proficiencyLevel: values.proficiencyLevel || 3,
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
+
+    // Create a skill object for validation
+    const skillToValidate: Skill = {
+      id: "",
+      userId: userId,
+      name: values.name,
+      category: values.category,
+      proficiencyLevel: parseInt(String(values.proficiencyLevel)),
+    };
+
+    if (!skillToValidate.name?.trim()) {
+      newErrors.name = "Skill name is required";
+      isValid = false;
+    }
+
+    if (!skillToValidate.category?.trim()) {
+      newErrors.category = "Category is required";
+      isValid = false;
+    }
+
+    if (
+      !skillToValidate.proficiencyLevel ||
+      skillToValidate.proficiencyLevel < 1 ||
+      skillToValidate.proficiencyLevel > 10
+    ) {
+      newErrors.proficiencyLevel = "Proficiency level must be between 1 and 10";
+      isValid = false;
+    }
+
+    setFormErrors(newErrors);
+    return isValid;
+  };
+
+  const touchField = (field: string) => {
+    setTouchedFields((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
+    `/api/users/${userId}/skills`
+  );
+
+  const resetForm = () => {
+    setValues({
+      name: "",
+      proficiencyLevel: 3,
+      category: "Frontend",
+    });
+    setTouchedFields({});
+    setFormErrors({});
+  };
+
+  const cancelAddingNew = () => {
+    setIsAddingNew(false);
+    setFormErrors({});
+    setTouchedFields({});
+  };
+
+  const handleChange = (field: string, value: any) => {
+    setValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const getInputClassName = (id: string, field: string, baseClass: string) => {
+    const hasError = touchedFields[field] && formErrors[field];
+    return `${baseClass} ${hasError ? "border-red-500" : ""}`;
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // touchField("name");
+    // touchField("category");
+    // touchField("proficiencyLevel");
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await SaveNewSkill(
+        e,
+        validateForm,
+        values,
+        touchField,
+        mutate,
+        resetForm,
+        cancelAddingNew
+      );
+      setIsSubmitting(false);
+      setSaveSuccess(true);
+      setIsAddingNew(false);
+      await mutate();
+    } catch (error) {
+      console.error("Error saving skill:", error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Skill</h4>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          touchField("name");
-          touchField("category");
-          touchField("proficiencyLevel");
-
-          if (!validateForm()) {
-            return;
-          }
-
-          setIsSubmitting(true);
-          try {
-            await SaveNewSkill(
-              e,
-              validateForm,
-              values,
-              touchField,
-              setNewItemData,
-              userId,
-              mutate,
-              resetForm,
-              cancelAddingNew
-            );
-            setIsSubmitting(false);
-            setSaveSuccess(true);
-            setIsAddingNew(false);
-            await mutate();
-          } catch (error) {
-            console.error("Error saving skill:", error);
-            setIsSubmitting(false);
-          }
-        }}
-        className="space-y-4"
-      >
+      <form onSubmit={onSubmit} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Skill Name*</label>
           <Input
             type="text"
             value={values.name}
-            onChange={(e) =>
-              NewSkillChange(
-                "name",
-                e.target.value,
-                setNewItemData,
-                handleChange,
-                values
-              )
-            }
+            onChange={(e) => handleChange("name", e.target.value)}
             onBlur={() => touchField("name")}
             className={getInputClassName("name", "name", "mt-1")}
             placeholder="e.g., JavaScript, React, Agile"
@@ -138,15 +161,7 @@ export function NewSkill({
           <Input
             type="text"
             value={values.category}
-            onChange={(e) =>
-              NewSkillChange(
-                "category",
-                e.target.value,
-                setNewItemData,
-                handleChange,
-                values
-              )
-            }
+            onChange={(e) => handleChange("category", e.target.value)}
             onBlur={() => touchField("category")}
             className={getInputClassName("category", "category", "mt-1")}
             placeholder="e.g., Frontend, Backend, DevOps"
@@ -167,15 +182,7 @@ export function NewSkill({
             min="1"
             max="10"
             value={values.proficiencyLevel}
-            onChange={(e) =>
-              NewSkillChange(
-                "proficiencyLevel",
-                parseInt(e.target.value),
-                setNewItemData,
-                handleChange,
-                values
-              )
-            }
+            onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
             onBlur={() => touchField("proficiencyLevel")}
             className={getInputClassName(
               "proficiencyLevel",
@@ -190,10 +197,7 @@ export function NewSkill({
           )}
         </div>
 
-        <FieldValidation
-          skill={skillToValidate}
-          touchedFields={touchedFields}
-        />
+        <FormValidation skill={skillToValidate} touchedFields={touchedFields} />
 
         <CancelSaveButtons
           cancelAddingNew={cancelAddingNew}
