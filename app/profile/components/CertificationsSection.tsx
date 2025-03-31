@@ -8,12 +8,12 @@ import {
   formatCertificationsForUI,
 } from "@/app/hooks/date-utils";
 import { Certification } from "./certifications/Interface";
-import { NewCertification } from "./certifications/add_new/NewCertification";
+import { NewCertification } from "./certifications/add/NewCertification";
 import { AddButton } from "./ui/AddButton";
 import { DoneButton } from "./ui/DoneButton";
 import { EditButton } from "./ui/EditButton";
 import { CertificationList } from "./certifications/display/List";
-import { FormValidation } from "./certifications/add_new/FormValidation";
+import { FormValidation } from "./certifications/add/child/new-certification/FormValidation";
 
 interface CertificationsProps {
   userId: string;

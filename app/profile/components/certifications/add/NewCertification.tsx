@@ -1,11 +1,11 @@
 "use client";
-import { CertificateNameInput } from "./CertificateNameInput";
-import { IssuingOrganizationInput } from "./IssuingOrganizationInput";
-import { IssueDateInput } from "./IssueDateInput";
-import { ExpirationDateInput } from "./ExpirationDateInput";
-import { CredentialUrlInput } from "./CredentialUrlInput";
-import { FormValidation } from "./FormValidation";
-import { CancelSave } from "./CancelSave";
+import { CertificateNameInput } from "./child/new-certification/CertificateNameInput";
+import { IssuingOrganizationInput } from "./child/new-certification/IssuingOrganizationInput";
+import { IssueDateInput } from "./child/new-certification/IssueDateInput";
+import { ExpirationDateInput } from "./child/new-certification/ExpirationDateInput";
+import { CredentialUrlInput } from "./child/new-certification/CredentialUrlInput";
+import { FormValidation } from "./child/new-certification/FormValidation";
+import { CancelSave } from "./child/new-certification/CancelSave";
 import { Certification } from "../Interface";
 import { useState } from "react";
 import { SaveNewCertification } from "../SaveNewCertifications";
