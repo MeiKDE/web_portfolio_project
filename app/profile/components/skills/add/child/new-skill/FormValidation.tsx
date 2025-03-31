@@ -1,6 +1,4 @@
 import { Skill } from "../Interface";
-import { successResponse, errorResponse } from "@/app/lib/api/api-helpers";
-import { handleApiError } from "@/app/lib/api/error-handler";
 
 interface FormValidationProps {
   skill: Skill;

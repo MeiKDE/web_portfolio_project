@@ -1,84 +1,67 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import { Lightbulb } from "lucide-react";
 import { Skill } from "../Interface";
 import { useState, useEffect } from "react";
-
+import { DeleteSkill } from "../DeleteSkill";
+import { NameInput } from "../add/child/list/nameInput";
+import { CategoryInput } from "../add/child/list/categoryInput";
+import { ProficiencyInput } from "../add/child/list/proficiencyInput";
+import { DeleteButton } from "../add/child/list/deleteBtn";
+import { SkillsList } from "../add/child/list/skillsList";
 interface SkillListProps {
   editedData: Skill[];
+  isEditing: boolean;
+  mutate: () => Promise<any>;
 }
 
-export function SkillList({ editedData }: SkillListProps) {
-  const [isEditing, setIsEditing] = useState(false);
+export function SkillList({ editedData, isEditing, mutate }: SkillListProps) {
   const [localData, setLocalData] = useState<Skill[]>(editedData);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // This state is important as it takes editedData from parent component
+  console.log("isEditing", isEditing);
+
+  // This state is important as it takes editedData set as localData
   useEffect(() => {
     setLocalData(editedData);
   }, [editedData]);
 
-  // Internal implementation of required functions
-  const handleInputChange = (field: string, value: any) => {
-    console.log(`Change ${field} to ${value}`);
-  };
-
-  const SkillInputChange = (
-    id: string,
-    field: string,
-    value: any,
-    handleInputChange: (field: string, value: any) => void
-  ) => {
-    handleInputChange(field, value);
-
-    // Update local data
-    setLocalData((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
-  };
-
-  const handleDeleteItem = async (id: string) => {
+  // Delete item from the localData
+  const deleteItemFromLocalState = async (id: string) => {
     try {
-      // Update local state
+      // prev is the previous state of the localData
+      // filter is used to remove the item with the id that is being deleted
       setLocalData((prev) => prev.filter((skill) => skill.id !== id));
-      return Promise.resolve();
+      return Promise.resolve(); // success
     } catch (error) {
       console.error("Error deleting item:", error);
-      return Promise.reject(error);
+      return Promise.reject(error); // error
     }
   };
 
-  const DeleteSkill = async (
-    id: string,
-    handleDeleteItem: (id: string) => Promise<void>,
-    mutate: () => Promise<any>
-  ) => {
+  // Delete item from the database
+  const deleteItemFromDatabase = async (id: string) => {
     try {
-      await handleDeleteItem(id);
-      // We don't actually call mutate here since this is local
-      return Promise.resolve();
+      await DeleteSkill(id, deleteItemFromLocalState, mutate);
     } catch (error) {
-      console.error("Error in DeleteSkill:", error);
-      return Promise.reject(error);
+      console.error("Error deleting item from database:", error);
     }
   };
 
-  const mutate = async () => {
-    // Mock implementation of mutate
-    return Promise.resolve();
-  };
-
+  // Delete button function
   const onDeleteClick = async (skillId: string) => {
     try {
       setIsDeleting(skillId);
-      await DeleteSkill(skillId, handleDeleteItem, mutate);
+      await deleteItemFromDatabase(skillId);
     } catch (error) {
-      console.error("Error in onDeleteClick:", error);
+      console.error("Error in onDeleteClick button:", error);
       alert("Failed to delete skill. Please try again.");
     } finally {
       setIsDeleting(null);
     }
+  };
+
+  const skillInputChange = (id: string, field: string, value: any) => {
+    setLocalData((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
+    );
   };
 
   return (
@@ -89,100 +72,27 @@ export function SkillList({ editedData }: SkillListProps) {
           {isEditing ? (
             <div className="flex gap-2">
               <div className="w-full">
-                <Input
-                  type="text"
-                  value={skill.name}
-                  onChange={(e) =>
-                    SkillInputChange(
-                      skill.id,
-                      "name",
-                      e.target.value,
-                      handleInputChange
-                    )
-                  }
-                  className={`font-medium mb-2 ${
-                    !skill.name ? "border-red-500" : ""
-                  }`}
-                  placeholder="Skill Name *"
-                  required
+                <NameInput skill={skill} skillInputChange={skillInputChange} />
+                <CategoryInput
+                  skill={skill}
+                  skillInputChange={skillInputChange}
                 />
-                <Input
-                  type="text"
-                  value={skill.category}
-                  onChange={(e) =>
-                    SkillInputChange(
-                      skill.id,
-                      "category",
-                      e.target.value,
-                      handleInputChange
-                    )
-                  }
-                  className={`text-sm mb-2 ${
-                    !skill.category ? "border-red-500" : ""
-                  }`}
-                  placeholder="Category *"
-                  required
-                />
-                <Input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={skill.proficiencyLevel}
-                  onChange={(e) =>
-                    SkillInputChange(
-                      skill.id,
-                      "proficiencyLevel",
-                      parseInt(e.target.value),
-                      handleInputChange
-                    )
-                  }
-                  className={`text-sm ${
-                    !skill.proficiencyLevel ||
-                    skill.proficiencyLevel < 1 ||
-                    skill.proficiencyLevel > 10
-                      ? "border-red-500"
-                      : ""
-                  }`}
-                  placeholder="Proficiency Level (1-10) *"
-                  required
+                <ProficiencyInput
+                  skill={skill}
+                  skillInputChange={skillInputChange}
                 />
               </div>
               <div className="flex items-start">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDeleteClick(skill.id)}
-                  className="h-8 w-8 text-red-500"
-                  disabled={isDeleting === skill.id}
-                >
-                  {isDeleting === skill.id ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
-                </Button>
+                <DeleteButton
+                  onDeleteClick={onDeleteClick}
+                  isDeleting={isDeleting}
+                  skillId={skill.id}
+                />
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">{skill.name}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {skill.category}
-                </p>
-                <div className="flex mt-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Lightbulb
-                      key={i}
-                      className={`h-4 w-4 mr-1 ${
-                        i < skill.proficiencyLevel
-                          ? "text-yellow-500 fill-yellow-500"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <SkillsList skill={skill} />
             </div>
           )}
         </div>

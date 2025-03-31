@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Certification } from "../Interface";
+import React from "react";
 
 interface IssuingOrganizationInputProps {
   formData: Partial<Certification>;

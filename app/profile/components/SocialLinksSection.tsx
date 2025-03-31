@@ -1,4 +1,4 @@
-import React from "react";
+import React, { JSX } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Github, Linkedin, Twitter, Globe } from "lucide-react";
 import { useRouter } from "next/navigation";

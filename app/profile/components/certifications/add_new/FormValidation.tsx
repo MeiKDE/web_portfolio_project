@@ -1,105 +1,48 @@
-import { getCurrentDate, formatDateForDatabase } from "@/app/hooks/date-utils";
 import { Certification } from "../Interface";
-import { useState } from "react";
 
 interface FormValidationProps {
-  cancelAddingNew: () => void;
-  setIsSubmitting: (isSubmitting: boolean) => void;
+  certification: Certification;
+  touchedFields?: Record<string, boolean>;
 }
 
-// Initialize form data with custom hook
-export const useFormValidation = ({
-  cancelAddingNew,
-  setIsSubmitting,
+// Add a validation function that can be exported
+export const validateCertification = (
+  certification: Certification
+): { isValid: boolean; errors: Record<string, string> } => {
+  const errors: Record<string, string> = {};
+  let isValid = true;
+
+  if (!certification.name) {
+    errors.name = "Name is required";
+    isValid = false;
+  }
+
+  if (!certification.issuer) {
+    errors.issuer = "Issuer is required";
+    isValid = false;
+  }
+
+  if (!certification.issueDate) {
+    errors.issueDate = "Issue date is required";
+    isValid = false;
+  }
+
+  return { isValid, errors };
+};
+
+export const FormValidation = ({
+  certification,
+  touchedFields = {},
 }: FormValidationProps) => {
-  const [formData, setFormData] = useState<Partial<Certification>>({
-    name: "",
-    issuer: "",
-    issueDate: getCurrentDate(),
-    expirationDate: "",
-    credentialUrl: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleInputChange = (field: keyof Certification, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name?.trim()) {
-      newErrors.name = "Name is required";
-    }
-    if (!formData.issuer?.trim()) {
-      newErrors.issuer = "Issuer is required";
-    }
-    if (!formData.issueDate) {
-      newErrors.issueDate = "Issue date is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-
-      const payload = {
-        name: formData.name?.trim(),
-        issuer: formData.issuer?.trim(),
-        issueDate: formatDateForDatabase(formData.issueDate || ""),
-        expirationDate: formData.expirationDate
-          ? formatDateForDatabase(formData.expirationDate)
-          : null,
-        credentialUrl: formData.credentialUrl?.trim() || null,
-      };
-
-      const response = await fetch("/api/certifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create certification");
-      }
-
-      //await mutate();
-      cancelAddingNew();
-    } catch (error) {
-      console.error("Error adding certification:", error);
-      setErrors((prev) => ({
-        ...prev,
-        submit:
-          error instanceof Error
-            ? error.message
-            : "Failed to add certification",
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return {
-    formData,
-    errors,
-    handleInputChange,
-    handleSubmit,
-  };
+  return (
+    <div className="text-sm text-red-500">
+      {touchedFields.name && !certification.name && <p>Name is required</p>}
+      {touchedFields.issuer && !certification.issuer && (
+        <p>Issuer is required</p>
+      )}
+      {touchedFields.issueDate && !certification.issueDate && (
+        <p>Issue date is required</p>
+      )}
+    </div>
+  );
 };

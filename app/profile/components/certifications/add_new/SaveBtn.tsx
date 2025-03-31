@@ -5,9 +5,9 @@ interface SaveBtnProps {
   onSave?: () => void;
 }
 
-export function SaveBtn({ isSubmitting, onSave }: SaveBtnProps) {
+export function SaveBtn({ isSubmitting }: SaveBtnProps) {
   return (
-    <Button type="submit" disabled={isSubmitting} onClick={onSave}>
+    <Button type="submit" disabled={isSubmitting}>
       {isSubmitting ? "Adding..." : "Save Certification"}
     </Button>
   );

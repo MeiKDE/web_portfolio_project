@@ -3,60 +3,84 @@ import { CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import React, { JSX } from "react";
+import React, { useEffect } from "react";
 import { Certification } from "../Interface";
 import { useState } from "react";
+import { getCurrentDate } from "@/app/hooks/date-utils";
+
+interface CertificationListProps {
+  editedData: Certification[];
+  isEditing: boolean;
+}
 
 export function CertificationList({
   editedData,
   isEditing,
-  handleCertificationInputChange,
-  DeleteCertification,
-  handleDeleteItem,
-  mutate,
-  getCurrentDate,
-}: {
-  editedData: Certification[];
-  isEditing: boolean;
-  handleCertificationInputChange: (
-    id: string,
-    field: string,
-    value: any,
-    handleInputChange: (field: string, value: any) => void,
-    touchField: (field: string) => void
-  ) => void;
-  DeleteCertification: (
-    id: string,
-    handleDeleteItem: (options: any) => Promise<void>,
-    mutate: () => void
-  ) => void;
-  handleDeleteItem: (options: {
-    id: string;
-    endpoint: string;
-    filterFn?: (item: any) => boolean;
-    confirmMessage?: string;
-    onSuccess?: () => void;
-    onError?: (error: any) => void;
-  }) => Promise<void>;
-  mutate: () => Promise<any>;
-  getCurrentDate: () => string;
-}) {
+}: CertificationListProps) {
+  const [localData, setLocalData] = useState<Certification[]>(editedData);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Add dummy implementations for these functions
+  console.log("isEditing", isEditing);
+
+  // This state is important as it takes editedData from parent component
+  useEffect(() => {
+    setLocalData(editedData);
+  }, [editedData]);
+
+  // Internal implementation of required functions
   const handleInputChange = (field: string, value: any) => {
     console.log(`Change ${field} to ${value}`);
   };
 
-  const touchField = (field: string) => {
-    console.log(`Touched field: ${field}`);
+  const CertificationInputChange = (
+    id: string,
+    field: string,
+    value: any,
+    handleInputChange: (field: string, value: any) => void
+  ) => {
+    handleInputChange(field, value);
+
+    // Update local data
+    setLocalData((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    try {
+      // Update local state
+      setLocalData((prev) => prev.filter((skill) => skill.id !== id));
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      return Promise.reject(error);
+    }
+  };
+
+  const DeleteSkill = async (
+    id: string,
+    handleDeleteItem: (id: string) => Promise<void>,
+    mutate: () => Promise<any>
+  ) => {
+    try {
+      await handleDeleteItem(id);
+      // We don't actually call mutate here since this is local
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error in DeleteSkill:", error);
+      return Promise.reject(error);
+    }
+  };
+
+  const mutate = async () => {
+    // Mock implementation of mutate
+    return Promise.resolve();
   };
 
   const onDeleteClick = async (certificationId: string) => {
     try {
-      console.log("Initiating delete for certification:", certificationId);
       setIsDeleting(certificationId);
-      await DeleteCertification(certificationId, handleDeleteItem, mutate);
+      await DeleteSkill(certificationId, handleDeleteItem, mutate);
     } catch (error) {
       console.error("Error in onDeleteClick:", error);
       alert("Failed to delete certification. Please try again.");
@@ -83,12 +107,11 @@ export function CertificationList({
                     type="text"
                     value={certification.name}
                     onChange={(e) =>
-                      handleCertificationInputChange(
+                      CertificationInputChange(
                         certification.id,
                         "name",
                         e.target.value,
-                        handleInputChange,
-                        touchField
+                        handleInputChange
                       )
                     }
                     className={`font-medium mb-2 w-full ${
@@ -101,12 +124,11 @@ export function CertificationList({
                     type="text"
                     value={certification.issuer}
                     onChange={(e) =>
-                      handleCertificationInputChange(
+                      CertificationInputChange(
                         certification.id,
                         "issuer",
                         e.target.value,
-                        handleInputChange,
-                        touchField
+                        handleInputChange
                       )
                     }
                     className={`text-sm mb-2 w-full ${
@@ -124,12 +146,11 @@ export function CertificationList({
                         type="date"
                         value={certification.issueDate}
                         onChange={(e) =>
-                          handleCertificationInputChange(
+                          CertificationInputChange(
                             certification.id,
                             "issueDate",
                             e.target.value,
-                            handleInputChange,
-                            touchField
+                            handleInputChange
                           )
                         }
                         className={`text-sm ${
@@ -147,12 +168,11 @@ export function CertificationList({
                         type="date"
                         value={certification.expirationDate || ""}
                         onChange={(e) =>
-                          handleCertificationInputChange(
+                          CertificationInputChange(
                             certification.id,
                             "expirationDate",
                             e.target.value,
-                            handleInputChange,
-                            touchField
+                            handleInputChange
                           )
                         }
                         className="text-sm"
@@ -164,12 +184,11 @@ export function CertificationList({
                     type="url"
                     value={certification.credentialUrl || ""}
                     onChange={(e) =>
-                      handleCertificationInputChange(
+                      CertificationInputChange(
                         certification.id,
                         "credentialUrl",
                         e.target.value,
-                        handleInputChange,
-                        touchField
+                        handleInputChange
                       )
                     }
                     className="text-sm w-full"

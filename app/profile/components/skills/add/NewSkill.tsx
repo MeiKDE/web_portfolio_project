@@ -1,8 +1,8 @@
 import { Input } from "@/components/ui/input";
-import { CancelSave } from "./CancelSave";
+import { CancelSave } from "./child/new-skill/CancelSave";
 import { useState } from "react";
 import { SaveNewSkill } from "../SaveNewSkill";
-import { FormValidation } from "./FormValidation";
+import { FormValidation } from "./child/new-skill/FormValidation";
 
 interface NewSkillProps {
   userId: string;
@@ -21,16 +21,6 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
     proficiencyLevel: 3,
     category: "Frontend",
   });
-
-  const resetForm = () => {
-    setValues({
-      name: "",
-      proficiencyLevel: 3,
-      category: "Frontend",
-    });
-    setTouchedFields({}); // Reset touched fields
-    setFormErrors({}); // Reset form errors
-  };
 
   const handleChange = (field: string, value: any) => {
     setValues((prev) => ({ ...prev, [field]: value })); // update prev values with new value
@@ -88,12 +78,13 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
 
     try {
       const postData = {
+        id: "",
         name: values.name.trim(),
         category: values.category.trim(),
         proficiencyLevel: parseInt(values.proficiencyLevel.toString()),
+        userId,
       };
       await SaveNewSkill(postData);
-      resetForm();
       await onSave(); // Call this to hide the form and refresh data
     } catch (error) {
       console.error("Error saving skill:", error);
@@ -142,12 +133,12 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
-            Proficiency Level* (1-10)
+            Proficiency Level* (1-5)
           </label>
           <Input
             type="number"
             min="1"
-            max="10"
+            max="5"
             value={values.proficiencyLevel}
             onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
             onBlur={
@@ -182,7 +173,7 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
           touchedFields={touchedFields}
         />
 
-        <CancelSave isSubmitting={isSubmitting} resetForm={resetForm} />
+        <CancelSave isSubmitting={isSubmitting} resetForm={onSave} />
       </form>
     </div>
   );

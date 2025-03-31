@@ -7,8 +7,8 @@ import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FormValidation } from "./skills/add_new/FormValidation";
-import { NewSkill } from "./skills/add_new/NewSkill";
+import { FormValidation } from "./skills/add/child/new-skill/FormValidation";
+import { NewSkill } from "./skills/add/NewSkill";
 import { SkillList } from "./skills/display/List";
 
 interface SkillsProps {
@@ -45,7 +45,7 @@ export default function Skills({ userId }: SkillsProps) {
         setEditedData([]);
       }
     }
-  }, [data]); // Only depend on data changes
+  }, [data]); // Depends on data change
 
   //this is used to refresh the data after saving a new skill
   // setting saveSuccess to false will trigger this useEffect
@@ -76,22 +76,9 @@ export default function Skills({ userId }: SkillsProps) {
   const onClickDone = () => {
     handleSaveEdits({
       endpoint: `/api/skills`,
-      validateFn: (data) => {
-        try {
-          // Validate each skill
-          if (Array.isArray(data)) {
-            data.forEach((skill) => {
-              if (!skill.name || !skill.category || !skill.proficiencyLevel) {
-                throw new Error("All required fields must be filled");
-              }
-            });
-          }
-          return true;
-        } catch (error) {
-          console.error("Validation error:", error);
-          alert("Please fill out all required fields correctly");
-          return false;
-        }
+      validateFn: (data: any) => {
+        setEditedData(data); // added this line to set the editedData to the data
+        return true;
       },
       onSuccess: () => {
         mutate(); // refresh the data
@@ -128,6 +115,7 @@ export default function Skills({ userId }: SkillsProps) {
   }) => {
     try {
       if (validateFn && editedData) {
+        console.log("if validateFn && editedData", validateFn, editedData);
         const validationResult = validateFn(editedData); // validate the data
 
         // if the data is not valid, call the onError function
@@ -159,7 +147,7 @@ export default function Skills({ userId }: SkillsProps) {
           credentials: "include",
           body: JSON.stringify(item),
         });
-
+        console.log("ln150: response", response);
         // update the data
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -223,7 +211,11 @@ export default function Skills({ userId }: SkillsProps) {
         {!isLoading && !error && (
           <>
             {editedData && editedData.length > 0 ? (
-              <SkillList editedData={editedData} />
+              <SkillList
+                editedData={editedData}
+                isEditing={isEditing}
+                mutate={mutate}
+              />
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 No skills added yet.

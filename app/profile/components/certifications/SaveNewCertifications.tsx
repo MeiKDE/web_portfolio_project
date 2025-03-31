@@ -1,9 +1,19 @@
-import { Skill } from "./Interface";
+// SAVE all edited certifications to the backend
+// Updating existing ones
+// Called when clicking the "Done" button in edit mode
+interface CertificationFormValues {
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expirationDate: string;
+  credentialUrl: string;
+}
 
-// create a new skill
-export const SaveNewSkill = async (postData: Skill): Promise<void> => {
+export const SaveNewCertification = async (
+  postData: CertificationFormValues
+): Promise<void> => {
   try {
-    const response = await fetch(`/api/skills`, {
+    const response = await fetch(`/api/certifications`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -15,7 +25,7 @@ export const SaveNewSkill = async (postData: Skill): Promise<void> => {
     const contentType = response.headers.get("content-type");
 
     if (!response.ok) {
-      let errorMessage = "Failed to create skill";
+      let errorMessage = "Failed to create certification";
 
       if (contentType?.includes("application/json")) {
         try {

@@ -1,5 +1,5 @@
 // Handler for input changes in edit mode
-export const SkillInputChange = <T extends string>(
+export const CertificationInputChange = <T extends string>(
   id: string,
   field: T,
   value: any,

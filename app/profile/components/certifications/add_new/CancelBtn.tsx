@@ -1,18 +1,12 @@
 import { Button } from "@/components/ui/button";
 
 interface CancelBtnProps {
-  cancelAddingNew: () => void;
-  isSubmitting: boolean;
+  resetForm: () => void;
 }
 
-export function CancelBtn({ cancelAddingNew, isSubmitting }: CancelBtnProps) {
+export function CancelBtn({ resetForm }: CancelBtnProps) {
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      onClick={cancelAddingNew}
-      disabled={isSubmitting}
-    >
+    <Button variant="ghost" onClick={resetForm}>
       Cancel
     </Button>
   );
