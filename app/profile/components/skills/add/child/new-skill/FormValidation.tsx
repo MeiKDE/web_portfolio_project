@@ -1,4 +1,4 @@
-import { Skill } from "../Interface";
+import { Skill } from "../../../Interface";
 
 interface FormValidationProps {
   skill: Skill;

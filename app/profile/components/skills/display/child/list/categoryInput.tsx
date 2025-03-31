@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Skill } from "@/app/profile/components/skills/Interface";
+import { Skill } from "../../../Interface";
 
 interface CategoryInputProps {
   skill: Skill;

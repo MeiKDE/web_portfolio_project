@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import React, { useEffect } from "react";
-import { Certification } from "../Interface";
+import { Certification } from "@/app/profile/components/certifications/Interface";
 import { useState } from "react";
 import { getCurrentDate } from "@/app/hooks/date-utils";
 

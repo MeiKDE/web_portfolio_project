@@ -1,14 +1,14 @@
 "use client";
-import { CertificateNameInput } from "./child/new-certification/CertificateNameInput";
-import { IssuingOrganizationInput } from "./child/new-certification/IssuingOrganizationInput";
-import { IssueDateInput } from "./child/new-certification/IssueDateInput";
-import { ExpirationDateInput } from "./child/new-certification/ExpirationDateInput";
-import { CredentialUrlInput } from "./child/new-certification/CredentialUrlInput";
-import { FormValidation } from "./child/new-certification/FormValidation";
-import { CancelSave } from "./child/new-certification/CancelSave";
-import { Certification } from "../Interface";
+import { CertificateNameInput } from "@/app/profile/components/certifications/display/child/CertificateNameInput";
+import { IssuingOrganizationInput } from "@/app/profile/components/certifications/display/child/IssuingOrganizationInput";
+import { IssueDateInput } from "@/app/profile/components/certifications/display/child/IssueDateInput";
+import { ExpirationDateInput } from "@/app/profile/components/certifications/display/child/ExpirationDateInput";
+import { CredentialUrlInput } from "@/app/profile/components/certifications/display/child/CredentialUrlInput";
+import { FormValidation } from "@/app/profile/components/certifications/display/child/FormValidation";
+import { CancelSave } from "@/app/profile/components/ui/CancelSave";
+import { Certification } from "@/app/profile/components/certifications/Interface";
 import { useState } from "react";
-import { SaveNewCertification } from "../SaveNewCertifications";
+import { SaveNewCertification } from "@/app/profile/components/certifications/SaveNewCertifications";
 interface NewCertificationProps {
   userId: string;
   onSave: (certification: Certification) => Promise<void>;

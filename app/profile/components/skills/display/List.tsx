@@ -1,11 +1,11 @@
-import { Skill } from "../Interface";
+import { Skill } from "@/app/profile/components/skills/Interface";
 import { useState, useEffect } from "react";
-import { DeleteSkill } from "../DeleteSkill";
-import { NameInput } from "../add/child/list/nameInput";
-import { CategoryInput } from "../add/child/list/categoryInput";
-import { ProficiencyInput } from "../add/child/list/proficiencyInput";
-import { DeleteButton } from "../add/child/list/deleteBtn";
-import { SkillsList } from "../add/child/list/skillsList";
+import { DeleteSkill } from "@/app/profile/components/skills/DeleteSkill";
+import { NameInput } from "@/app/profile/components/skills/display/child/list/nameInput";
+import { CategoryInput } from "@/app/profile/components/skills/display/child/list/categoryInput";
+import { ProficiencyInput } from "@/app/profile/components/skills/display/child/list/proficiencyInput";
+import { DeleteButton } from "@/app/profile/components/skills/add/child/new-skill/deleteBtn";
+import { SkillsList } from "@/app/profile/components/skills/add/child/new-skill/skillsList";
 interface SkillListProps {
   editedData: Skill[];
   isEditing: boolean;

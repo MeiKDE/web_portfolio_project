@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { Certification } from "../Interface";
+import { Certification } from "@/app/profile/components/certifications/Interface";
 import React from "react";
 
 interface IssuingOrganizationInputProps {

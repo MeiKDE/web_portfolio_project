@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { CancelSave } from "./child/new-skill/CancelSave";
+import { CancelSave } from "../../ui/CancelSave";
 import { useState } from "react";
 import { SaveNewSkill } from "../SaveNewSkill";
 import { FormValidation } from "./child/new-skill/FormValidation";
