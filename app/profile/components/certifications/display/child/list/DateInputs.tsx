@@ -1,7 +1,8 @@
+/** @jsxImportSource react */
 import { Certification } from "@/app/profile/components/certifications/Interface";
 import { Input } from "@/components/ui/input";
 import { getCurrentDate } from "@/app/hooks/date-utils";
-import React, { JSX } from "react";
+import React from "react";
 
 interface IssueDateInputProps {
   formData: Partial<Certification>;
@@ -9,11 +10,11 @@ interface IssueDateInputProps {
   handleInputChange: (field: keyof Certification, value: string) => void;
 }
 
-export function DateInputs({
+export const DateInputs: React.FC<IssueDateInputProps> = ({
   formData,
   errors,
   handleInputChange,
-}: IssueDateInputProps) {
+}) => {
   return (
     <div className="flex-1">
       <label className="block text-sm text-gray-600 mb-1">Issue Date*</label>
@@ -29,4 +30,4 @@ export function DateInputs({
       )}
     </div>
   );
-}
+};

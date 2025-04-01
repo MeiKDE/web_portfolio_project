@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
-import { useMobile } from "@/app/hooks/ui/useMobile";
+import { useIsMobile } from "@/app/hooks/use-mobile";
+import React, { JSX } from "react";
 
 const menuItems = [
   { name: "Profile", href: "/", icon: User },

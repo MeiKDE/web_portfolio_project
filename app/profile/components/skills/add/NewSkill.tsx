@@ -1,96 +1,78 @@
-import { Input } from "@/components/ui/input";
 import { CancelSave } from "../../ui/CancelSave";
 import { useState } from "react";
-import { SaveNewSkill } from "../SaveNewSkill";
-import { FormValidation } from "./child/new-skill/FormValidation";
+import { NameInput } from "./child/new-skill/nameInput";
+import { CategoryInput } from "./child/new-skill/categoryInput";
+import { ProficiencyInput } from "./child/new-skill/proficiencyInput";
+import { Skill } from "../Interface";
+import React from "react";
+import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 
 interface NewSkillProps {
   userId: string;
-  onSave: () => void;
+  onSaveNewSkill: (values: Skill) => void | Promise<void>;
 }
 
-export function NewSkill({ userId, onSave }: NewSkillProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const [values, setValues] = useState<Record<string, any>>({
+export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
+  const formValues = {
     name: "",
-    proficiencyLevel: 3,
-    category: "Frontend",
+    category: "",
+    proficiencyLevel: "",
+  };
+
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
+    name: false,
+    category: false,
+    proficiencyLevel: false,
   });
 
-  const handleChange = (field: string, value: any) => {
-    setValues((prev) => ({ ...prev, [field]: value })); // update prev values with new value
+  const [isSubmitting, setIsSubmitting] = useState(false); // Default is false
+
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+  } = useFormValidation(formValues, {
+    name: (value) => (value.length > 0 ? null : "Name is required"),
+    category: (value) => (value.length > 0 ? null : "Category is required"),
+    proficiencyLevel: (value) =>
+      value >= 1 && value <= 5
+        ? null
+        : "Proficiency level must be between 1 and 5",
+  });
+
+  const getSkillModel = (values: any) => {
+    return {
+      id: "",
+      userId,
+      name: values.name,
+      proficiencyLevel: parseInt(values.proficiencyLevel),
+      category: values.category,
+    };
   };
 
-  // Get the input error class name
-  const getInputClassName = (id: string, field: string, baseClass: string) => {
-    // Check if the field has been touched and if it has an error
-    const hasError = touchedFields[field] && formErrors[field];
-    return `${baseClass} ${hasError ? "border-red-500" : ""}`;
-  };
+  // When click on SAVE button, the defaultSkillModel will be used to create a new skill data
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Prevent default form submission behavior
+    setIsSubmitting(true); // Default is false
 
-  // Submit the form
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate raw input values
-    const errors: Record<string, string> = {};
-    let isValid = true;
-
-    // Validate name
-    // if name is empty, set the error and isValid to false
-    if (!values.name || values.name.trim() === "") {
-      errors.name = "Name is required";
-      isValid = false;
-    }
-
-    // Validate category
-    // if category is empty, set the error and isValid to false
-    if (!values.category || values.category.trim() === "") {
-      errors.category = "Category is required";
-      isValid = false;
-    }
-
-    // Validate proficiency level
-    // if proficiency level is not a number, set the error and isValid to false
-    const proficiencyLevel = parseInt(String(values.proficiencyLevel));
-    if (
-      isNaN(proficiencyLevel) ||
-      proficiencyLevel < 1 ||
-      proficiencyLevel > 5
-    ) {
-      errors.proficiencyLevel = "Proficiency level must be between 1 and 5";
-      isValid = false;
-    }
-
-    // if the form is not valid, set the form errors
+    // Validate the form
+    const isValid = validateForm();
     if (!isValid) {
-      setFormErrors(errors);
+      setIsSubmitting(false);
       return;
     }
 
-    // set the form as submitting
-    setIsSubmitting(true);
+    onSaveNewSkill(getSkillModel(values)); // pass the values to the onClickSave function
+  };
 
-    try {
-      const postData = {
-        id: "",
-        name: values.name.trim(),
-        category: values.category.trim(),
-        proficiencyLevel: parseInt(values.proficiencyLevel.toString()),
-        userId,
-      };
-      await SaveNewSkill(postData);
-      await onSave(); // Call this to hide the form and refresh data
-    } catch (error) {
-      console.error("Error saving skill:", error);
-    } finally {
-      setIsSubmitting(false); //reset the isSubmitting to false
-    }
+  // The getInputClassName function is used to get the input class name
+  // which is used to style the input field
+  const getInputClassName = (field: string) => {
+    return errors[field as keyof typeof errors] ? "border-red-500" : "";
   };
 
   return (
@@ -99,35 +81,31 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Skill Name*</label>
-          <Input
-            type="text"
-            value={values.name}
-            onChange={(e) => handleChange("name", e.target.value)}
-            onBlur={() => setTouchedFields((prev) => ({ ...prev, name: true }))} // set the field as touched
-            className={getInputClassName("name", "name", "mt-1")} // get the input error class name
-            placeholder="e.g., JavaScript, React, Agile"
+          <NameInput
+            values={values} // The values of the input fields
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            } // The function to handle the change of the input fields
+            setTouchedFields={(fields) => setTouchedFields(fields)} // The function to set the touched fields
+            getInputClassName={getInputClassName} // The function to get the input class name
           />
-          {formErrors["name"] && (
-            <p className="text-red-500 text-xs mt-1">{formErrors["name"]}</p>
+          {errors["name"] && (
+            <p className="text-red-500 text-xs mt-1">{errors["name"]}</p>
           )}
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Category*</label>
-          <Input
-            type="text"
-            value={values.category}
-            onChange={(e) => handleChange("category", e.target.value)}
-            onBlur={
-              () => setTouchedFields((prev) => ({ ...prev, category: true })) // set the field as touched
-            }
-            className={getInputClassName("category", "category", "mt-1")} // get the input error class name
-            placeholder="e.g., Frontend, Backend, DevOps"
+          <CategoryInput
+            values={values} // The values of the input fields
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            } // The function to handle the change of the input fields
+            setTouchedFields={setTouchedFields} // The function to set the touched fields
+            getInputClassName={getInputClassName} // The function to get the input class name
           />
-          {formErrors["category"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {formErrors["category"]}
-            </p>
+          {errors["category"] && (
+            <p className="text-red-500 text-xs mt-1">{errors["category"]}</p>
           )}
         </div>
 
@@ -135,45 +113,27 @@ export function NewSkill({ userId, onSave }: NewSkillProps) {
           <label className="text-sm text-muted-foreground">
             Proficiency Level* (1-5)
           </label>
-          <Input
-            type="number"
-            min="1"
-            max="5"
-            value={values.proficiencyLevel}
-            onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
-            onBlur={
-              () =>
-                setTouchedFields((prev) => ({
-                  ...prev,
-                  proficiencyLevel: true,
-                })) // set the field as touched
-            }
-            className={getInputClassName(
-              "proficiencyLevel",
-              "proficiencyLevel",
-              "mt-1"
-            )} // get the input error class name
+          <ProficiencyInput
+            values={values} // The values of the input fields
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            } // The function to handle the change of the input fields
+            setTouchedFields={setTouchedFields} // The function to set the touched fields
+            getInputClassName={getInputClassName} // The function to get the input class name
           />
-          {formErrors["proficiencyLevel"] && (
+          {errors["proficiencyLevel"] && (
             <p className="text-red-500 text-xs mt-1">
-              {formErrors["proficiencyLevel"]}
+              {errors["proficiencyLevel"]}
             </p>
           )}
         </div>
 
-        {/* Create a skill object for validation */}
-        <FormValidation
-          skill={{
-            id: "",
-            userId,
-            name: values.name || "",
-            category: values.category || "",
-            proficiencyLevel: parseInt(String(values.proficiencyLevel)) || 3,
+        <CancelSave
+          isSubmitting={isSubmitting} // Set isSubmitting to true when the user clicks on the SAVE button
+          resetForm={() => {
+            onSaveNewSkill(getSkillModel(values)); // Call the onSaveNewSkill function to save the skill data
           }}
-          touchedFields={touchedFields}
         />
-
-        <CancelSave isSubmitting={isSubmitting} resetForm={onSave} />
       </form>
     </div>
   );

@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Certification } from "@/app/profile/components/certifications/Interface";
-import React, { JSX } from "react";
+import React from "react";
 
 interface CertificateNameProps {
   formData: Partial<Certification>;

@@ -31,6 +31,7 @@ interface UserData {
 }
 
 export default function User({ userId }: UserProps) {
+  console.log("ln34: userId", userId);
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);

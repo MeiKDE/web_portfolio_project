@@ -1,6 +1,6 @@
 import { Certification } from "@/app/profile/components/certifications/Interface";
 import { Input } from "@/components/ui/input";
-import React, { JSX } from "react";
+import React from "react";
 
 interface ExpirationDateInputProps {
   formData: Partial<Certification>;

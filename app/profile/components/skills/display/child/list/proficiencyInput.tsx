@@ -1,16 +1,21 @@
 import { Input } from "@/components/ui/input";
-import { Skill } from "../../../Interface";
 
 interface ProficiencyInputProps {
-  skill: Skill;
-  skillInputChange: (id: string, field: string, value: number) => void;
+  values: any;
+  handleChange: (field: string, value: string) => void;
+  handleBlur: (field: string) => void;
+  errors: any;
+  touched: any;
 }
 
 export const ProficiencyInput = ({
-  skill,
-  skillInputChange,
+  values,
+  handleChange,
+  handleBlur,
+  errors,
+  touched,
 }: ProficiencyInputProps) => {
-  const proficiencyLevel = skill.proficiencyLevel || 1;
+  const proficiencyLevel = values.proficiencyLevel || 1;
 
   return (
     <Input
@@ -18,18 +23,9 @@ export const ProficiencyInput = ({
       min="1"
       max="10"
       value={proficiencyLevel}
-      onChange={(e) =>
-        skillInputChange(
-          skill.id,
-          "proficiencyLevel",
-          parseInt(e.target.value) || 1
-        )
-      }
-      className={`text-sm ${
-        !proficiencyLevel || proficiencyLevel < 1 || proficiencyLevel > 5
-          ? "border-red-500"
-          : ""
-      }`}
+      onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
+      onBlur={() => handleBlur("proficiencyLevel")}
+      className={`text-sm ${errors.proficiencyLevel ? "border-red-500" : ""}`}
       placeholder="Proficiency Level (1-5) *"
       required
     />

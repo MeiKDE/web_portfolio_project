@@ -17,13 +17,13 @@ import { handleApiError } from "@/app/lib/api/error-handler";
 // Define schema for validation
 const skillUpdateSchema = z.object({
   name: z.string().min(1, "Skill name is required"),
-  proficiencyLevel: z.number().int().min(1).max(5),
   category: z.string().optional(),
+  proficiencyLevel: z.number().int().min(1).max(5).default(1),
 });
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { userId: string; id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,31 +31,50 @@ export async function PUT(
       return errorResponse("Unauthorized", 401);
     }
 
-    const { userId, id } = params;
     const data = await req.json();
 
-    // Validate required fields
-    if (!data.name || !data.category || !data.proficiencyLevel) {
-      return errorResponse("Missing required fields", 400);
+    console.log("params.id:", params.id);
+
+    // Validate the incoming data using skillSchema
+    const validationResult = skillUpdateSchema.safeParse(data);
+    if (!validationResult.success) {
+      return errorResponse(
+        `Validation failed: ${JSON.stringify(validationResult.error.format())}`,
+        400
+      );
+    }
+
+    // Verify skill ownership
+    const existingSkill = await prisma.skill.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingSkill) {
+      return errorResponse("Skill not found", 404);
+    }
+
+    console.log("Session user:", session.user);
+    console.log("Existing skill:", existingSkill);
+
+    console.log("Session user ID:", session.user.id);
+    console.log("Existing skill user ID:", existingSkill.userId);
+    console.log("Existing skill ID:", existingSkill.id);
+
+    // Compare the session user's ID with the skill's userId
+    if (existingSkill.userId !== session.user.id) {
+      return errorResponse("Not authorized to update this skill", 403);
     }
 
     // Update the skill
     const updatedSkill = await prisma.skill.update({
-      where: {
-        id: id,
-        userId: userId,
-      },
-      data: {
-        name: data.name,
-        category: data.category,
-        proficiencyLevel: data.proficiencyLevel,
-      },
+      where: { id: params.id },
+      data: validationResult.data,
     });
 
     return successResponse(updatedSkill);
   } catch (error) {
-    console.error("Error updating skill:", error);
-    return errorResponse("Failed to update skill", 500);
+    console.error("Error in PUT /api/skills/[id]:", error);
+    return handleApiError(error);
   }
 }
 
@@ -150,6 +169,40 @@ export const POST = withAuth(
       }
 
       return errorResponse("Failed to create skill", 500);
+    }
+  }
+);
+
+// GET all skills for a specific user
+export const GET = withAuth(
+  async (
+    request: NextRequest,
+    { params }: { params: { userId: string } },
+    user
+  ) => {
+    try {
+      console.log("Fetching skills for user:", params.userId);
+      const userId = params.userId;
+
+      // Fetch the skills for the specified user
+      const skills = await prisma.skill.findMany({
+        where: {
+          userId: userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return successResponse(skills);
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+
+      if (error instanceof Error) {
+        return errorResponse(`Failed to fetch skills: ${error.message}`, 500);
+      }
+
+      return errorResponse("Failed to fetch skills", 500);
     }
   }
 );

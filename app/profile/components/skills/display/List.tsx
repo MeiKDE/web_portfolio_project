@@ -1,12 +1,8 @@
 import { Skill } from "@/app/profile/components/skills/Interface";
 import { useState, useEffect } from "react";
-import { DeleteSkill } from "@/app/profile/components/skills/DeleteSkill";
-import { NameInput } from "@/app/profile/components/skills/display/child/list/nameInput";
-import { CategoryInput } from "@/app/profile/components/skills/display/child/list/categoryInput";
-import { ProficiencyInput } from "@/app/profile/components/skills/display/child/list/proficiencyInput";
-import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
 import { SkillsList } from "@/app/profile/components/skills/display/child/list/skillsList";
 import React from "react";
+import { SkillForm } from "@/app/profile/components/skills/display/child/list/skillForm";
 
 interface SkillListProps {
   editedData: Skill[];
@@ -21,87 +17,31 @@ export function SkillList({
   mutate,
   userId,
 }: SkillListProps) {
-  const [localData, setLocalData] = useState<Skill[]>(editedData);
+  const onDeleteClick = (id: string) => {
+    console.log(id);
+    setIsDeleting(id);
+    mutate(); // Refetch the data
+  };
+
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-
-  console.log("isEditing", isEditing);
-
-  // This state is important as it takes editedData set as localData
-  useEffect(() => {
-    setLocalData(editedData);
-  }, [editedData]);
-
-  // Delete item from the localData
-  const deleteItemFromLocalState = async (id: string) => {
-    try {
-      // prev is the previous state of the localData
-      // filter is used to remove the item with the id that is being deleted
-      setLocalData((prev) => prev.filter((skill) => skill.id !== id));
-      return Promise.resolve(); // success
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      return Promise.reject(error); // error
-    }
-  };
-
-  // Delete item from the database
-  const deleteItemFromDatabase = async (id: string) => {
-    try {
-      await DeleteSkill(id, userId, deleteItemFromLocalState, mutate);
-    } catch (error) {
-      console.error("Error deleting item from database:", error);
-    }
-  };
-
-  // Delete button function
-  const onDeleteClick = async (skillId: string) => {
-    try {
-      setIsDeleting(skillId);
-      await deleteItemFromDatabase(skillId);
-    } catch (error) {
-      console.error("Error in onDeleteClick button:", error);
-      alert("Failed to delete skill. Please try again.");
-    } finally {
-      setIsDeleting(null);
-    }
-  };
-
-  const skillInputChange = (id: string, field: string, value: any) => {
-    setLocalData((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
-    );
-  };
 
   return (
     <div className="space-y-4">
-      {localData.map((skill: Skill) => (
+      {editedData.map((skill: Skill) => (
         <div key={skill.id} className="relative border-b pb-4 last:border-0">
           {/* Skill content - editable or readonly */}
           {isEditing ? (
-            <div className="flex gap-2">
-              <div className="w-full">
-                <NameInput skill={skill} skillInputChange={skillInputChange} />
-                <CategoryInput
-                  skill={skill}
-                  skillInputChange={skillInputChange}
-                />
-                <ProficiencyInput
-                  skill={skill}
-                  skillInputChange={skillInputChange}
-                />
-              </div>
-              <div className="flex items-start">
-                <DeleteButton
-                  onDeleteClick={onDeleteClick}
-                  isDeleting={isDeleting}
-                  skillId={skill.id}
-                />
-              </div>
-            </div>
+            <SkillForm
+              skill={{
+                ...skill,
+                category: skill.category || "",
+                proficiencyLevel: skill.proficiencyLevel || 1,
+              }}
+              onDeleteClick={onDeleteClick}
+              isDeleting={isDeleting}
+            />
           ) : (
-            <div className="flex items-center justify-between">
-              <SkillsList skill={skill} />
-            </div>
+            <SkillsList skill={skill} />
           )}
         </div>
       ))}

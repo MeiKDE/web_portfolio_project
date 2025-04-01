@@ -1,20 +1,29 @@
 import { Input } from "@/components/ui/input";
-import { Skill } from "../../../Interface";
 
 interface NameInputProps {
-  skill: Skill;
-  skillInputChange: (id: string, field: string, value: string) => void;
+  values: any;
+  handleChange: (field: string, value: string) => void;
+  handleBlur: (field: string) => void;
+  errors: any;
+  touched: any;
 }
 
-export const NameInput = ({ skill, skillInputChange }: NameInputProps) => {
+export const NameInput = ({
+  values,
+  handleChange,
+  handleBlur,
+  errors,
+  touched,
+}: NameInputProps) => {
   return (
     <Input
       type="text"
-      value={skill.name}
+      value={values.name}
       onChange={(e) => {
-        skillInputChange(skill.id, "name", e.target.value);
+        handleChange("name", e.target.value);
       }}
-      className={`font-medium mb-2 ${!skill.name ? "border-red-500" : ""}`}
+      onBlur={() => handleBlur("name")}
+      className={`font-medium mb-2 ${errors.name ? "border-red-500" : ""}`}
       placeholder="Skill Name *"
       required
     />

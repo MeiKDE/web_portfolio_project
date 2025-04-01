@@ -24,6 +24,7 @@ export function SaveBtn({ isSubmitting, component }: SaveBtnProps) {
   return (
     <Button size="sm" type="submit" disabled={isSubmitting}>
       {isSubmitting ? "Saving..." : `${component}`}
+      Save
     </Button>
   );
 }

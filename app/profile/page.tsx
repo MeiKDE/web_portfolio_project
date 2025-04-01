@@ -45,7 +45,7 @@ export default function ProfilePage() {
   // what's the point of using useRef here?
   // useRef is used to store a value that is not needed for rendering, to be cached in the browser
   const hasFetchAttempted = useRef(false);
-
+  console.log("session", session);
   // fetchUserProfile is a function that fetches the user profile
   // it is a useCallback function which is cached in the browser and not recreated on each render
   const fetchUserProfile = useCallback(
