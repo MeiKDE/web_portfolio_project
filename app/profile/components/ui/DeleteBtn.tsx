@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import React from "react";
 
 interface DeleteButtonProps {
   onDeleteClick: (id: string) => void;
@@ -7,11 +8,11 @@ interface DeleteButtonProps {
   skillId: string;
 }
 
-export const DeleteButton = ({
+export function DeleteButton({
   onDeleteClick,
   isDeleting,
   skillId,
-}: DeleteButtonProps) => {
+}: DeleteButtonProps) {
   return (
     <Button
       variant="ghost"
@@ -27,4 +28,4 @@ export const DeleteButton = ({
       )}
     </Button>
   );
-};
+}

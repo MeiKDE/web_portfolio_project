@@ -1,17 +1,12 @@
-"use client";
-import { CertificateNameInput } from "@/app/profile/components/certifications/display/child/CertificateNameInput";
-import { IssuingOrganizationInput } from "@/app/profile/components/certifications/display/child/IssuingOrganizationInput";
-import { IssueDateInput } from "@/app/profile/components/certifications/display/child/IssueDateInput";
-import { ExpirationDateInput } from "@/app/profile/components/certifications/display/child/ExpirationDateInput";
-import { CredentialUrlInput } from "@/app/profile/components/certifications/display/child/CredentialUrlInput";
-import { FormValidation } from "@/app/profile/components/certifications/display/child/FormValidation";
-import { CancelSave } from "@/app/profile/components/ui/CancelSave";
-import { Certification } from "@/app/profile/components/certifications/Interface";
+import { Input } from "@/components/ui/input";
+import { CancelSave } from "../../ui/CancelSave";
 import { useState } from "react";
-import { SaveNewCertification } from "@/app/profile/components/certifications/SaveNewCertifications";
+import { SaveNewCertification } from "../SaveNewCertifications";
+import { FormValidation } from "./child/new-certification/FormValidation";
+
 interface NewCertificationProps {
   userId: string;
-  onSave: (certification: Certification) => Promise<void>;
+  onSave: () => void;
 }
 
 export function NewCertification({ userId, onSave }: NewCertificationProps) {
@@ -29,148 +24,196 @@ export function NewCertification({ userId, onSave }: NewCertificationProps) {
     credentialUrl: "",
   });
 
-  const resetForm = () => {
-    setValues({
-      name: "",
-      issuer: "",
-      issueDate: "",
-      expirationDate: "",
-      credentialUrl: "",
-    });
-    setTouchedFields({}); // Reset touched fields
-    setFormErrors({}); // Reset form errors
-  };
-
   const handleChange = (field: string, value: any) => {
-    setValues((prev) => ({ ...prev, [field]: value })); // update prev values with new value
+    setValues((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Get the input error class name
   const getInputClassName = (id: string, field: string, baseClass: string) => {
-    // Check if the field has been touched and if it has an error
     const hasError = touchedFields[field] && formErrors[field];
     return `${baseClass} ${hasError ? "border-red-500" : ""}`;
   };
 
-  // Submit the form
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate raw input values
     const errors: Record<string, string> = {};
     let isValid = true;
 
-    // Validate name
-    // if name is empty, set the error and isValid to false
     if (!values.name || values.name.trim() === "") {
       errors.name = "Name is required";
       isValid = false;
     }
 
-    // Validate issuer
-    // if issuer is empty, set the error and isValid to false
     if (!values.issuer || values.issuer.trim() === "") {
-      errors.issuer = "Issuer is required";
+      errors.issuer = "Issuing organization is required";
       isValid = false;
     }
 
-    // Validate issueDate
-    // if issueDate is empty, set the error and isValid to false
     if (!values.issueDate || values.issueDate.trim() === "") {
       errors.issueDate = "Issue date is required";
       isValid = false;
     }
 
-    // Validate expirationDate
-    // if expirationDate is empty, set the error and isValid to false
     if (!values.expirationDate || values.expirationDate.trim() === "") {
       errors.expirationDate = "Expiration date is required";
       isValid = false;
     }
 
-    // Validate credentialUrl
-    // if credentialUrl is empty, set the error and isValid to false
     if (!values.credentialUrl || values.credentialUrl.trim() === "") {
       errors.credentialUrl = "Credential URL is required";
       isValid = false;
     }
 
-    // if the form is not valid, set the form errors
     if (!isValid) {
       setFormErrors(errors);
       return;
     }
 
-    // set the form as submitting
     setIsSubmitting(true);
 
     try {
       const postData = {
+        id: "",
         name: values.name.trim(),
         issuer: values.issuer.trim(),
         issueDate: values.issueDate.trim(),
         expirationDate: values.expirationDate.trim(),
         credentialUrl: values.credentialUrl.trim(),
+        userId,
       };
       await SaveNewCertification(postData);
-      resetForm();
-      await onSave(postData); // Call this to hide the form and refresh data
+      await onSave();
     } catch (error) {
       console.error("Error saving certification:", error);
     } finally {
-      setIsSubmitting(false); //reset the isSubmitting to false
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 mb-6">
-      <CertificateNameInput
-        formData={formData}
-        errors={errors}
-        handleInputChange={handleInputChange}
-      />
+    <div className="mb-6 border p-4 rounded-md">
+      <h4 className="font-medium mb-3">Add New Certification</h4>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="mb-2">
+          <label className="text-sm text-muted-foreground">
+            Certification Name*
+          </label>
+          <Input
+            type="text"
+            value={values.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            onBlur={() => setTouchedFields((prev) => ({ ...prev, name: true }))}
+            className={getInputClassName("name", "name", "mt-1")}
+            placeholder="e.g., AWS Solutions Architect"
+          />
+          {formErrors["name"] && (
+            <p className="text-red-500 text-xs mt-1">{formErrors["name"]}</p>
+          )}
+        </div>
 
-      <IssuingOrganizationInput
-        formData={formData}
-        errors={errors}
-        handleInputChange={handleInputChange}
-      />
+        <div className="mb-2">
+          <label className="text-sm text-muted-foreground">
+            Issuing Organization*
+          </label>
+          <Input
+            type="text"
+            value={values.issuer}
+            onChange={(e) => handleChange("issuer", e.target.value)}
+            onBlur={() =>
+              setTouchedFields((prev) => ({ ...prev, issuer: true }))
+            }
+            className={getInputClassName("issuer", "issuer", "mt-1")}
+            placeholder="e.g., Amazon Web Services"
+          />
+          {formErrors["issuer"] && (
+            <p className="text-red-500 text-xs mt-1">{formErrors["issuer"]}</p>
+          )}
+        </div>
 
-      <div className="flex gap-4">
-        <IssueDateInput
-          formData={formData}
-          errors={errors}
-          handleInputChange={handleInputChange}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-2">
+            <label className="text-sm text-muted-foreground">Issue Date*</label>
+            <Input
+              type="date"
+              value={values.issueDate}
+              onChange={(e) => handleChange("issueDate", e.target.value)}
+              onBlur={() =>
+                setTouchedFields((prev) => ({ ...prev, issueDate: true }))
+              }
+              className={getInputClassName("issueDate", "issueDate", "mt-1")}
+            />
+            {formErrors["issueDate"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {formErrors["issueDate"]}
+              </p>
+            )}
+          </div>
+
+          <div className="mb-2">
+            <label className="text-sm text-muted-foreground">
+              Expiration Date*
+            </label>
+            <Input
+              type="date"
+              value={values.expirationDate}
+              onChange={(e) => handleChange("expirationDate", e.target.value)}
+              onBlur={() =>
+                setTouchedFields((prev) => ({ ...prev, expirationDate: true }))
+              }
+              className={getInputClassName(
+                "expirationDate",
+                "expirationDate",
+                "mt-1"
+              )}
+            />
+            {formErrors["expirationDate"] && (
+              <p className="text-red-500 text-xs mt-1">
+                {formErrors["expirationDate"]}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-2">
+          <label className="text-sm text-muted-foreground">
+            Credential URL*
+          </label>
+          <Input
+            type="url"
+            value={values.credentialUrl}
+            onChange={(e) => handleChange("credentialUrl", e.target.value)}
+            onBlur={() =>
+              setTouchedFields((prev) => ({ ...prev, credentialUrl: true }))
+            }
+            className={getInputClassName(
+              "credentialUrl",
+              "credentialUrl",
+              "mt-1"
+            )}
+            placeholder="e.g., https://www.credential.net/..."
+          />
+          {formErrors["credentialUrl"] && (
+            <p className="text-red-500 text-xs mt-1">
+              {formErrors["credentialUrl"]}
+            </p>
+          )}
+        </div>
+
+        <FormValidation
+          certification={{
+            id: "",
+            userId,
+            name: values.name || "",
+            issuer: values.issuer || "",
+            issueDate: values.issueDate || "",
+            expirationDate: values.expirationDate || "",
+            credentialUrl: values.credentialUrl || "",
+          }}
+          touchedFields={touchedFields}
         />
 
-        <ExpirationDateInput
-          formData={formData}
-          errors={errors}
-          handleInputChange={handleInputChange}
-        />
-      </div>
-
-      <CredentialUrlInput
-        formData={formData}
-        errors={errors}
-        handleInputChange={handleInputChange}
-      />
-
-      {/* Create a certification object for validation */}
-      <FormValidation
-        certification={{
-          id: "",
-          userId,
-          name: values.name || "",
-          issuer: values.issuer || "",
-          issueDate: values.issueDate || "",
-          expirationDate: values.expirationDate || "",
-          credentialUrl: values.credentialUrl || "",
-        }}
-        touchedFields={touchedFields}
-      />
-
-      <CancelSave isSubmitting={isSubmitting} resetForm={resetForm} />
-    </form>
+        <CancelSave isSubmitting={isSubmitting} resetForm={onSave} />
+      </form>
+    </div>
   );
 }

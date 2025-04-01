@@ -7,10 +7,12 @@ import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { FormValidation } from "@/app/profile/components/certifications/display/child/FormValidation";
+import { FormValidation } from "@/app/profile/components/certifications/add/child/new-certification/FormValidation";
 import { NewCertification } from "./certifications/add/NewCertification";
 import { CertificationList } from "./certifications/display/List";
 import { formatCertificationsForUI } from "@/app/hooks/date-utils";
+import { certificationSchema } from "@/app/hooks/validations";
+import { formatDateForDatabase } from "@/app/hooks/date-utils";
 
 interface CertificationsProps {
   userId: string;
@@ -134,13 +136,25 @@ export default function Certifications({ userId }: CertificationsProps) {
         : [editedData];
 
       for (const item of itemsToUpdate) {
+        // Convert dates to ISO-8601 format
+        const formattedItem = {
+          ...item,
+          issueDate: formatDateForDatabase(item.issueDate),
+          expirationDate: item.expirationDate
+            ? formatDateForDatabase(item.expirationDate)
+            : null,
+        };
+
+        // Validate against the certificationSchema
+        const validatedItem = certificationSchema.parse(formattedItem);
+
         const response = await fetch(`${endpoint}/${item.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(item),
+          body: JSON.stringify(validatedItem),
         });
-        console.log("ln143: response", response);
+
         // update the data
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -206,6 +220,7 @@ export default function Certifications({ userId }: CertificationsProps) {
               <CertificationList
                 editedData={editedData}
                 isEditing={isEditing}
+                mutate={mutate}
               />
             ) : (
               <div className="text-center py-4 text-muted-foreground">

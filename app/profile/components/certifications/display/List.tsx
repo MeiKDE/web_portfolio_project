@@ -1,55 +1,33 @@
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import React, { useEffect } from "react";
 import { Certification } from "@/app/profile/components/certifications/Interface";
-import { useState } from "react";
-import { getCurrentDate } from "@/app/hooks/date-utils";
+import { useState, useEffect } from "react";
+import { DeleteCertification } from "@/app/profile/components/certifications/DeleteCertification";
+import { NameInput } from "@/app/profile/components/certifications/display/child/list/NameInput";
+import { IssuerInput } from "@/app/profile/components/certifications/display/child/list/IssuerInput";
+import { DateInputs } from "@/app/profile/components/certifications/display/child/list/DateInputs";
+import { UrlInput } from "@/app/profile/components/certifications/display/child/list/UrlInput";
+import { DeleteButton } from "@/app/profile/components/ui";
 
 interface CertificationListProps {
   editedData: Certification[];
   isEditing: boolean;
+  mutate: () => Promise<any>;
 }
 
 export function CertificationList({
   editedData,
   isEditing,
+  mutate,
 }: CertificationListProps) {
   const [localData, setLocalData] = useState<Certification[]>(editedData);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  console.log("isEditing", isEditing);
-
-  // This state is important as it takes editedData from parent component
   useEffect(() => {
     setLocalData(editedData);
   }, [editedData]);
 
-  // Internal implementation of required functions
-  const handleInputChange = (field: string, value: any) => {
-    console.log(`Change ${field} to ${value}`);
-  };
-
-  const CertificationInputChange = (
-    id: string,
-    field: string,
-    value: any,
-    handleInputChange: (field: string, value: any) => void
-  ) => {
-    handleInputChange(field, value);
-
-    // Update local data
-    setLocalData((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
-  };
-
-  const handleDeleteItem = async (id: string) => {
+  const deleteItemFromLocalState = async (id: string) => {
     try {
-      // Update local state
-      setLocalData((prev) => prev.filter((skill) => skill.id !== id));
+      setLocalData((prev) => prev.filter((cert) => cert.id !== id));
       return Promise.resolve();
     } catch (error) {
       console.error("Error deleting item:", error);
@@ -57,30 +35,18 @@ export function CertificationList({
     }
   };
 
-  const DeleteSkill = async (
-    id: string,
-    handleDeleteItem: (id: string) => Promise<void>,
-    mutate: () => Promise<any>
-  ) => {
+  const deleteItemFromDatabase = async (id: string) => {
     try {
-      await handleDeleteItem(id);
-      // We don't actually call mutate here since this is local
-      return Promise.resolve();
+      await DeleteCertification(id, deleteItemFromLocalState, mutate);
     } catch (error) {
-      console.error("Error in DeleteSkill:", error);
-      return Promise.reject(error);
+      console.error("Error deleting item from database:", error);
     }
-  };
-
-  const mutate = async () => {
-    // Mock implementation of mutate
-    return Promise.resolve();
   };
 
   const onDeleteClick = async (certificationId: string) => {
     try {
       setIsDeleting(certificationId);
-      await DeleteSkill(certificationId, handleDeleteItem, mutate);
+      await deleteItemFromDatabase(certificationId);
     } catch (error) {
       console.error("Error in onDeleteClick:", error);
       alert("Failed to delete certification. Please try again.");
@@ -89,154 +55,82 @@ export function CertificationList({
     }
   };
 
+  const certificationInputChange = (id: string, field: string, value: any) => {
+    setLocalData((prev) =>
+      prev.map((cert) => (cert.id === id ? { ...cert, [field]: value } : cert))
+    );
+  };
+
   return (
     <div className="space-y-4">
-      {editedData.map((certification: Certification) => (
+      {localData.map((certification) => (
         <div
           key={certification.id}
           className="relative border-b pb-4 last:border-0"
         >
-          <div className="flex items-center gap-3">
-            <Badge className="h-8 w-8 rounded-full flex items-center justify-center p-0">
-              <CheckCircle className="h-4 w-4" />
-            </Badge>
-            <div className="flex-grow">
-              {isEditing ? (
-                <>
-                  <Input
-                    type="text"
-                    value={certification.name}
-                    onChange={(e) =>
-                      CertificationInputChange(
-                        certification.id,
-                        "name",
-                        e.target.value,
-                        handleInputChange
-                      )
-                    }
-                    className={`font-medium mb-2 w-full ${
-                      !certification.name ? "border-red-500" : ""
-                    }`}
-                    placeholder="Certification Name *"
-                    required
-                  />
-                  <Input
-                    type="text"
-                    value={certification.issuer}
-                    onChange={(e) =>
-                      CertificationInputChange(
-                        certification.id,
-                        "issuer",
-                        e.target.value,
-                        handleInputChange
-                      )
-                    }
-                    className={`text-sm mb-2 w-full ${
-                      !certification.issuer ? "border-red-500" : ""
-                    }`}
-                    placeholder="Issuing Organization *"
-                    required
-                  />
-                  <div className="flex gap-2 mb-2">
-                    <div className="w-1/2">
-                      <label className="text-xs text-muted-foreground">
-                        Issue Date *
-                      </label>
-                      <Input
-                        type="date"
-                        value={certification.issueDate}
-                        onChange={(e) =>
-                          CertificationInputChange(
-                            certification.id,
-                            "issueDate",
-                            e.target.value,
-                            handleInputChange
-                          )
-                        }
-                        className={`text-sm ${
-                          !certification.issueDate ? "border-red-500" : ""
-                        }`}
-                        max={getCurrentDate()}
-                        required
-                      />
-                    </div>
-                    <div className="w-1/2">
-                      <label className="text-xs text-muted-foreground">
-                        Expiration Date
-                      </label>
-                      <Input
-                        type="date"
-                        value={certification.expirationDate || ""}
-                        onChange={(e) =>
-                          CertificationInputChange(
-                            certification.id,
-                            "expirationDate",
-                            e.target.value,
-                            handleInputChange
-                          )
-                        }
-                        className="text-sm"
-                        max={getCurrentDate()}
-                      />
-                    </div>
-                  </div>
-                  <Input
-                    type="url"
-                    value={certification.credentialUrl || ""}
-                    onChange={(e) =>
-                      CertificationInputChange(
-                        certification.id,
-                        "credentialUrl",
-                        e.target.value,
-                        handleInputChange
-                      )
-                    }
-                    className="text-sm w-full"
-                    placeholder="Credential URL"
-                  />
-                </>
-              ) : (
-                <>
-                  <h4 className="font-medium">{certification.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {certification.issuer}
-                  </p>
-                  <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                    <span>Issued: {certification.issueDate}</span>
-                    {certification.expirationDate && (
-                      <span>Expires: {certification.expirationDate}</span>
-                    )}
-                  </div>
-                  {certification.credentialUrl && (
-                    <a
-                      href={certification.credentialUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-500 hover:underline mt-1 inline-block"
-                    >
-                      View Credential
-                    </a>
-                  )}
-                </>
+          {isEditing ? (
+            <div className="flex gap-2">
+              <div className="w-full">
+                <NameInput
+                  formData={certification}
+                  errors={{}}
+                  handleInputChange={(field, value) =>
+                    certificationInputChange(certification.id, field, value)
+                  }
+                />
+                <IssuerInput
+                  formData={certification}
+                  errors={{}}
+                  handleInputChange={(field, value) =>
+                    certificationInputChange(certification.id, field, value)
+                  }
+                />
+                <DateInputs
+                  formData={certification}
+                  errors={{}}
+                  handleInputChange={(field, value) =>
+                    certificationInputChange(certification.id, field, value)
+                  }
+                />
+                <UrlInput
+                  formData={certification}
+                  errors={{}}
+                  handleInputChange={(field, value) =>
+                    certificationInputChange(certification.id, field, value)
+                  }
+                />
+              </div>
+              <div className="flex items-start">
+                <DeleteButton
+                  onDeleteClick={onDeleteClick}
+                  isDeleting={isDeleting}
+                  skillId={certification.id}
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-lg font-medium">{certification.name}</h3>
+              <p className="text-sm text-gray-600">{certification.issuer}</p>
+              <p className="text-sm text-gray-600">
+                Issued: {new Date(certification.issueDate).toLocaleDateString()}
+                {certification.expirationDate &&
+                  ` • Expires: ${new Date(
+                    certification.expirationDate
+                  ).toLocaleDateString()}`}
+              </p>
+              {certification.credentialUrl && (
+                <a
+                  href={certification.credentialUrl}
+                  className="text-sm text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View credential
+                </a>
               )}
             </div>
-
-            {isEditing && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDeleteClick(certification.id)}
-                className="text-red-500"
-                disabled={isDeleting === certification.id}
-              >
-                {isDeleting === certification.id ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-          </div>
+          )}
         </div>
       ))}
     </div>

@@ -93,14 +93,4 @@ export const userProfileSchema = z.object({
   isAvailable: z.boolean().optional(),
 });
 
-// export type UserProfileData is a type that is used to define the type of the user profile data
-// we can use this type to validate the data before saving it to the database, client, ai or user
-// for example: const userProfileData:
-// UserProfileData = {
-//   name: "John Doe",
-//   email: "john.doe@example.com",
-//   phone: "+1234567890",
-//   bio: "I am a software engineer",
-//   isAvailable: true,
-// };
 export type UserProfileData = z.infer<typeof userProfileSchema>;

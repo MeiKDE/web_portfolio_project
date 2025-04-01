@@ -1,7 +1,7 @@
 import { Certification } from "@/app/profile/components/certifications/Interface";
 import { Input } from "@/components/ui/input";
 import { getCurrentDate } from "@/app/hooks/date-utils";
-import React from "react";
+import React, { JSX } from "react";
 
 interface IssueDateInputProps {
   formData: Partial<Certification>;
@@ -9,7 +9,7 @@ interface IssueDateInputProps {
   handleInputChange: (field: keyof Certification, value: string) => void;
 }
 
-export function IssueDateInput({
+export function DateInputs({
   formData,
   errors,
   handleInputChange,

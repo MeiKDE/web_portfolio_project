@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Certification } from "@/app/profile/components/certifications/Interface";
-import React from "react";
+import React, { JSX } from "react";
 
 interface CertificateNameProps {
   formData: Partial<Certification>;
@@ -8,7 +8,7 @@ interface CertificateNameProps {
   handleInputChange: (field: keyof Certification, value: string) => void;
 }
 
-export function CertificateNameInput({
+export function NameInput({
   formData,
   errors,
   handleInputChange,

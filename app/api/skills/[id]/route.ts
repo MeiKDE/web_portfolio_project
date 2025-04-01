@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
+import { handleApiError } from "@/app/lib/api/error-handler";
 
 // Define schema for validation
 const skillUpdateSchema = z.object({
@@ -59,63 +60,52 @@ export async function PUT(
 }
 
 // DELETE a skill
-export const DELETE = withAuth(
+export const DELETE = withOwnership(
   async (
     request: NextRequest,
     { params }: { params: { id: string } },
     user
   ) => {
     try {
-      const skillId = params.id;
-      console.log("Attempting to delete skill:", {
-        skillId,
+      // Log the user and skill IDs for debugging
+      console.log("Delete attempt:", {
         userId: user.id,
+        skillId: params.id,
       });
 
-      // First, check if the skill exists
+      // First verify the skill exists and belongs to the user
       const skill = await prisma.skill.findUnique({
-        where: { id: skillId },
-        select: {
-          id: true,
-          userId: true,
-        },
+        where: { id: params.id },
+        select: { id: true, userId: true },
       });
 
       console.log("Found skill:", skill);
 
       if (!skill) {
-        console.log("Skill not found in database");
         return errorResponse("Skill not found", 404);
       }
 
-      // Check if the skill belongs to the authenticated user
       if (skill.userId !== user.id) {
-        console.log("Unauthorized: skill belongs to different user", {
+        console.log("Ownership mismatch:", {
           skillUserId: skill.userId,
-          requestingUserId: user.id,
+          requestUserId: user.id,
         });
-        return errorResponse("Unauthorized to delete this skill", 403);
+        return errorResponse("Not authorized to access this skill", 403);
       }
 
-      // Delete the skill
       const deletedSkill = await prisma.skill.delete({
-        where: { id: skillId },
+        where: { id: params.id },
       });
-
-      console.log("Successfully deleted skill:", deletedSkill);
 
       return successResponse({
         message: "Skill deleted successfully",
         deletedSkill,
       });
     } catch (error) {
-      console.error("Error in DELETE /api/skills/[id]:", error);
-      return errorResponse(
-        error instanceof Error ? error.message : "Failed to delete skill",
-        500
-      );
+      return handleApiError(error);
     }
-  }
+  },
+  "skill"
 );
 
 // POST a new skill for a specific user

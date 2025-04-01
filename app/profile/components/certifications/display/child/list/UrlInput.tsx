@@ -1,12 +1,13 @@
 import { Certification } from "@/app/profile/components/certifications/Interface";
 import { Input } from "@/components/ui/input";
+import React, { JSX } from "react";
 
 interface CredentialUrlInputProps {
   formData: Partial<Certification>;
   errors: Record<string, string>;
   handleInputChange: (field: keyof Certification, value: string) => void;
 }
-export function CredentialUrlInput({
+export function UrlInput({
   formData,
   errors,
   handleInputChange,

@@ -10,6 +10,7 @@ import { DoneButton } from "./ui/DoneButton";
 import { FormValidation } from "./skills/add/child/new-skill/FormValidation";
 import { NewSkill } from "./skills/add/NewSkill";
 import { SkillList } from "./skills/display/List";
+import { skillSchema } from "@/app/hooks/validations";
 
 interface SkillsProps {
   userId: string;
@@ -141,13 +142,16 @@ export default function Skills({ userId }: SkillsProps) {
         : [editedData];
 
       for (const item of itemsToUpdate) {
+        // Validate the item against the skillSchema
+        const validatedItem = skillSchema.safeParse(item);
+
         const response = await fetch(`${endpoint}/${item.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(item),
+          body: JSON.stringify(validatedItem.data), // Send the validated data
         });
-        console.log("ln150: response", response);
+        console.log("ln161: response", response);
         // update the data
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));

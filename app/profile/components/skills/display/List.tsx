@@ -4,8 +4,9 @@ import { DeleteSkill } from "@/app/profile/components/skills/DeleteSkill";
 import { NameInput } from "@/app/profile/components/skills/display/child/list/nameInput";
 import { CategoryInput } from "@/app/profile/components/skills/display/child/list/categoryInput";
 import { ProficiencyInput } from "@/app/profile/components/skills/display/child/list/proficiencyInput";
-import { DeleteButton } from "@/app/profile/components/skills/add/child/new-skill/deleteBtn";
-import { SkillsList } from "@/app/profile/components/skills/add/child/new-skill/skillsList";
+import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
+import { SkillsList } from "@/app/profile/components/skills/display/child/list/skillsList";
+
 interface SkillListProps {
   editedData: Skill[];
   isEditing: boolean;
