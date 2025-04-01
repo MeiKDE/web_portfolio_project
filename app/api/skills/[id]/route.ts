@@ -60,37 +60,25 @@ export async function PUT(
 }
 
 // DELETE a skill
-export const DELETE = withOwnership(
+export const DELETE = withAuth(
   async (
     request: NextRequest,
     { params }: { params: { id: string } },
     user
   ) => {
     try {
-      // Log the user and skill IDs for debugging
-      console.log("Delete attempt:", {
-        userId: user.id,
-        skillId: params.id,
-      });
-
       // First verify the skill exists and belongs to the user
       const skill = await prisma.skill.findUnique({
         where: { id: params.id },
         select: { id: true, userId: true },
       });
 
-      console.log("Found skill:", skill);
-
       if (!skill) {
         return errorResponse("Skill not found", 404);
       }
 
       if (skill.userId !== user.id) {
-        console.log("Ownership mismatch:", {
-          skillUserId: skill.userId,
-          requestUserId: user.id,
-        });
-        return errorResponse("Not authorized to access this skill", 403);
+        return errorResponse("Not authorized to delete this skill", 403);
       }
 
       const deletedSkill = await prisma.skill.delete({
@@ -104,8 +92,7 @@ export const DELETE = withOwnership(
     } catch (error) {
       return handleApiError(error);
     }
-  },
-  "skill"
+  }
 );
 
 // POST a new skill for a specific user

@@ -1,6 +1,7 @@
 // Handler for deleting a skill
 export const DeleteSkill = async (
   id: string,
+  userId: string,
   handleDeleteItem: (id: string) => Promise<void>,
   mutate: () => Promise<any>
 ) => {
@@ -11,7 +12,12 @@ export const DeleteSkill = async (
         "Content-Type": "application/json",
       },
       credentials: "include",
+      body: JSON.stringify({ userId }),
     });
+
+    console.log("ln16: response", response);
+    console.log("ln17: userId", userId);
+    console.log("ln18: id", id);
 
     if (!response.ok) {
       const errorData = await response.json();

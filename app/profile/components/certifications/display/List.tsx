@@ -5,7 +5,7 @@ import { NameInput } from "@/app/profile/components/certifications/display/child
 import { IssuerInput } from "@/app/profile/components/certifications/display/child/list/IssuerInput";
 import { DateInputs } from "@/app/profile/components/certifications/display/child/list/DateInputs";
 import { UrlInput } from "@/app/profile/components/certifications/display/child/list/UrlInput";
-import { DeleteButton } from "@/app/profile/components/ui";
+import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
 
 interface CertificationListProps {
   editedData: Certification[];

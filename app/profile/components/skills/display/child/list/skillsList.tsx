@@ -1,5 +1,5 @@
 import { Lightbulb } from "lucide-react";
-import React from "react";
+import React, { JSX } from "react";
 
 interface Skill {
   name: string;

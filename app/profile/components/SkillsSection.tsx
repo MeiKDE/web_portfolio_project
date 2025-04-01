@@ -142,8 +142,11 @@ export default function Skills({ userId }: SkillsProps) {
         : [editedData];
 
       for (const item of itemsToUpdate) {
-        // Validate the item against the skillSchema
-        const validatedItem = skillSchema.safeParse(item);
+        // Add userId to the request to verify ownership
+        const validatedItem = skillSchema.safeParse({
+          ...item,
+          userId: userId, // Add userId from props
+        });
 
         const response = await fetch(`${endpoint}/${item.id}`, {
           method: "PUT",
@@ -219,6 +222,7 @@ export default function Skills({ userId }: SkillsProps) {
                 editedData={editedData}
                 isEditing={isEditing}
                 mutate={mutate}
+                userId={userId}
               />
             ) : (
               <div className="text-center py-4 text-muted-foreground">

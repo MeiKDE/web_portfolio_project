@@ -6,14 +6,21 @@ import { CategoryInput } from "@/app/profile/components/skills/display/child/lis
 import { ProficiencyInput } from "@/app/profile/components/skills/display/child/list/proficiencyInput";
 import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
 import { SkillsList } from "@/app/profile/components/skills/display/child/list/skillsList";
+import React from "react";
 
 interface SkillListProps {
   editedData: Skill[];
   isEditing: boolean;
   mutate: () => Promise<any>;
+  userId: string;
 }
 
-export function SkillList({ editedData, isEditing, mutate }: SkillListProps) {
+export function SkillList({
+  editedData,
+  isEditing,
+  mutate,
+  userId,
+}: SkillListProps) {
   const [localData, setLocalData] = useState<Skill[]>(editedData);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export function SkillList({ editedData, isEditing, mutate }: SkillListProps) {
   // Delete item from the database
   const deleteItemFromDatabase = async (id: string) => {
     try {
-      await DeleteSkill(id, deleteItemFromLocalState, mutate);
+      await DeleteSkill(id, userId, deleteItemFromLocalState, mutate);
     } catch (error) {
       console.error("Error deleting item from database:", error);
     }

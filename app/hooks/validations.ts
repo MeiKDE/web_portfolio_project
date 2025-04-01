@@ -38,6 +38,7 @@ export const educationSchema = z.object({
 
 // Skill validation schema
 export const skillSchema = z.object({
+  userId: z.string().optional(),
   name: z.string().min(1, "Name is required"),
   category: z.string().optional(),
   proficiencyLevel: z.number().min(1).max(10).optional(),
