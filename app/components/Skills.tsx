@@ -17,13 +17,7 @@ interface SkillsProps {
 }
 
 export default function Skills({ userId }: SkillsProps) {
-  const defaultSkillObject = {
-    name: "",
-    proficiencyLevel: 3,
-    category: "Frontend",
-  };
   const [isAddingNewItem, setIsAddingNewItem] = useState(false);
-  const [skillObject, setSkillObject] = useState(defaultSkillObject);
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [skillsData, setSkillsData] = useState<Skill[]>([]);
@@ -32,10 +26,6 @@ export default function Skills({ userId }: SkillsProps) {
   const [isSkillValidMap, setIsSkillValidMap] = useState<Map<string, boolean>>(
     new Map()
   );
-
-  // This is used to check if the user is deleting a skill
-  const isDeleting = !isAddingNewItem;
-
   // This is used to fetch the skills data from the database
   const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
     `/api/users/${userId}/skills`
@@ -48,15 +38,8 @@ export default function Skills({ userId }: SkillsProps) {
     }
   }, [data]);
 
-  // Set setIsAddingNewItem to true to add a new skill
-  const onAddNewSkill = async () => {
-    try {
-      setIsAddingNewItem(true);
-    } catch (error) {
-      console.error("Error adding new skill:", error);
-      toast.error("Error adding new skill");
-    }
-  };
+  // This is used to add a new skill
+  const onAddNewSkill = () => setIsAddingNewItem(true);
 
   // Delete a skill by id
   const onDeleteSkillList = async (id: string | null) => {
