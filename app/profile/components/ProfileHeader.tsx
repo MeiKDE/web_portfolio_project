@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { userProfileSchema } from "@/app/hooks/validations";
-import ProfileImage from "@/app/profile/components/ProfileImageUpload";
+import { ProfileImageUpload } from "@/app/profile/components/ProfileImageUpload";
 import PhoneInput from "@/components/PhoneInput";
 import { AIAssistantButton } from "@/app/ai/components/AIAssistantButton";
 
@@ -30,7 +30,7 @@ interface UserData {
   isAvailable?: boolean;
 }
 
-export default function User({ userId }: UserProps) {
+export default function ProfileHeader({ userId }: UserProps) {
   console.log("ln34: userId", userId);
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -384,7 +384,7 @@ export default function User({ userId }: UserProps) {
           <div>User not found</div>
         ) : (
           <div className="flex flex-col md:flex-row gap-6">
-            <ProfileImage
+            <ProfileImageUpload
               user={editedUser || user}
               editable={isEditing}
               onImageChange={(imageUrl) => handleInputChange("image", imageUrl)}

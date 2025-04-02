@@ -1,4 +1,4 @@
-import { Certification } from "@/app/profile/components/certifications/Interface";
+import { Certification } from "@/app/profile/components/Certifications/certifications.types";
 
 interface FormValidationProps {
   certification: Certification;

@@ -1,9 +1,9 @@
-import { CancelSave } from "../../ui/CancelSave";
+import { CancelSave } from "@/app/profile/components/ui/CancelSave";
 import { useState } from "react";
-import { NameInput } from "./child/new-skill/nameInput";
-import { CategoryInput } from "./child/new-skill/categoryInput";
-import { ProficiencyInput } from "./child/new-skill/proficiencyInput";
-import { Skill } from "../Interface";
+import { NameInput } from "@/app/profile/components/Skills/NewSkill/NameInput";
+import { CategoryInput } from "@/app/profile/components/Skills/NewSkill/CategoryInput";
+import { ProficiencyInput } from "@/app/profile/components/Skills/NewSkill/ProficiencyInput";
+import { Skill } from "@/app/profile/components/Skills/skills.types";
 import React from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import React from "react";
+import React, { JSX } from "react";
 
 interface DeleteButtonProps {
   onDeleteClick: (id: string) => void;

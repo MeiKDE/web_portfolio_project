@@ -1,9 +1,10 @@
-import { NameInput } from "@/app/profile/components/skills/display/child/list/nameInput";
-import { CategoryInput } from "@/app/profile/components/skills/display/child/list/categoryInput";
-import { ProficiencyInput } from "@/app/profile/components/skills/display/child/list/proficiencyInput";
+import { NameInput } from "@/app/profile/components/Skills/List/nameInput";
+import { CategoryInput } from "@/app/profile/components/Skills/List/categoryInput";
+import { ProficiencyInput } from "@/app/profile/components/Skills/List/proficiencyInput";
 import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
-import { Skill } from "@/app/profile/components/skills/Interface";
+import { Skill } from "@/app/profile/components/Skills/Interface";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
+import React from "react";
 
 interface SkillFormProps {
   skill: Skill;

@@ -1,5 +1,5 @@
 // Handler for deleting a certification
-export const DeleteCertification = async (
+export const deleteCertification = async (
   id: string,
   handleDeleteItem: (id: string) => Promise<void>,
   mutate: () => Promise<any>

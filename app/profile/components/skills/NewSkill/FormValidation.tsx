@@ -1,4 +1,4 @@
-import { Skill } from "../../../Interface";
+import { Skill } from "@/app/profile/components/Skills/skills.types";
 import React from "react";
 
 interface FormValidationProps {

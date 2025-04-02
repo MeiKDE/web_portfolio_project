@@ -1,10 +1,10 @@
-import { Certification } from "@/app/profile/components/certifications/Interface";
+import { Certification } from "@/app/profile/components/Certifications/certifications.types";
 import { useState, useEffect } from "react";
-import { DeleteCertification } from "@/app/profile/components/certifications/DeleteCertification";
-import { NameInput } from "@/app/profile/components/certifications/display/child/list/NameInput";
-import { IssuerInput } from "@/app/profile/components/certifications/display/child/list/IssuerInput";
-import { DateInputs } from "@/app/profile/components/certifications/display/child/list/DateInputs";
-import { UrlInput } from "@/app/profile/components/certifications/display/child/list/UrlInput";
+import { deleteCertification } from "@/app/profile/components/Certifications/DeleteCertification";
+import { NameInput } from "@/app/profile/components/Certifications/List/NameInput";
+import { IssuerInput } from "@/app/profile/components/Certifications/List/IssuerInput";
+import { DateInputs } from "@/app/profile/components/Certifications/List/DateInputs";
+import { UrlInput } from "@/app/profile/components/Certifications/List/UrlInput";
 import { DeleteButton } from "@/app/profile/components/ui/DeleteBtn";
 
 interface CertificationListProps {
@@ -37,7 +37,7 @@ export function CertificationList({
 
   const deleteItemFromDatabase = async (id: string) => {
     try {
-      await DeleteCertification(id, deleteItemFromLocalState, mutate);
+      await deleteCertification(id, deleteItemFromLocalState, mutate);
     } catch (error) {
       console.error("Error deleting item from database:", error);
     }

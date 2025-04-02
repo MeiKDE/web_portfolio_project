@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skill } from "./skills/Interface";
+import { Skill } from "./Skills/Interface";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "./ui/AddButton";
 import { EditButton } from "./ui/EditButton";
 import { DoneButton } from "./ui/DoneButton";
-import { NewSkill } from "./skills/add/NewSkill";
-import { SkillList } from "./skills/display/List";
+import { NewSkill } from "@/app/profile/components/Skills/NewSkill";
+import { SkillList } from "@/app/profile/components/Skills/List";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { toast } from "sonner";
+
 interface SkillsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
 }
@@ -50,14 +52,32 @@ export default function Skills({ userId }: SkillsProps) {
     setIsEditing(false);
     setIsAddingNew(false);
 
-    const response = await fetch(`/api/skills/${userId}`, {
-      method: "PUT",
-      body: JSON.stringify(editedData),
-    });
+    try {
+      // Convert edited data array to an object
+      const formattedSkills = editedData.map((skill) => ({
+        name: skill.name,
+        category: skill.category || "General",
+        proficiencyLevel: skill.proficiencyLevel || 1,
+      }));
 
-    const data = await response.json();
-    console.log("data", data);
-    mutate();
+      const response = await fetch(`/api/skills/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formattedSkills),
+      });
+
+      const data = await response.json();
+      console.log("Skills updated successfully:", data);
+      mutate();
+    } catch (error) {
+      console.error("Error updating skills:", error);
+      // You might want to show an error message to the user here
+      toast.error("Error updating skills");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
@@ -109,7 +129,11 @@ export default function Skills({ userId }: SkillsProps) {
               /* When not editing, the Edit button will be shown */
               isDeleting && (
                 <>
-                  <EditButton onClick={() => onDeleteSkillList(null)} />
+                  <EditButton
+                    onClick={() => {
+                      setIsEditing(true);
+                    }}
+                  />
                 </>
               )
             )}
@@ -130,6 +154,7 @@ export default function Skills({ userId }: SkillsProps) {
                 editedData={editedData.filter(
                   (skill) => skill.userId === userId
                 )}
+                onDeleteSkillList={onDeleteSkillList}
                 isEditing={isEditing} // Whether the user is editing the skill
                 mutate={mutate} // Refresh the data
                 userId={userId} // The user ID of the current user

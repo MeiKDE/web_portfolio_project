@@ -13,7 +13,7 @@ interface UserData {
   image?: string;
 }
 
-interface ProfileImageProps {
+interface ProfileImageUploadProps {
   user: UserData | null;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -21,13 +21,13 @@ interface ProfileImageProps {
   onImageChange?: (imageUrl: string) => void;
 }
 
-const ProfileImage = ({
+export const ProfileImageUpload = ({
   user,
   size = "md",
   className = "",
   editable = false,
   onImageChange,
-}: ProfileImageProps) => {
+}: ProfileImageUploadProps) => {
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState(user?.image || "");
   const [imageInputType, setImageInputType] = useState<"url" | "file">("url");
@@ -171,5 +171,3 @@ const ProfileImage = ({
     </div>
   );
 };
-
-export default ProfileImage;

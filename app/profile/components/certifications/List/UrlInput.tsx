@@ -1,4 +1,4 @@
-import { Certification } from "@/app/profile/components/certifications/Interface";
+import { Certification } from "@/app/profile/components/Certifications/certifications.types";
 import { Input } from "@/components/ui/input";
 import React from "react";
 

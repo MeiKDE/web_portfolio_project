@@ -1,14 +1,15 @@
-import { Skill } from "@/app/profile/components/skills/Interface";
+import { Skill } from "@/app/profile/components/Skills/Interface";
 import { useState, useEffect } from "react";
-import { SkillsList } from "@/app/profile/components/skills/display/child/list/skillsList";
-import React from "react";
-import { SkillForm } from "@/app/profile/components/skills/display/child/list/skillForm";
+import { SkillItem } from "@/app/profile/components/Skills/List/skillItem";
+import React, { JSX } from "react";
+import { SkillForm } from "@/app/profile/components/Skills/List/skillForm";
 
 interface SkillListProps {
   editedData: Skill[];
   isEditing: boolean;
   mutate: () => Promise<any>;
   userId: string;
+  onDeleteSkillList: (id: string) => void;
 }
 
 export function SkillList({
@@ -16,6 +17,7 @@ export function SkillList({
   isEditing,
   mutate,
   userId,
+  onDeleteSkillList,
 }: SkillListProps) {
   const onDeleteClick = (id: string) => {
     console.log(id);
@@ -27,9 +29,10 @@ export function SkillList({
 
   return (
     <div className="space-y-4">
+      {/* Display the list of skills */}
       {editedData.map((skill: Skill) => (
         <div key={skill.id} className="relative border-b pb-4 last:border-0">
-          {/* Skill content - editable or readonly */}
+          {/* If the user is editing the skill, show the skill form */}
           {isEditing ? (
             <SkillForm
               skill={{
@@ -37,11 +40,12 @@ export function SkillList({
                 category: skill.category || "",
                 proficiencyLevel: skill.proficiencyLevel || 1,
               }}
-              onDeleteClick={onDeleteClick}
+              onDeleteClick={onDeleteSkillList}
               isDeleting={isDeleting}
             />
           ) : (
-            <SkillsList skill={skill} />
+            //If the user is not editing the skill, show the skill item
+            <SkillItem skill={skill} />
           )}
         </div>
       ))}
