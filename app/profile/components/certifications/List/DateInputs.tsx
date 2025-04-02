@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { Certification } from "@/app/profile/components/Certifications/certifications.types";
 import { Input } from "@/components/ui/input";
-import { getCurrentDate } from "@/app/hooks/date-utils";
+import { getCurrentDate } from "@/app/lib/utils/date-utils";
 import React from "react";
 
 interface IssueDateInputProps {

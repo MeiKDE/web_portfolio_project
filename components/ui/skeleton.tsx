@@ -1,4 +1,4 @@
-import { cn } from "@/app/hooks/utils";
+import { cn } from "@/app/lib/utils/utils";
 function Skeleton({
   className,
   ...props

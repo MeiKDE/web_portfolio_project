@@ -27,10 +27,10 @@ import {
   formatDateForDisplay,
   getCurrentDate,
   calculateDuration,
-} from "@/app/hooks/date-utils";
-import { AddButton } from "./ui/AddButton";
-import { EditButton } from "./ui/EditButton";
-import { DoneButton } from "./ui/DoneButton";
+} from "@/app/lib/utils/date-utils";
+import { AddButton } from "@/app/profile/components/ui/AddButton";
+import { EditButton } from "@/app/profile/components/ui/EditButton";
+import { DoneButton } from "@/app/profile/components/ui/DoneButton";
 
 interface Experience {
   id: string;

@@ -10,7 +10,7 @@ import {
   formatDateForInput,
   calculateDuration,
   getCurrentDate,
-} from "@/app/hooks/date-utils";
+} from "@/app/lib/utils/date-utils";
 
 interface Experience {
   id: string;

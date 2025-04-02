@@ -11,7 +11,7 @@ import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { userProfileSchema } from "@/app/hooks/validations";
 import { ProfileImageUpload } from "@/app/profile/components/ProfileImageUpload";
 import PhoneInput from "@/components/PhoneInput";
-import { AIAssistantButton } from "@/app/ai/components/AIAssistantButton";
+import { AIAssistantButton } from "@/app/profile/components/ai/AIAssistantButton";
 
 interface UserProps {
   userId: string;

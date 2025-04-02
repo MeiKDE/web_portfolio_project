@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { errorResponse, successResponse } from "./api-helpers";
 import { ZodError } from "zod";
 
@@ -46,7 +45,7 @@ export function handleApiError(error: unknown) {
       formattedErrors[field].push(err.message);
     });
 
-    return errorResponse("Validation failed", formattedErrors);
+    return errorResponse("Validation failed", 400, formattedErrors);
   }
 
   // Handle other types of errors
@@ -79,9 +78,9 @@ export class ApiError extends Error {
  */
 export function handleApiErrorInstance(error: ApiError) {
   return errorResponse(
+    error.message,
     error.statusCode,
-    error.message +
-      (error.details ? ` (Details: ${JSON.stringify(error.details)})` : "")
+    error.details ? { details: error.details } : undefined
   );
 }
 

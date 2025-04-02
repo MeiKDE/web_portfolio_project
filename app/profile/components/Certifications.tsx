@@ -10,9 +10,11 @@ import { DoneButton } from "@/app/profile/components/ui/DoneButton";
 import { FormValidation } from "@/app/profile/components/Certifications/NewCertification/FormValidation";
 import { NewCertification } from "@/app/profile/components/Certifications/NewCertification";
 import { CertificationList } from "@/app/profile/components/Certifications/List";
-import { formatCertificationsForUI } from "@/app/hooks/date-utils";
+import {
+  formatDateForDatabase,
+  formatCertificationsForUI,
+} from "@/app/lib/utils/date-utils";
 import { certificationSchema } from "@/app/hooks/validations";
-import { formatDateForDatabase } from "@/app/hooks/date-utils";
 
 interface CertificationsProps {
   userId: string;
