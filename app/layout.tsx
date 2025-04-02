@@ -1,7 +1,7 @@
-import AuthProvider from "@/components/auth/AuthProvider";
+import AuthProvider from "@/app/components/auth/AuthProvider";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
+import Navbar from "@/app/components/layout/Navbar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";

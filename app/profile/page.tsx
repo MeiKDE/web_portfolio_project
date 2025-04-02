@@ -12,13 +12,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Edit, Lightbulb, CheckCircle, X, Upload } from "lucide-react";
 
 // Import profile components - UPDATED PATHS
-import ProfileHeader from "@/app/profile/components/ProfileHeader";
-import ExperienceSection from "@/app/profile/components/Experiences";
-import EducationSection from "@/app/profile/components/Educations";
-import SkillsSection from "@/app/profile/components/Skills";
-import CertificationsSection from "@/app/profile/components/Certifications";
-import SocialLinksSection from "@/app/profile/components/SocialLinks";
-import ResumeUpload from "@/components/common/ResumeUpload"; // Keep shared version
+import ProfileHeader from "@/app/components/ProfileHeader";
+import ExperienceSection from "@/app/components/Experiences";
+import EducationSection from "@/app/components/Educations";
+import SkillsSection from "@/app/components/Skills";
+import CertificationsSection from "@/app/components/Certifications";
+import SocialLinksSection from "@/app/components/SocialLinks";
+import ResumeUpload from "@/app/components/common/ResumeUpload"; // Keep shared version
 
 // Add this near the top of the file
 // we need below interface to be able to use the user profile data in the profile page

@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
-import ResumeUpload from "@/components/common/ResumeUpload";
+import ResumeUpload from "@/app/components/common/ResumeUpload";
 import { redirect } from "next/navigation";
 import { getUserProfile } from "@/app/lib/services/user-service";
 
