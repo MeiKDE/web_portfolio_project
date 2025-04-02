@@ -9,19 +9,25 @@ import React from "react";
 interface SkillFormProps {
   skill: Skill;
   onDeleteClick: (id: string) => void;
-  isDeleting: string | null;
+  onFormChange: (
+    id: string,
+    field: string,
+    value: string,
+    isFormValid: boolean
+  ) => void;
 }
 
 export const SkillForm = ({
   skill,
   onDeleteClick,
-  isDeleting,
+  onFormChange,
 }: SkillFormProps) => {
   const formValues = {
     name: skill.name,
     category: skill.category,
     proficiencyLevel: skill.proficiencyLevel,
   };
+
   const {
     values,
     errors,
@@ -43,10 +49,11 @@ export const SkillForm = ({
     <div className="flex gap-2">
       <div className="w-full">
         <NameInput
-          values={values}
-          handleChange={(field, value) =>
-            handleChange(field as keyof typeof values, value)
-          }
+          values={skill}
+          handleChange={(field, value) => {
+            onFormChange(skill.id, field, value, validateForm());
+            handleChange(field as keyof typeof values, value);
+          }}
           handleBlur={(field) => handleBlur(field as keyof typeof values)}
           errors={errors}
           touched={touched}
@@ -55,10 +62,11 @@ export const SkillForm = ({
           <p className="text-red-500 text-xs mt-1">{errors.name}</p>
         )}
         <CategoryInput
-          values={values}
-          handleChange={(field, value) =>
-            handleChange(field as keyof typeof values, value)
-          }
+          values={skill}
+          handleChange={(field, value) => {
+            onFormChange(skill.id, field, value, validateForm());
+            handleChange(field as keyof typeof values, value);
+          }}
           handleBlur={(field) => handleBlur(field as keyof typeof values)}
           errors={errors}
           touched={touched}
@@ -67,10 +75,11 @@ export const SkillForm = ({
           <p className="text-red-500 text-xs mt-1">{errors.category}</p>
         )}
         <ProficiencyInput
-          values={values}
-          handleChange={(field, value) =>
-            handleChange(field as keyof typeof values, value)
-          }
+          values={skill}
+          handleChange={(field, value) => {
+            onFormChange(skill.id, field, value, validateForm());
+            handleChange(field as keyof typeof values, value);
+          }}
           handleBlur={(field) => handleBlur(field as keyof typeof values)}
           errors={errors}
           touched={touched}
@@ -80,11 +89,7 @@ export const SkillForm = ({
         )}
       </div>
       <div className="flex items-start">
-        <DeleteButton
-          onDeleteClick={onDeleteClick}
-          isDeleting={isDeleting}
-          skillId={skill.id}
-        />
+        <DeleteButton onDeleteClick={() => onDeleteClick(skill.id)} />
       </div>
     </div>
   );

@@ -4,4 +4,5 @@ export interface Skill {
   proficiencyLevel: number;
   category: string;
   userId: string;
+  changed?: boolean;
 }

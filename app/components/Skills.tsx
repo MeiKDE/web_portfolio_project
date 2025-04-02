@@ -7,104 +7,176 @@ import { AddButton } from "@/app/components/ui/AddButton";
 import { EditButton } from "@/app/components/ui/EditButton";
 import { DoneButton } from "@/app/components/ui/DoneButton";
 import { NewSkill } from "@/app/components/Skills/NewSkill";
-import { SkillList } from "@/app/components/Skills/List";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
+import { SkillItem } from "./Skills/List/SkillItem";
+import { SkillForm } from "./Skills/List/SkillForm";
 
 interface SkillsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
 }
 
 export default function Skills({ userId }: SkillsProps) {
-  const defaultSkillValues = {
+  const defaultSkillObject = {
     name: "",
     proficiencyLevel: 3,
     category: "Frontend",
   };
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [values, setValues] = useState(defaultSkillValues);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editedData, setEditedData] = useState<Skill[]>([]);
+  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
+  const [skillObject, setSkillObject] = useState(defaultSkillObject);
+  const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
+  const [skillsData, setSkillsData] = useState<Skill[]>([]);
+  const [formData, setFormData] = useState<Skill[]>([]);
+  const [changedSkillId, setChangedSkillId] = useState<Set<string>>(new Set());
+  const [isSkillValidMap, setIsSkillValidMap] = useState<Map<string, boolean>>(
+    new Map()
+  );
 
-  const isDeleting = !isAddingNew;
+  // This is used to check if the user is deleting a skill
+  const isDeleting = !isAddingNewItem;
 
-  const onClickAddNew = () => {
-    setIsAddingNew(true);
-    setValues(values);
+  // This is used to fetch the skills data from the database
+  const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
+    `/api/users/${userId}/skills`
+  );
+
+  useEffect(() => {
+    if (data) {
+      setSkillsData(data);
+      setFormData(data);
+    }
+  }, [data]);
+
+  // Set setIsAddingNewItem to true to add a new skill
+  const onAddNewSkill = async () => {
+    try {
+      setIsAddingNewItem(true);
+    } catch (error) {
+      console.error("Error adding new skill:", error);
+      toast.error("Error adding new skill");
+    }
   };
 
+  // Delete a skill by id
   const onDeleteSkillList = async (id: string | null) => {
-    setIsEditing(true);
-    setIsAddingNew(false);
+    try {
+      console.log("Deleting skill:", id);
 
-    const response = await fetch(`/api/skills/${id}`, {
-      method: "DELETE",
-    });
+      setIsSubmittingItem(true);
 
-    const data = await response.json();
-    console.log("data", data);
-    mutate();
+      const response = await fetch(`/api/skills/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete skill");
+      }
+
+      const data = await response.json();
+      console.log("data", data);
+    } catch (error) {
+      console.error("Error deleting skill:", error);
+      toast.error("Error deleting skill");
+    } finally {
+      mutate(); // Refresh the data thus re-fetches the skills data by calling the useFetchData hook again
+      setIsSubmittingItem(false);
+    }
   };
 
+  const updateSkill = async (id: string, skillObject: Skill) => {
+    const response = await fetch(`/api/skills/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: skillObject.name,
+        category: skillObject.category,
+        proficiencyLevel: skillObject.proficiencyLevel,
+      }),
+    });
+  };
+
+  // Update a skill by id
   const onUpdateSkillList = async () => {
-    setIsSubmitting(true);
-    setIsEditing(false);
-    setIsAddingNew(false);
+    setIsSubmittingItem(true);
+    setIsEditingMode(true);
 
     try {
       // Convert edited data array to an object
-      const formattedSkills = editedData.map((skill) => ({
-        name: skill.name,
-        category: skill.category || "General",
-        proficiencyLevel: skill.proficiencyLevel || 1,
-      }));
-
-      const response = await fetch(`/api/skills/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formattedSkills),
+      formData.forEach((skill) => {
+        if (changedSkillId.has(skill.id)) {
+          updateSkill(skill.id, skill);
+        }
       });
-
-      const data = await response.json();
-      console.log("Skills updated successfully:", data);
-      mutate();
     } catch (error) {
       console.error("Error updating skills:", error);
       // You might want to show an error message to the user here
       toast.error("Error updating skills");
     } finally {
-      setIsSubmitting(false);
+      mutate();
+      setIsSubmittingItem(false);
+      setIsEditingMode(false);
     }
   };
-
-  const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
-    `/api/skills/${userId}`
-  );
 
   // console.log("data", data);
 
-  const onSaveNewSkill = async (values: Skill) => {
-    setIsSubmitting(true);
-    setIsAddingNew(false);
+  const onSaveNewSkill = async (skillObject: Skill) => {
+    try {
+      setIsSubmittingItem(true);
+      setIsAddingNewItem(false);
 
-    const response = await fetch(`/api/skills/`, {
-      method: "POST",
-      body: JSON.stringify(values),
-    });
+      const response = await fetch(`/api/skills/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(skillObject),
+      });
 
-    const data = await response.json();
-    console.log("data", data);
-    mutate();
+      if (!response.ok) {
+        throw new Error("Failed to add skill");
+      }
+
+      const data = await response.json();
+      console.log("data", data);
+      toast.success("Skill added successfully");
+
+      setIsSubmittingItem(false);
+    } catch (error) {
+      console.error("Error adding new skill:", error);
+      toast.error("Error adding new skill");
+    } finally {
+      mutate(); // Refresh the data
+      setIsSubmittingItem(false);
+    }
   };
 
-  useEffect(() => {
-    if (data) {
-      setEditedData(data);
-    }
-  }, [data]);
+  const onSkillChange = (
+    id: string,
+    field: string,
+    value: string,
+    isFormValid: boolean
+  ) => {
+    setFormData((prev) => {
+      return prev.map((skill) => {
+        setIsSkillValidMap((prev) => {
+          prev.set(id, isFormValid);
+          return prev;
+        });
+        if (skill.id === id) {
+          setChangedSkillId((prev) => {
+            prev.add(id);
+            return prev;
+          });
+          return { ...skill, [field]: value };
+        }
+        return skill;
+      });
+    });
+  };
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skills information</div>;
@@ -115,55 +187,64 @@ export default function Skills({ userId }: SkillsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Skills</h3>
           <div className="flex gap-2">
-            {/* When not adding or editing, the Add button will be shown */}
-            {!isAddingNew && !isEditing && (
-              <AddButton onClick={onClickAddNew} />
+            {/* When not adding and editing, the Add button will be shown */}
+            {/* or When adding or editing, the ADD button will not be shown */}
+            {/* !isAddingNewItem && !isEditingMode equates to isAddingNewItem || isEditingMode */}
+            {!isAddingNewItem && !isEditingMode && (
+              <AddButton onClick={onAddNewSkill} />
             )}
-            {/* When editing, the Done button will be shown */}
-            {isEditing ? (
+            {/* When not adding and editing, the Edit button will be shown */}
+            {/* or When adding or editing, EDIT button will not be shown */}
+            {!isEditingMode && !isAddingNewItem && (
+              <EditButton
+                onClick={() => {
+                  setIsEditingMode(true);
+                }}
+              />
+            )}
+            {isEditingMode && (
               <DoneButton
                 onClick={onUpdateSkillList}
-                isSubmitting={isSubmitting}
+                isSubmitting={isSubmittingItem}
+                disabled={!isSkillValidMap.values().every((isValid) => isValid)}
               />
-            ) : (
-              /* When not editing, the Edit button will be shown */
-              isDeleting && (
-                <>
-                  <EditButton
-                    onClick={() => {
-                      setIsEditing(true);
-                    }}
-                  />
-                </>
-              )
             )}
           </div>
         </div>
 
         {/* Add New Skill Entry */}
-        {isAddingNew && (
+        {isAddingNewItem && (
           <NewSkill userId={userId} onSaveNewSkill={onSaveNewSkill} />
         )}
 
-        {/* Display Skills List when not loading or error */}
-        {!isLoading && !error && (
+        {!isEditingMode ? (
           <>
-            {editedData && editedData.length > 0 ? (
-              <SkillList
-                //Filter the skills to only include the skills for the current user
-                editedData={editedData.filter(
-                  (skill) => skill.userId === userId
-                )}
-                onDeleteSkillList={onDeleteSkillList}
-                isEditing={isEditing} // Whether the user is editing the skill
-                mutate={mutate} // Refresh the data
-                userId={userId} // The user ID of the current user
-              />
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                No skills added yet.
-              </div>
-            )}
+            {!isLoading &&
+              !error &&
+              skillsData &&
+              skillsData.length > 0 &&
+              skillsData.map((skill: Skill) => (
+                <div
+                  key={skill.id}
+                  className="relative border-b pb-4 last:border-0"
+                >
+                  <SkillItem skill={skill} />
+                </div>
+              ))}
+          </>
+        ) : (
+          <>
+            {formData.map((skill: Skill) => {
+              return (
+                <div key={skill.id}>
+                  <SkillForm
+                    onFormChange={onSkillChange}
+                    skill={skill}
+                    onDeleteClick={onDeleteSkillList}
+                  />
+                </div>
+              );
+            })}
           </>
         )}
       </CardContent>

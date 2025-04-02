@@ -177,17 +177,17 @@ export const POST = withAuth(
 export const GET = withAuth(
   async (
     request: NextRequest,
-    { params }: { params: { userId: string } },
+    { params }: { params: { id: string } },
     user
   ) => {
     try {
-      console.log("Fetching skills for user:", params.userId);
-      const userId = params.userId;
+      console.log("Fetching skills for user:", params.id);
+      const id = params.id;
 
       // Fetch the skills for the specified user
       const skills = await prisma.skill.findMany({
         where: {
-          userId: userId,
+          id: id,
         },
         orderBy: {
           createdAt: "desc",
