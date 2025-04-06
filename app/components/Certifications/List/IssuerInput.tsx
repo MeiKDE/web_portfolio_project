@@ -3,28 +3,30 @@ import { Certification } from "@/app/components/Certifications/certifications.ty
 import React from "react";
 
 interface IssuingOrganizationInputProps {
-  formData: Partial<Certification>;
-  errors: Record<string, string>;
-  handleInputChange: (field: keyof Certification, value: string) => void;
+  values: Certification;
+  handleChange: (field: string, value: string) => void;
+  handleBlur: (field: string) => void;
+  errors: any;
+  touched: any;
 }
 
 export function IssuerInput({
-  formData,
+  values,
+  handleChange,
+  handleBlur,
   errors,
-  handleInputChange,
+  touched,
 }: IssuingOrganizationInputProps) {
   return (
     <div>
       <Input
         type="text"
-        value={formData.issuer || ""}
-        onChange={(e) => handleInputChange("issuer", e.target.value)}
+        value={values.issuer || ""}
+        onChange={(e) => handleChange("issuer", e.target.value)}
+        onBlur={() => handleBlur("issuer")}
         placeholder="Issuing Organization*"
         className={errors.issuer ? "border-red-500" : ""}
       />
-      {errors.issuer && (
-        <p className="text-red-500 text-sm mt-1">{errors.issuer}</p>
-      )}
     </div>
   );
 }

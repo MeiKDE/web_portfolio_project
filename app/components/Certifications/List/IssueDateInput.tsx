@@ -5,23 +5,28 @@ import { getCurrentDate } from "@/app/lib/utils/date-utils";
 import React from "react";
 
 interface IssueDateInputProps {
-  formData: Partial<Certification>;
-  errors: Record<string, string>;
-  handleInputChange: (field: keyof Certification, value: string) => void;
+  values: Certification;
+  handleChange: (field: string, value: string) => void;
+  handleBlur: (field: string) => void;
+  errors: any;
+  touched: any;
 }
 
-export const DateInputs: React.FC<IssueDateInputProps> = ({
-  formData,
+export const IssueDateInput: React.FC<IssueDateInputProps> = ({
+  values,
+  handleChange,
+  handleBlur,
   errors,
-  handleInputChange,
+  touched,
 }) => {
   return (
     <div className="flex-1">
       <label className="block text-sm text-gray-600 mb-1">Issue Date*</label>
       <Input
         type="date"
-        value={formData.issueDate || ""}
-        onChange={(e) => handleInputChange("issueDate", e.target.value)}
+        value={values.issueDate || ""}
+        onChange={(e) => handleChange("issueDate", e.target.value)}
+        onBlur={() => handleBlur("issueDate")}
         max={getCurrentDate()}
         className={errors.issueDate ? "border-red-500" : ""}
       />
