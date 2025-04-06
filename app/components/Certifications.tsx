@@ -15,6 +15,7 @@ import {
 } from "@/app/lib/utils/date-utils";
 
 import { CertificationForm } from "./Certifications/List/CertificationForm";
+import { CertificationItem } from "./Certifications/List/CertificationItem";
 interface CertificationsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
 }
@@ -173,6 +174,7 @@ export default function Certifications({ userId }: CertificationsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Certifications</h3>
           <div className="flex gap-2">
+            {/* When not adding and editing, the Add button will be shown */}
             {!isAddingNewItem && !isEditingMode && (
               <AddButton onClick={onAddNewCertification} />
             )}
@@ -205,8 +207,12 @@ export default function Certifications({ userId }: CertificationsProps) {
           />
         )}
 
+        {/* When not editing, the CertificationForm will be shown */}
         {!isEditingMode ? (
           <>
+            {/* When not loading, not error, and certifications data is available,
+            and certifications data length is greater than 0, the
+            CertificationForm will be shown */}
             {!isLoading &&
               !error &&
               certificationsData &&
@@ -216,11 +222,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                   key={certification.id}
                   className="relative border-b pb-4 last:border-0"
                 >
-                  <CertificationForm
-                    onFormChange={onCertificationChange}
-                    certification={certification}
-                    onDeleteClick={onDeleteCertification}
-                  />
+                  <CertificationItem certification={certification} />
                 </div>
               ))}
           </>

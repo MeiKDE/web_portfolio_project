@@ -31,6 +31,8 @@ export function NewCertification({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  console.log("isSubmitting", isSubmitting);
+
   const { values, errors, handleChange, validateForm, resetForm } =
     useFormValidation(formValues, {
       name: (value) =>

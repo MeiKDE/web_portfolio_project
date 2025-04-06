@@ -1,4 +1,4 @@
-import React from "react";
+import React, { JSX } from "react";
 import { CancelBtn } from "./CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
 

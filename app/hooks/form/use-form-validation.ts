@@ -47,6 +47,7 @@ export function useFormValidation<T>(
   };
 
   const resetForm = () => {
+    console.log("resetForm called");
     setValues(initialValues);
     setErrors({});
     setTouched({});
