@@ -161,6 +161,36 @@ export default function Skills({ userId }: SkillsProps) {
     });
   };
 
+  const SkillItemContent = (
+    <>
+      {!isLoading &&
+        !error &&
+        skillsData &&
+        skillsData.length > 0 &&
+        skillsData.map((skill: Skill) => (
+          <div key={skill.id} className="relative border-b pb-4 last:border-0">
+            <SkillItem skill={skill} />
+          </div>
+        ))}
+    </>
+  );
+
+  const SkillFormContent = (
+    <>
+      {formData.map((skill: Skill) => {
+        return (
+          <div key={skill.id}>
+            <SkillForm
+              onFormChange={onSkillChange}
+              skill={skill}
+              onDeleteClick={onDeleteSkillList}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skills information</div>;
 
@@ -170,25 +200,23 @@ export default function Skills({ userId }: SkillsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Skills</h3>
           <div className="flex gap-2">
-            {/* When not adding and editing, the Add button will be shown */}
-            {/* or When adding or editing, the ADD button will not be shown */}
-            {/* !isAddingNewItem && !isEditingMode equates to isAddingNewItem || isEditingMode */}
+            {/* if isAddingNewItem is false and if isEditingMode is false, then the Add button will be shown */}
             {!isAddingNewItem && !isEditingMode && (
               <AddButton onClick={onAddNewSkill} />
             )}
-            {/* When not adding and editing, the Edit button will be shown */}
-            {/* or When adding or editing, EDIT button will not be shown */}
-            {!isEditingMode && !isAddingNewItem && (
+            {/* if isAddingNewItem is false and if isEditingMode is false, then the Edit button will be shown */}
+            {!isAddingNewItem && !isEditingMode && (
               <EditButton
                 onClick={() => {
                   setIsEditingMode(true);
                 }}
               />
             )}
+            {/* if isEditingMode is true, then the Done button will be shown */}
             {isEditingMode && (
               <DoneButton
                 onClick={onUpdateSkillList}
-                isSubmitting={isSubmittingItem}
+                isSubmitting={isSubmittingItem} //defaults to false
                 disabled={!isSkillValidMap.values().every((isValid) => isValid)}
               />
             )}
@@ -196,40 +224,14 @@ export default function Skills({ userId }: SkillsProps) {
         </div>
 
         {/* Add New Skill Entry */}
+        {/* if isAddingNewItem is true, then the NewSkill component will be shown */}
         {isAddingNewItem && (
           <NewSkill userId={userId} onSaveNewSkill={onSaveNewSkill} />
         )}
 
-        {!isEditingMode ? (
-          <>
-            {!isLoading &&
-              !error &&
-              skillsData &&
-              skillsData.length > 0 &&
-              skillsData.map((skill: Skill) => (
-                <div
-                  key={skill.id}
-                  className="relative border-b pb-4 last:border-0"
-                >
-                  <SkillItem skill={skill} />
-                </div>
-              ))}
-          </>
-        ) : (
-          <>
-            {formData.map((skill: Skill) => {
-              return (
-                <div key={skill.id}>
-                  <SkillForm
-                    onFormChange={onSkillChange}
-                    skill={skill}
-                    onDeleteClick={onDeleteSkillList}
-                  />
-                </div>
-              );
-            })}
-          </>
-        )}
+        {/* if isEditingMode is false, then the SkillItem component will be shown */}
+        {/* else, then the SkillForm component will be shown */}
+        {!isEditingMode ? <>{SkillItemContent}</> : <>{SkillFormContent}</>}
       </CardContent>
     </Card>
   );

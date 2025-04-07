@@ -1,999 +1,249 @@
-/** @jsxImportSource react */
 "use client";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GraduationCap, Edit, Save, Plus, X } from "lucide-react";
-import useSWR from "swr";
-import { z } from "zod";
+import { Education } from "./Educations/educations.types";
+import { useFetchData } from "@/app/hooks/data/use-fetch-data";
+import { AddButton } from "@/app/components/ui/AddButton";
+import { EditButton } from "@/app/components/ui/EditButton";
+import { DoneButton } from "@/app/components/ui/DoneButton";
+import { NewEducation } from "./Educations/NewEducation/NewEducation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { useFormValidation } from "@/app/hooks/form/use-form-validation";
-import { AddButton } from "./ui/AddButton";
-interface Education {
-  id: string;
-  institution: string;
-  degree: string;
-  fieldOfStudy: string;
-  startYear: number;
-  endYear?: number;
-  description?: string;
-  userId?: string;
-}
+import { toast } from "sonner";
+import { EducationItem } from "./Educations/List/EducationItem";
+import { EducationForm } from "./Educations/List/EducationForm";
 
-interface EducationProps {
+// Helper to adapt Education type to match EducationItem requirements
+const adaptEducationForItem = (education: Education) => ({
+  institution: education.institution,
+  degree: education.degree,
+  fieldOfStudy: education.fieldOfStudy,
+  startYear: education.startYear,
+  endYear: education.endYear,
+  description: education.description,
+});
+
+interface EducationsProps {
   userId: string;
 }
 
-// Define Zod schema for education validation
-const educationSchema = z
-  .object({
-    institution: z.string().min(1, "Institution is required"),
-    degree: z.string().min(1, "Degree is required"),
-    fieldOfStudy: z.string().min(1, "Field of study is required"),
-    startYear: z
-      .number()
-      .int()
-      .positive("Start year must be a positive integer"),
-    endYear: z
-      .number()
-      .int()
-      .positive("End year must be a positive integer")
-      .nullable()
-      .optional(),
-    description: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      // Skip validation if end year is null or empty
-      if (data.endYear == null) return true;
-
-      // Compare years - start year should be before or equal to end year
-      return data.startYear <= data.endYear;
-    },
-    {
-      message: "Start year cannot be after end year",
-      path: ["startYear", "endYear"],
-    }
+export default function Educations({ userId }: EducationsProps) {
+  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
+  const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
+  const [educationsData, setEducationsData] = useState<Education[]>([]);
+  const [formData, setFormData] = useState<Education[]>([]);
+  const [changedEducationId, setChangedEducationId] = useState<Set<string>>(
+    new Set()
+  );
+  const [isEducationValidMap, setIsEducationValidMap] = useState<
+    Map<string, boolean>
+  >(new Map());
+  const { data, isLoading, error, mutate } = useFetchData<Education[]>(
+    `/api/users/${userId}/educations`
   );
 
-// Update ValidationErrors interface to handle Zod validation
-interface ValidationErrors {
-  [key: string]: { [field: string]: boolean } | z.ZodIssue[];
-}
-
-// Improved fetcher function with error handling
-const fetcher = async (url: string) => {
-  console.log("Fetching from URL:", url);
-  try {
-    const response = await fetch(url, {
-      credentials: "include",
-    });
-
-    console.log("Response status:", response.status);
-
-    // Check if the request was successful
-    if (!response.ok) {
-      // Create an error object with details from the response
-      const error = new Error(
-        `An error occurred while fetching the data: ${response.statusText}`
-      );
-      // Add status and info from response to the error
-      (error as any).status = response.status;
-
-      // Try to parse error details if available
-      try {
-        const errorData = await response.json();
-        console.error("API error details:", errorData);
-        (error as any).info = errorData;
-      } catch (e) {
-        // If parsing fails, just use the status text
-        (error as any).info = response.statusText;
-      }
-
-      throw error;
-    }
-
-    const responseData = await response.json();
-    console.log("API response data:", responseData);
-    return responseData;
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
-  }
-};
-
-export default function Educations({ userId }: EducationProps) {
-  const [editable, setEditable] = useState(false);
-  const [educationData, setEducationData] = useState<Education[]>([]);
-  const [editedEducation, setEditedEducation] = useState<Education[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // Add state for validation errors
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    {}
-  );
-
-  // Use the form validation hook
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    validateForm,
-    resetForm,
-    setValues,
-  } = useFormValidation(
-    {
-      institution: "",
-      degree: "",
-      fieldOfStudy: "",
-      startYear: new Date().getFullYear(),
-      endYear: new Date().getFullYear(),
-      description: "",
-    },
-    {
-      institution: (value) => (!value ? "Institution is required" : null),
-      degree: (value) => (!value ? "Degree is required" : null),
-      fieldOfStudy: (value) => (!value ? "Field of study is required" : null),
-      startYear: (value) => (!value ? "Start year is required" : null),
-      endYear: () => null, // optional
-      description: () => null, // optional
-    }
-  );
-
-  const { data, error, isLoading, mutate } = useSWR(
-    `/api/users/${userId}/education`,
-    fetcher,
-    {
-      onError: (err) => {
-        console.error("Error fetching education:", err);
-        // You can set a more user-friendly error message here if needed
-
-        // If unauthorized, you might want to redirect to login
-        if (err.status === 401) {
-          // Redirect to login or show auth error
-          // window.location.href = "/login";
-        }
-      },
-      // Add retry configuration if needed
-      // retry: 3,
-    }
-  );
-
-  // Update local state when data is fetched
   useEffect(() => {
-    console.log("Education data from API:", data);
-
-    // Check if data exists and has the expected structure
-    if (data && !data.error && Array.isArray(data.data)) {
-      // Use data.data instead of data directly
-      setEducationData(data.data);
-      setEditedEducation(JSON.parse(JSON.stringify(data.data))); // Deep copy for editing
-    } else if (data && Array.isArray(data)) {
-      // Handle case where data might be directly an array (for backward compatibility)
-      setEducationData(data);
-      setEditedEducation(JSON.parse(JSON.stringify(data)));
-    } else {
-      // Initialize with empty arrays if data is not available or in unexpected format
-      console.log("Initializing with empty arrays - data format unexpected");
-      setEducationData([]);
-      setEditedEducation([]);
+    if (data) {
+      setEducationsData(data);
+      setFormData(data);
     }
-
-    console.log("Current educationData state:", educationData);
-    console.log("Current editedEducation state:", editedEducation);
   }, [data]);
 
-  // Update validation function to use Zod
-  const validateEducation = (education: Education, id: string) => {
-    try {
-      // Validate with Zod schema
-      educationSchema.parse(education);
+  const onAddNewEducation = () => setIsAddingNewItem(true);
 
-      // If validation passes, clear any existing errors
-      setValidationErrors((prev) => ({
-        ...prev,
-        [id]: [],
-      }));
-
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        // Store Zod validation issues
-        setValidationErrors((prev) => ({
-          ...prev,
-          [id]: error.issues,
-        }));
-        return false;
-      }
-      return false;
-    }
-  };
-
-  const handleEditToggle = () => {
-    if (editable) {
-      // Validate all education entries before saving
-      let hasErrors = false;
-
-      editedEducation.forEach((edu) => {
-        if (!validateEducation(edu, edu.id)) {
-          hasErrors = true;
-        }
-      });
-
-      if (hasErrors) {
-        alert("Please fill out all required fields before saving.");
-        return;
-      }
-
-      saveChanges();
-    } else {
-      // Reset validation errors when entering edit mode
-      setValidationErrors({});
-    }
-    setEditable(!editable);
-  };
-
-  // Change this function name
-  const getLocalFieldError = (id: string, field: string): string | null => {
-    if (!validationErrors[id]) return null;
-
-    if (Array.isArray(validationErrors[id])) {
-      const issues = validationErrors[id] as z.ZodIssue[];
-      const issue = issues.find((i) => i.path.includes(field));
-      return issue ? issue.message : null;
-    } else {
-      const errors = validationErrors[id] as { [field: string]: boolean };
-      return errors[field]
-        ? `${field.charAt(0).toUpperCase() + field.slice(1)} is required`
-        : null;
-    }
-  };
-
-  // Add a function to check if a field has a date relationship error
-  const hasYearRangeError = (id: string): boolean => {
-    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
-      return false;
-
-    const issues = validationErrors[id] as z.ZodIssue[];
-    return issues.some(
-      (issue) =>
-        issue.path.includes("startYear") && issue.path.includes("endYear")
-    );
-  };
-
-  // Add a function to get the year range error message
-  const getYearRangeError = (id: string): string | null => {
-    if (!validationErrors[id] || !Array.isArray(validationErrors[id]))
-      return null;
-
-    const issues = validationErrors[id] as z.ZodIssue[];
-    const issue = issues.find(
-      (issue) =>
-        issue.path.includes("startYear") && issue.path.includes("endYear")
-    );
-
-    return issue ? issue.message : null;
-  };
-
-  // Define custom helpers that use the existing validationErrors state
-  const getInputClassName = (id: string, field: string, baseClass: string) => {
-    const hasError = getLocalFieldError(id, field) !== null;
-    return hasError ? `${baseClass} border-red-500` : baseClass;
-  };
-
-  const hasErrorType = (id: string, fields: string[]) => {
-    return fields.some((field) => getLocalFieldError(id, field) !== null);
-  };
-
-  const getErrorTypeMessage = (id: string, fields: string[]) => {
-    for (const field of fields) {
-      const error = getLocalFieldError(id, field);
-      if (error) return error;
-    }
-    return hasYearRangeError(id) ? getYearRangeError(id) : null;
-  };
-
-  // Simplified handleInputChange
-  const handleInputChange = (
-    id: string,
-    field: keyof Education,
-    value: any
-  ) => {
-    // Update the education data
-    setEditedEducation((prev) =>
-      prev.map((edu) =>
-        edu.id === id
-          ? {
-              ...edu,
-              [field]: field.includes("Year") ? parseInt(value) : value,
-            }
-          : edu
-      )
-    );
-
-    // Find the updated education
-    const updatedEducation = editedEducation.find((edu) => edu.id === id);
-    if (updatedEducation) {
-      // Create a copy with the new value
-      const educationToValidate = {
-        ...updatedEducation,
-        [field]: field.includes("Year") ? parseInt(value) : value,
-      };
-
-      // Validate it
-      validateEducation(educationToValidate, id);
-    }
-  };
-
-  const handleAddEducation = () => {
-    // Create a temporary ID for the new education entry
-    const tempId = `temp-${Date.now()}`;
-
-    // Create a new education entry with default values
-    const newEducation: Education = {
-      id: tempId,
-      institution: "",
-      degree: "",
-      fieldOfStudy: "",
-      startYear: new Date().getFullYear(),
-      endYear: new Date().getFullYear() + 4,
-      description: "",
-    };
-
-    // Add the new education to the edited list
-    setEditedEducation((prev) =>
-      Array.isArray(prev) ? [...prev, newEducation] : [newEducation]
-    );
-
-    // Enable editing mode if not already enabled
-    if (!editable) {
-      setEditable(true);
-    }
-  };
-
-  const CancelAdd = () => {
-    // If we're adding a new entry, remove it and exit edit mode
-    if (editedEducation.length > educationData.length) {
-      setEditedEducation(JSON.parse(JSON.stringify(educationData)));
-    }
-    setEditable(false);
-  };
-
-  const handleSaveNewEducation = async () => {
-    // Validate the new education entry
-    const newEntry = editedEducation[editedEducation.length - 1];
-    if (!validateEducation(newEntry, newEntry.id)) {
+  const onDeleteEducationList = async (id: string | null) => {
+    if (!window.confirm("Are you sure you want to delete this education?")) {
       return;
     }
 
     try {
-      setIsSubmitting(true);
+      setIsSubmittingItem(true);
 
-      // Format the payload - convert string years to integers
-      const payload = {
-        institution: newEntry.institution,
-        degree: newEntry.degree,
-        fieldOfStudy: newEntry.fieldOfStudy,
-        startYear: newEntry.startYear,
-        endYear: newEntry.endYear ? newEntry.endYear : null,
-        description: newEntry.description || "",
-      };
+      const response = await fetch(`/api/educations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      console.log("Sending new education payload:", payload);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete education");
+      }
 
-      const response = await fetch(`/api/users/${userId}/education`, {
+      toast.success("Education deleted successfully");
+      mutate(); // Refresh the data
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Error deleting education"
+      );
+    } finally {
+      setIsSubmittingItem(false);
+    }
+  };
+
+  const updateEducation = async (id: string, educationObject: Education) => {
+    const response = await fetch(`/api/educations/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(educationObject),
+    });
+  };
+
+  const onUpdateEducationList = async () => {
+    setIsSubmittingItem(true);
+    setIsEditingMode(true);
+
+    try {
+      formData.forEach((education) => {
+        if (changedEducationId.has(education.id)) {
+          updateEducation(education.id, education);
+        }
+      });
+    } catch (error) {
+      console.error("Error updating educations:", error);
+      toast.error("Error updating educations");
+    } finally {
+      mutate();
+      setIsSubmittingItem(false);
+      setIsEditingMode(false);
+    }
+  };
+
+  const onSaveNewEducation = async (educationObject: Education) => {
+    try {
+      setIsSubmittingItem(true);
+      setIsAddingNewItem(false);
+
+      const response = await fetch(`/api/educations/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(educationObject),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          `Failed to add education: ${response.statusText}. ${JSON.stringify(
-            errorData
-          )}`
-        );
+        throw new Error("Failed to add education");
       }
 
-      // Refresh the data
-      mutate();
-      setEditable(false);
+      const data = await response.json();
+      console.log("data", data);
+      toast.success("Education added successfully");
+
+      setIsSubmittingItem(false);
     } catch (error) {
-      console.error("Error adding education:", error);
-      alert("Failed to add education. Please try again.");
+      console.error("Error adding new education:", error);
+      toast.error("Error adding new education");
     } finally {
-      setIsSubmitting(false);
+      mutate();
+      setIsSubmittingItem(false);
     }
   };
 
-  const saveChanges = async () => {
-    try {
-      setIsSubmitting(true);
-
-      for (const education of editedEducation) {
-        // Skip empty entries
-        if (
-          !education.institution ||
-          !education.degree ||
-          !education.fieldOfStudy
-        ) {
-          console.log("Skipping empty education entry:", education);
-          continue;
-        }
-
-        console.log("Processing education:", education);
-
-        // Create a modified payload with startYear and endYear converted to integer
-        const payload = {
-          institution: education.institution,
-          degree: education.degree,
-          fieldOfStudy: education.fieldOfStudy,
-          startYear: education.startYear,
-          endYear: education.endYear ? education.endYear : null,
-          description: education.description || "",
-        };
-
-        console.log("Sending payload:", payload);
-
-        // Check if this is a new entry (has a temp ID)
-        const isNewEntry = education.id.startsWith("temp-");
-
-        if (isNewEntry) {
-          // Create a new education entry
-          console.log("Creating new education entry:", payload);
-          const response = await fetch(`/api/users/${userId}/education`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(payload),
+  const onEducationChange = (
+    id: string,
+    field: string,
+    value: string,
+    isFormValid: boolean
+  ) => {
+    setFormData((prev) => {
+      return prev.map((education) => {
+        setIsEducationValidMap((prev) => {
+          prev.set(id, isFormValid);
+          return prev;
+        });
+        if (education.id === id) {
+          setChangedEducationId((prev) => {
+            prev.add(id);
+            return prev;
           });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Error response:", errorData);
-            throw new Error(
-              `Failed to create education: ${
-                response.statusText
-              }. ${JSON.stringify(errorData)}`
-            );
-          }
-        } else {
-          // Update existing education entry
-          console.log("Updating education:", payload);
-          const response = await fetch(
-            `/api/users/${userId}/education/${education.id}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-              body: JSON.stringify(payload),
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Error response:", errorData);
-            throw new Error(
-              `Failed to update education: ${
-                response.statusText
-              }. ${JSON.stringify(errorData)}`
-            );
-          }
+          return { ...education, [field]: value };
         }
-      }
-
-      // Re-fetch data to ensure consistency
-      mutate();
-    } catch (error) {
-      console.error("Error saving changes:", error);
-      alert("Failed to save changes. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteEducation = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this education entry?")) {
-      return;
-    }
-
-    try {
-      // If it's a temporary ID (new unsaved entry), just remove it from state
-      if (id.startsWith("temp-")) {
-        setEditedEducation(editedEducation.filter((edu) => edu.id !== id));
-        return;
-      }
-
-      const response = await fetch(`/api/users/${userId}/education/${id}`, {
-        method: "DELETE",
-        credentials: "include",
+        return education;
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete education: ${response.statusText}`);
-      }
-
-      // Remove from local state and refresh data
-      setEditedEducation(editedEducation.filter((edu) => edu.id !== id));
-      mutate();
-    } catch (error) {
-      console.error("Error deleting education:", error);
-      alert("Failed to delete education. Please try again.");
-    }
+    });
   };
 
-  useEffect(() => {
-    console.log("Education data from API:", data);
-    console.log("Current educationData state:", educationData);
-    console.log("Current editedEducation state:", editedEducation);
-  }, [data, educationData, editedEducation]);
+  const EducationItemContent = (
+    <>
+      {!isLoading &&
+        !error &&
+        educationsData &&
+        educationsData.length > 0 &&
+        educationsData.map((education: Education) => (
+          <div
+            key={education.id}
+            className="relative border-b pb-4 last:border-0"
+          >
+            <EducationItem education={adaptEducationForItem(education)} />
+          </div>
+        ))}
+    </>
+  );
 
-  if (isLoading) {
-    return <LoadingSpinner size="sm" text="Loading education..." />;
-  }
-  if (error) return <div>Error loading education information</div>;
+  const EducationFormContent = (
+    <>
+      {formData.map((education: Education) => {
+        return (
+          <div key={education.id}>
+            <EducationForm
+              onFormChange={onEducationChange}
+              education={education}
+              onDeleteClick={onDeleteEducationList}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <div>Error loading educations information</div>;
 
   return (
     <Card>
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold flex items-center">
-            <GraduationCap className="h-5 w-5 mr-2" />
-            Education
-          </h3>
+          <h3 className="text-xl font-semibold">Education</h3>
           <div className="flex gap-2">
-            {!editable ? (
-              <>
-                <AddButton onClick={handleAddEducation} />
-
-                <Button variant="ghost" size="sm" onClick={handleEditToggle}>
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </>
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleEditToggle}
-                disabled={isSubmitting}
-              >
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSubmitting ? "Saving..." : "Done"}
-                </>
-              </Button>
+            {!isAddingNewItem && !isEditingMode && (
+              <AddButton onClick={onAddNewEducation} />
+            )}
+            {!isEditingMode && !isAddingNewItem && (
+              <EditButton
+                onClick={() => {
+                  setIsEditingMode(true);
+                }}
+              />
+            )}
+            {isEditingMode && (
+              <DoneButton
+                onClick={onUpdateEducationList}
+                isSubmitting={isSubmittingItem}
+                disabled={
+                  !isEducationValidMap.values().every((isValid) => isValid)
+                }
+              />
             )}
           </div>
         </div>
 
-        {/* Display the most recently added education entry with Save/Cancel buttons */}
-        {editable && editedEducation.length > educationData.length ? (
-          <div className="mb-6 border-b pb-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-shrink-0">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback>
-                    {editedEducation[editedEducation.length - 1].institution
-                      .substring(0, 2)
-                      .toUpperCase() || "ED"}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="flex-grow">
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    value={
-                      editedEducation[editedEducation.length - 1].institution
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        editedEducation[editedEducation.length - 1].id,
-                        "institution",
-                        e.target.value
-                      )
-                    }
-                    className={getInputClassName(
-                      editedEducation[editedEducation.length - 1].id,
-                      "institution",
-                      "font-semibold w-full p-1 border rounded"
-                    )}
-                    placeholder="Institution*"
-                  />
-                  {getLocalFieldError(
-                    editedEducation[editedEducation.length - 1].id,
-                    "institution"
-                  ) && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {getLocalFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "institution"
-                      )}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    value={editedEducation[editedEducation.length - 1].degree}
-                    onChange={(e) =>
-                      handleInputChange(
-                        editedEducation[editedEducation.length - 1].id,
-                        "degree",
-                        e.target.value
-                      )
-                    }
-                    className={getInputClassName(
-                      editedEducation[editedEducation.length - 1].id,
-                      "degree",
-                      "text-muted-foreground w-full p-1 border rounded"
-                    )}
-                    placeholder="Degree*"
-                  />
-                  {getLocalFieldError(
-                    editedEducation[editedEducation.length - 1].id,
-                    "degree"
-                  ) && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {getLocalFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "degree"
-                      )}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    value={
-                      editedEducation[editedEducation.length - 1].fieldOfStudy
-                    }
-                    onChange={(e) =>
-                      handleInputChange(
-                        editedEducation[editedEducation.length - 1].id,
-                        "fieldOfStudy",
-                        e.target.value
-                      )
-                    }
-                    className={getInputClassName(
-                      editedEducation[editedEducation.length - 1].id,
-                      "fieldOfStudy",
-                      "text-muted-foreground w-full p-1 border rounded"
-                    )}
-                    placeholder="Field of Study*"
-                  />
-                  {getLocalFieldError(
-                    editedEducation[editedEducation.length - 1].id,
-                    "fieldOfStudy"
-                  ) && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {getLocalFieldError(
-                        editedEducation[editedEducation.length - 1].id,
-                        "fieldOfStudy"
-                      )}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2 mb-2">
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      value={
-                        editedEducation[editedEducation.length - 1].startYear ||
-                        ""
-                      }
-                      onChange={(e) =>
-                        handleInputChange(
-                          editedEducation[editedEducation.length - 1].id,
-                          "startYear",
-                          e.target.value
-                        )
-                      }
-                      className={getInputClassName(
-                        editedEducation[editedEducation.length - 1].id,
-                        "startYear",
-                        "text-sm text-muted-foreground w-full p-1 border rounded"
-                      )}
-                      placeholder="Start Year*"
-                    />
-                  </div>
-                  <div className="w-1/2">
-                    <input
-                      type="number"
-                      value={
-                        editedEducation[editedEducation.length - 1].endYear ||
-                        ""
-                      }
-                      onChange={(e) =>
-                        handleInputChange(
-                          editedEducation[editedEducation.length - 1].id,
-                          "endYear",
-                          e.target.value
-                        )
-                      }
-                      className={getInputClassName(
-                        editedEducation[editedEducation.length - 1].id,
-                        "endYear",
-                        "text-sm text-muted-foreground w-full p-1 border rounded"
-                      )}
-                      placeholder="End Year"
-                    />
-                  </div>
-                </div>
-
-                {hasErrorType(editedEducation[editedEducation.length - 1].id, [
-                  "startYear",
-                  "endYear",
-                ]) && (
-                  <p className="text-red-500 text-xs mt-1 mb-2">
-                    {getErrorTypeMessage(
-                      editedEducation[editedEducation.length - 1].id,
-                      ["startYear", "endYear"]
-                    )}
-                  </p>
-                )}
-
-                <textarea
-                  value={
-                    editedEducation[editedEducation.length - 1].description ||
-                    ""
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      editedEducation[editedEducation.length - 1].id,
-                      "description",
-                      e.target.value
-                    )
-                  }
-                  className="mt-2 w-full p-1 border rounded"
-                  rows={4}
-                  placeholder="Description (optional)"
-                />
-
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" size="sm" onClick={CancelAdd}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={handleSaveNewEducation}>
-                    Save Education
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Display existing education entries only when not adding a new entry */
-          <>
-            {(editable
-              ? editedEducation.slice(0, educationData.length)
-              : educationData
-            ).length > 0 ? (
-              (editable
-                ? editedEducation.slice(0, educationData.length)
-                : educationData
-              ).map((edu, index) => (
-                <div
-                  key={edu.id}
-                  className="flex flex-col sm:flex-row gap-4 mb-6 relative border-b pb-4 last:border-b-0"
-                >
-                  {editable && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-0 right-0 text-red-500"
-                      onClick={() => handleDeleteEducation(edu.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <div className="flex-shrink-0">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage
-                        src={"/placeholder.svg?height=48&width=48"}
-                        alt="University logo"
-                      />
-                      <AvatarFallback>
-                        {edu.institution
-                          ? edu.institution.substring(0, 2).toUpperCase()
-                          : "ED"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="flex-grow">
-                    {editable ? (
-                      <>
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={edu.institution}
-                            onChange={(e) =>
-                              handleInputChange(
-                                edu.id,
-                                "institution",
-                                e.target.value
-                              )
-                            }
-                            className={getInputClassName(
-                              edu.id,
-                              "institution",
-                              "font-semibold w-full p-1 border rounded"
-                            )}
-                            placeholder="Institution*"
-                          />
-                          {getLocalFieldError(edu.id, "institution") && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {getLocalFieldError(edu.id, "institution")}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={edu.degree}
-                            onChange={(e) =>
-                              handleInputChange(
-                                edu.id,
-                                "degree",
-                                e.target.value
-                              )
-                            }
-                            className={getInputClassName(
-                              edu.id,
-                              "degree",
-                              "text-muted-foreground w-full p-1 border rounded"
-                            )}
-                            placeholder="Degree*"
-                          />
-                          {getLocalFieldError(edu.id, "degree") && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {getLocalFieldError(edu.id, "degree")}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={edu.fieldOfStudy}
-                            onChange={(e) =>
-                              handleInputChange(
-                                edu.id,
-                                "fieldOfStudy",
-                                e.target.value
-                              )
-                            }
-                            className={getInputClassName(
-                              edu.id,
-                              "fieldOfStudy",
-                              "text-muted-foreground w-full p-1 border rounded"
-                            )}
-                            placeholder="Field of Study*"
-                          />
-                          {getLocalFieldError(edu.id, "fieldOfStudy") && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {getLocalFieldError(edu.id, "fieldOfStudy")}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex gap-2 mb-2">
-                          <div className="w-1/2">
-                            <input
-                              type="number"
-                              value={edu.startYear || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  edu.id,
-                                  "startYear",
-                                  e.target.value
-                                )
-                              }
-                              className={getInputClassName(
-                                edu.id,
-                                "startYear",
-                                "text-sm text-muted-foreground w-full p-1 border rounded"
-                              )}
-                              placeholder="Start Year*"
-                            />
-                            {getLocalFieldError(edu.id, "startYear") && (
-                              <p className="text-red-500 text-xs mt-1">
-                                {getLocalFieldError(edu.id, "startYear")}
-                              </p>
-                            )}
-                          </div>
-                          <div className="w-1/2">
-                            <input
-                              type="number"
-                              value={edu.endYear || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  edu.id,
-                                  "endYear",
-                                  e.target.value
-                                )
-                              }
-                              className={getInputClassName(
-                                edu.id,
-                                "endYear",
-                                "text-sm text-muted-foreground w-full p-1 border rounded"
-                              )}
-                              placeholder="End Year"
-                            />
-                          </div>
-                        </div>
-
-                        {hasErrorType(edu.id, ["startYear", "endYear"]) && (
-                          <p className="text-red-500 text-xs mt-1 mb-2">
-                            {getErrorTypeMessage(edu.id, [
-                              "startYear",
-                              "endYear",
-                            ])}
-                          </p>
-                        )}
-
-                        <textarea
-                          value={edu.description || ""}
-                          onChange={(e) =>
-                            handleInputChange(
-                              edu.id,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                          className="mt-2 w-full p-1 border rounded"
-                          rows={4}
-                          placeholder="Description (optional)"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <h4 className="font-semibold">{edu.institution}</h4>
-                        <p className="text-muted-foreground">
-                          {edu.degree} in {edu.fieldOfStudy}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {edu.startYear}
-                          {edu.endYear ? ` - ${edu.endYear}` : ""}
-                        </p>
-                        {edu.description && (
-                          <p className="mt-2">{edu.description}</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                No education information available. Click "Add" to add your
-                education history.
-              </div>
-            )}
-          </>
+        {isAddingNewItem && (
+          <NewEducation
+            userId={userId}
+            onSaveNewEducation={onSaveNewEducation}
+          />
         )}
 
-        {/* Add a note about required fields */}
-        {editable && (
-          <div className="text-sm text-muted-foreground mt-4">
-            * Required fields
-          </div>
+        {!isEditingMode ? (
+          <>{EducationItemContent}</>
+        ) : (
+          <>{EducationFormContent}</>
         )}
       </CardContent>
     </Card>

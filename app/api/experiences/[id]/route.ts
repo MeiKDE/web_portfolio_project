@@ -4,7 +4,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/app/lib/db/prisma";
 import {
-  withAuth,
   withOwnership,
   successResponse,
   errorResponse,
