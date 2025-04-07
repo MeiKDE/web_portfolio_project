@@ -169,38 +169,43 @@ export default function Educations({ userId }: EducationsProps) {
     });
   };
 
-  const EducationItemContent = (
-    <>
-      {!isLoading &&
-        !error &&
-        educationsData &&
-        educationsData.length > 0 &&
-        educationsData.map((education: Education) => (
-          <div
-            key={education.id}
-            className="relative border-b pb-4 last:border-0"
-          >
-            <EducationItem education={adaptEducationForItem(education)} />
-          </div>
-        ))}
-    </>
-  );
+  let EducationItemContent;
+  let EducationFormContent;
 
-  const EducationFormContent = (
-    <>
-      {formData.map((education: Education) => {
-        return (
-          <div key={education.id}>
-            <EducationForm
-              onFormChange={onEducationChange}
-              education={education}
-              onDeleteClick={onDeleteEducationList}
-            />
-          </div>
-        );
-      })}
-    </>
-  );
+  if (!isEditingMode) {
+    EducationItemContent = (
+      <>
+        {!isLoading &&
+          !error &&
+          educationsData &&
+          educationsData.length > 0 &&
+          educationsData.map((education: Education) => (
+            <div
+              key={education.id}
+              className="relative border-b pb-4 last:border-0"
+            >
+              <EducationItem education={adaptEducationForItem(education)} />
+            </div>
+          ))}
+      </>
+    );
+  } else {
+    EducationFormContent = (
+      <>
+        {formData.map((education: Education) => {
+          return (
+            <div key={education.id}>
+              <EducationForm
+                onFormChange={onEducationChange}
+                education={education}
+                onDeleteClick={onDeleteEducationList}
+              />
+            </div>
+          );
+        })}
+      </>
+    );
+  }
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading educations information</div>;
@@ -240,11 +245,8 @@ export default function Educations({ userId }: EducationsProps) {
           />
         )}
 
-        {!isEditingMode ? (
-          <>{EducationItemContent}</>
-        ) : (
-          <>{EducationFormContent}</>
-        )}
+        {EducationItemContent}
+        {EducationFormContent}
       </CardContent>
     </Card>
   );

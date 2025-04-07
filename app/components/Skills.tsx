@@ -161,24 +161,30 @@ export default function Skills({ userId }: SkillsProps) {
     });
   };
 
-  const SkillItemContent = (
-    <>
-      {!isLoading &&
-        !error &&
-        skillsData &&
-        skillsData.length > 0 &&
-        skillsData.map((skill: Skill) => (
-          <div key={skill.id} className="relative border-b pb-4 last:border-0">
-            <SkillItem skill={skill} />
-          </div>
-        ))}
-    </>
-  );
+  let SkillItemContent;
+  let SkillFormContent;
 
-  const SkillFormContent = (
-    <>
-      {formData.map((skill: Skill) => {
-        return (
+  if (!isEditingMode) {
+    SkillItemContent = (
+      <>
+        {!isLoading &&
+          !error &&
+          skillsData &&
+          skillsData.length > 0 &&
+          skillsData.map((skill: Skill) => (
+            <div
+              key={skill.id}
+              className="relative border-b pb-4 last:border-0"
+            >
+              <SkillItem skill={skill} />
+            </div>
+          ))}
+      </>
+    );
+  } else {
+    SkillFormContent = (
+      <>
+        {formData.map((skill: Skill) => (
           <div key={skill.id}>
             <SkillForm
               onFormChange={onSkillChange}
@@ -186,10 +192,10 @@ export default function Skills({ userId }: SkillsProps) {
               onDeleteClick={onDeleteSkillList}
             />
           </div>
-        );
-      })}
-    </>
-  );
+        ))}
+      </>
+    );
+  }
 
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading skills information</div>;
@@ -231,7 +237,8 @@ export default function Skills({ userId }: SkillsProps) {
 
         {/* if isEditingMode is false, then the SkillItem component will be shown */}
         {/* else, then the SkillForm component will be shown */}
-        {!isEditingMode ? <>{SkillItemContent}</> : <>{SkillFormContent}</>}
+        {SkillItemContent}
+        {SkillFormContent}
       </CardContent>
     </Card>
   );
