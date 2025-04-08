@@ -1,8 +1,9 @@
-import { CancelSave } from "@/app/components/ui/CancelSave";
 import { useState } from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { Education } from "@/app/components/Educations/educations.types";
 import React from "react";
+import { CancelBtn } from "@/app/components/ui/CancelBtn";
+import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewEducationProps {
   userId: string;
@@ -54,13 +55,16 @@ export function NewEducation({
     return {
       id: "",
       userId,
-      school: values.school,
+      institution: values.school,
       degree: values.degree,
       fieldOfStudy: values.fieldOfStudy,
-      startDate: values.startDate,
-      endDate: values.endDate,
+      startYear: parseInt(values.startDate.split("-")[0]),
+      endYear: values.endDate
+        ? parseInt(values.endDate.split("-")[0])
+        : new Date().getFullYear(),
       description: values.description,
-      location: values.location,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   };
 
@@ -152,7 +156,8 @@ export function NewEducation({
           />
         </div>
 
-        <CancelSave isSubmitting={isSubmitting} resetForm={resetForm} />
+        <CancelBtn resetForm={resetForm} />
+        <SaveBtn isSubmitting={isSubmitting} component="Education" />
       </form>
     </div>
   );

@@ -1,4 +1,3 @@
-import { CancelSave } from "@/app/components/ui/CancelSave";
 import { useState } from "react";
 import { NameInput } from "@/app/components/Skills/NewSkill/NameInput";
 import { CategoryInput } from "@/app/components/Skills/NewSkill/CategoryInput";
@@ -6,6 +5,8 @@ import { ProficiencyInput } from "@/app/components/Skills/NewSkill/ProficiencyIn
 import { Skill } from "@/app/components/Skills/skills.types";
 import React from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
+import { CancelBtn } from "@/app/components/ui/CancelBtn";
+import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewSkillProps {
   userId: string;
@@ -128,12 +129,8 @@ export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
           )}
         </div>
 
-        <CancelSave
-          isSubmitting={isSubmitting} // Set isSubmitting to true when the user clicks on the SAVE button
-          resetForm={() => {
-            onSaveNewSkill(getSkillModel(values)); // Call the onSaveNewSkill function to save the skill data
-          }}
-        />
+        <CancelBtn resetForm={resetForm} />
+        <SaveBtn isSubmitting={isSubmitting} component="Skill" />
       </form>
     </div>
   );

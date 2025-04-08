@@ -1,8 +1,9 @@
-import { CancelSave } from "@/app/components/ui/CancelSave";
 import { useState } from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { Certification } from "@/app/components/Certifications/certifications.types";
 import React from "react";
+import { CancelBtn } from "@/app/components/ui/CancelBtn";
+import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewCertificationProps {
   userId: string;
@@ -146,7 +147,8 @@ export function NewCertification({
           />
         </div>
 
-        <CancelSave isSubmitting={isSubmitting} resetForm={resetForm} />
+        <CancelBtn resetForm={resetForm} />
+        <SaveBtn isSubmitting={isSubmitting} component="Certification" />
       </form>
     </div>
   );
