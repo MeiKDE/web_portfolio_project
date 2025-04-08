@@ -5,6 +5,7 @@ import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { Skill } from "@/app/components/Skills/skills.types";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import React from "react";
+import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface SkillFormProps {
   skill: Skill;
@@ -58,9 +59,8 @@ export const SkillForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.name && (
-          <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-        )}
+        <FormErrorMessage error={errors.name} />
+
         <CategoryInput
           values={skill}
           handleChange={(field, value) => {
@@ -71,9 +71,8 @@ export const SkillForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.category && (
-          <p className="text-red-500 text-xs mt-1">{errors.category}</p>
-        )}
+        <FormErrorMessage error={errors.category} />
+
         <ProficiencyInput
           values={skill}
           handleChange={(field, value) => {
@@ -84,9 +83,7 @@ export const SkillForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.proficiencyLevel && (
-          <p className="text-red-500 text-xs mt-1">{errors.proficiencyLevel}</p>
-        )}
+        <FormErrorMessage error={errors.proficiencyLevel} />
       </div>
       <div className="flex items-start">
         <DeleteButton onDeleteClick={() => onDeleteClick(skill.id)} />

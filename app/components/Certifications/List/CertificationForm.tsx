@@ -5,6 +5,7 @@ import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { Certification } from "@/app/components/Certifications/certifications.types";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import React from "react";
+import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface CertificationFormProps {
   certification: Certification;
@@ -55,9 +56,7 @@ export const CertificationForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.name && (
-          <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-        )}
+        <FormErrorMessage error={errors.name} />
         <IssuerInput
           values={certification}
           handleChange={(field, value) => {
@@ -68,9 +67,7 @@ export const CertificationForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.issuer && (
-          <p className="text-red-500 text-xs mt-1">{errors.issuer}</p>
-        )}
+        <FormErrorMessage error={errors.issuer} />
         <IssueDateInput
           values={certification}
           handleChange={(field, value) => {
@@ -81,9 +78,7 @@ export const CertificationForm = ({
           errors={errors}
           touched={touched}
         />
-        {errors.issueDate && (
-          <p className="text-red-500 text-xs mt-1">{errors.issueDate}</p>
-        )}
+        <FormErrorMessage error={errors.issueDate} />
       </div>
       <div className="flex items-start">
         <DeleteButton onDeleteClick={() => onDeleteClick(certification.id)} />
