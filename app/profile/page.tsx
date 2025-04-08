@@ -13,11 +13,11 @@ import { Edit, Lightbulb, CheckCircle, X, Upload } from "lucide-react";
 
 // Import profile components - UPDATED PATHS
 import ProfileHeader from "@/app/components/ProfileHeader";
-import ExperienceSection from "@/app/components/Experiences";
-import EducationSection from "@/app/components/Educations";
-import SkillsSection from "@/app/components/Skills";
-import CertificationsSection from "@/app/components/Certifications";
-import SocialLinksSection from "@/app/components/SocialLinks";
+import Experience from "@/app/components/Experiences";
+import Education from "@/app/components/Educations";
+import Skills from "@/app/components/Skills";
+import Certifications from "@/app/components/Certifications";
+import SocialLinks from "@/app/components/SocialLinks";
 import ResumeUpload from "@/app/components/common/ResumeUpload"; // Keep shared version
 
 // Add this near the top of the file
@@ -204,18 +204,16 @@ export default function ProfilePage() {
         {/* Left Column - Resume */}
         <div className="md:col-span-2 space-y-8">
           {/* Experience Section */}
-          {session?.user?.id && <ExperienceSection userId={session.user.id} />}
+          {session?.user?.id && <Experience userId={session.user.id} />}
 
           {/* Education Section */}
-          {session?.user?.id && <EducationSection userId={session.user.id} />}
+          {session?.user?.id && <Education userId={session.user.id} />}
 
           {/* Skills Section */}
-          {session?.user?.id && <SkillsSection userId={session.user.id} />}
+          {session?.user?.id && <Skills userId={session.user.id} />}
 
           {/* Certifications Section */}
-          {session?.user?.id && (
-            <CertificationsSection userId={session.user.id} />
-          )}
+          {session?.user?.id && <Certifications userId={session.user.id} />}
         </div>
 
         {/* Right Column - Portfolio, Cover Letter, Contact */}
@@ -361,7 +359,7 @@ export default function ProfilePage() {
           {/* Contact & Social Links */}
           <Card>
             <CardContent className="p-6">
-              <SocialLinksSection />
+              <SocialLinks />
             </CardContent>
           </Card>
         </div>
