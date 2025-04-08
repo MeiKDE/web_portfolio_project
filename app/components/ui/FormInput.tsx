@@ -9,8 +9,8 @@ interface FormInputProps {
   max?: number;
   handleChange: (field: string, value: string) => void;
   handleBlur: (field: string) => void;
-  errors?: Record<string, string>;
-  touched?: Record<string, boolean>;
+  errors?: Partial<Record<string, string>>;
+  touched?: Partial<Record<string, boolean>>;
   className?: string;
   required?: boolean;
 }
