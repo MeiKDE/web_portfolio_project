@@ -1,13 +1,9 @@
-export interface Education {
-  id: string;
-  institution: string;
-  institutionLogoUrl?: string;
+import { BaseEntity, Describable, Institution } from "@/app/types/common.types";
+
+export interface Education extends BaseEntity, Describable, Institution {
   degree: string;
   fieldOfStudy: string;
   startYear: number;
   endYear: number;
-  description?: string;
-  userId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  institution: string; // Override optional institution
 }

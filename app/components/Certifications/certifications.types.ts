@@ -1,9 +1,9 @@
-export interface Certification {
-  id: string;
-  userId: string;
+import { BaseEntity, Institution } from "@/app/types/common.types";
+
+export interface Certification extends BaseEntity, Institution {
   name: string;
-  issuer: string;
   issueDate: string;
   expirationDate?: string;
   credentialUrl?: string;
+  issuer: string; // Override optional issuer
 }
