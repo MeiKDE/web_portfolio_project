@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -348,84 +350,88 @@ export default function PhoneInput({
     : enhancedCountryCodes;
 
   return (
-    <div className="flex flex-col space-y-2">
-      <div className="flex">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="w-[120px] justify-between"
+    <>
+      <div className="flex flex-col space-y-2">
+        <div className="flex">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-[120px] justify-between"
+              >
+                <span className="flex items-center">
+                  <span className="mr-1">{selectedCountry.flag}</span>
+                  {selectedCountry.code}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[250px] p-0"
+              align="start"
+              sideOffset={5}
+              side="bottom"
             >
-              <span className="flex items-center">
-                <span className="mr-1">{selectedCountry.flag}</span>
-                {selectedCountry.code}
-              </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[250px] p-0"
-            align="start"
-            sideOffset={5}
-            side="bottom"
-          >
-            <Command>
-              <CommandInput
-                placeholder="Search country..."
-                value={searchQuery}
-                onValueChange={setSearchQuery}
-              />
-              <CommandEmpty>No country found.</CommandEmpty>
-              <CommandGroup>
-                <CommandList className="max-h-[300px] overflow-y-auto">
-                  {filteredCountries.map((country) => (
-                    <CommandItem
-                      key={`${country.code}-${country.country}`}
-                      value={`${country.country} ${country.code}`}
-                      onSelect={() => handleCountrySelect(country)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedCountry.code === country.code &&
-                            selectedCountry.country === country.country
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      <span className="mr-2">{country.flag}</span>
-                      <span>{country.country}</span>
-                      <span className="ml-auto text-muted-foreground">
-                        {country.code}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        <Input
-          type="tel"
-          value={phoneNumber}
-          onChange={handlePhoneChange}
-          className={cn(
-            "flex-1",
-            validationError ? "border-red-500 focus-visible:ring-red-500" : "",
-            className
-          )}
-          placeholder={selectedCountry.example}
-          aria-invalid={!!error || !!validationError}
-        />
+              <Command>
+                <CommandInput
+                  placeholder="Search country..."
+                  value={searchQuery}
+                  onValueChange={setSearchQuery}
+                />
+                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandGroup>
+                  <CommandList className="max-h-[300px] overflow-y-auto">
+                    {filteredCountries.map((country) => (
+                      <CommandItem
+                        key={`${country.code}-${country.country}`}
+                        value={`${country.country} ${country.code}`}
+                        onSelect={() => handleCountrySelect(country)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedCountry.code === country.code &&
+                              selectedCountry.country === country.country
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        <span className="mr-2">{country.flag}</span>
+                        <span>{country.country}</span>
+                        <span className="ml-auto text-muted-foreground">
+                          {country.code}
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <Input
+            type="tel"
+            value={phoneNumber}
+            onChange={handlePhoneChange}
+            className={cn(
+              "flex-1",
+              validationError
+                ? "border-red-500 focus-visible:ring-red-500"
+                : "",
+              className
+            )}
+            placeholder={selectedCountry.example}
+            aria-invalid={!!error || !!validationError}
+          />
+        </div>
+        {(error || validationError) && (
+          <p className="text-red-500 text-xs">{error || validationError}</p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Format: {selectedCountry.format} (Example: {selectedCountry.example})
+        </p>
       </div>
-      {(error || validationError) && (
-        <p className="text-red-500 text-xs">{error || validationError}</p>
-      )}
-      <p className="text-xs text-muted-foreground">
-        Format: {selectedCountry.format} (Example: {selectedCountry.example})
-      </p>
-    </div>
+    </>
   );
 }
