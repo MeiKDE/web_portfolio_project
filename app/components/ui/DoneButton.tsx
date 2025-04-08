@@ -1,26 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Save } from "lucide-react";
+
+interface DoneButtonProps {
+  children?: React.ReactNode;
+  onClick: () => void;
+  isSubmitting?: boolean;
+  disabled?: boolean;
+}
 
 export function DoneButton({
+  children = "Done",
   onClick,
-  isSubmitting,
-  disabled,
-}: {
-  onClick: () => void;
-  isSubmitting: boolean;
-  disabled: boolean;
-}) {
+  isSubmitting = false,
+  disabled = false,
+}: DoneButtonProps) {
   return (
     <Button
       variant="ghost"
       size="sm"
       onClick={onClick}
-      disabled={isSubmitting || disabled}
+      disabled={disabled || isSubmitting}
     >
-      <>
-        <Save className="h-4 w-4 mr-2" />
-        {isSubmitting ? "Saving..." : "Done"}
-      </>
+      {children}
     </Button>
   );
 }

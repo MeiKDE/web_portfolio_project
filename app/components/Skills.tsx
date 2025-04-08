@@ -224,7 +224,14 @@ export default function Skills({ userId }: SkillsProps) {
                 onClick={onUpdateSkillList}
                 isSubmitting={isSubmittingItem} //defaults to false
                 disabled={!isSkillValidMap.values().every((isValid) => isValid)}
-              />
+              >
+                {isSubmittingItem ? "Saving..." : "Done"}
+                {isSubmittingItem && (
+                  <span className="ml-2 inline-block">
+                    <LoadingSpinner size="sm" text="" />
+                  </span>
+                )}
+              </DoneButton>
             )}
           </div>
         </div>
