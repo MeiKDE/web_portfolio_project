@@ -6,7 +6,7 @@ import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "@/app/components/ui/AddButton";
 import { EditButton } from "@/app/components/ui/EditButton";
 import { DoneButton } from "@/app/components/ui/DoneButton";
-import { NewCertification } from "@/app/components/Certifications/NewCertification/NewCertification";
+import { NewCertification } from "@/app/components/Certifications/NewCertification";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import {

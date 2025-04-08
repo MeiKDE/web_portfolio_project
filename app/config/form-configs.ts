@@ -29,6 +29,7 @@ export const skillFormConfig: FormConfig = {
           : "Proficiency level must be between 1 and 5",
     },
   ],
+  onFormChange: (id, field, value, isFormValid) => {},
 };
 
 export const certificationFormConfig: FormConfig = {
@@ -62,9 +63,57 @@ export const certificationFormConfig: FormConfig = {
     {
       name: "credentialUrl",
       label: "Credential URL",
-      type: "url",
+      type: "text",
       required: false,
       placeholder: "https://...",
     },
   ],
+  onFormChange: (id, field, value, isFormValid) => {},
+};
+
+export const educationFormConfig: FormConfig = {
+  fields: [
+    {
+      name: "school",
+      label: "School",
+      type: "text",
+      validation: (value: string) =>
+        value.length > 0 ? null : "School is required",
+    },
+    {
+      name: "degree",
+      label: "Degree",
+      type: "text",
+      validation: (value: string) =>
+        value.length > 0 ? null : "Degree is required",
+    },
+    {
+      name: "fieldOfStudy",
+      label: "Field of Study",
+      type: "text",
+      validation: (value: string) =>
+        value.length > 0 ? null : "Field of study is required",
+    },
+    {
+      name: "startDate",
+      label: "Start Date",
+      type: "date",
+      validation: (value: string) =>
+        value.length > 0 ? null : "Start date is required",
+    },
+    {
+      name: "endDate",
+      label: "End Date",
+      type: "date",
+      validation: (value: string) =>
+        value.length > 0 ? null : "End date is required",
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "text",
+      validation: (value: string) => null,
+    },
+  ],
+  onFormChange: (id, field, value, isFormValid) => {},
 };

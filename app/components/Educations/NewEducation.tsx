@@ -4,6 +4,8 @@ import { Education } from "@/app/components/Educations/educations.types";
 import React from "react";
 import { CancelBtn } from "@/app/components/ui/CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
+import { FormInput } from "@/app/components/ui/FormInput";
+import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface NewEducationProps {
   userId: string;
@@ -15,7 +17,6 @@ export function NewEducation({
   onSaveNewEducation,
 }: NewEducationProps) {
   const formValues = {
-    name: "",
     school: "",
     degree: "",
     fieldOfStudy: "",
@@ -26,30 +27,35 @@ export function NewEducation({
   };
 
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
-    name: false,
-    issuer: false,
-    issueDate: false,
-    expiryDate: false,
-    credentialUrl: false,
+    school: false,
+    degree: false,
+    fieldOfStudy: false,
+    startDate: false,
+    endDate: false,
+    description: false,
+    location: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  console.log("isSubmitting", isSubmitting);
-
-  const { values, errors, handleChange, validateForm, resetForm } =
-    useFormValidation(formValues, {
-      name: (value) => (value.length > 0 ? null : "School name is required"),
-      school: (value) => (value.length > 0 ? null : "School name is required"),
-      degree: (value) => (value.length > 0 ? null : "Degree is required"),
-      fieldOfStudy: (value) =>
-        value.length > 0 ? null : "Field of study is required",
-      startDate: (value) =>
-        value.length > 0 ? null : "Start date is required",
-      endDate: (value) => null,
-      description: (value) => null,
-      location: (value) => null,
-    });
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+  } = useFormValidation(formValues, {
+    school: (value) => (value.length > 0 ? null : "School name is required"),
+    degree: (value) => (value.length > 0 ? null : "Degree is required"),
+    fieldOfStudy: (value) =>
+      value.length > 0 ? null : "Field of study is required",
+    startDate: (value) => (value.length > 0 ? null : "Start date is required"),
+    endDate: (value) => null,
+    description: (value) => null,
+    location: (value) => null,
+  });
 
   const getEducationModel = (values: any): Education => {
     return {
@@ -91,69 +97,88 @@ export function NewEducation({
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">School Name*</label>
-          <input
-            type="text"
+          <FormInput
+            field="school"
             value={values.school}
-            onChange={(e) => handleChange("school", e.target.value)}
-            className={`w-full p-2 border rounded ${getInputClassName(
-              "school"
-            )}`}
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("school")}
+            required
           />
-          {errors.school && (
-            <p className="text-red-500 text-xs mt-1">{errors.school}</p>
-          )}
+          <FormErrorMessage error={errors["school"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Degree*</label>
-          <input
-            type="text"
+          <FormInput
+            field="degree"
             value={values.degree}
-            onChange={(e) => handleChange("degree", e.target.value)}
-            className={`w-full p-2 border rounded ${getInputClassName(
-              "degree"
-            )}`}
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("degree")}
+            required
           />
-          {errors.degree && (
-            <p className="text-red-500 text-xs mt-1">{errors.degree}</p>
-          )}
+          <FormErrorMessage error={errors["degree"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
             Field of Study*
           </label>
-          <input
-            type="text"
+          <FormInput
+            field="fieldOfStudy"
             value={values.fieldOfStudy}
-            onChange={(e) => handleChange("fieldOfStudy", e.target.value)}
-            className={`w-full p-2 border rounded ${getInputClassName(
-              "fieldOfStudy"
-            )}`}
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("fieldOfStudy")}
+            required
           />
-          {errors.fieldOfStudy && (
-            <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>
-          )}
+          <FormErrorMessage error={errors["fieldOfStudy"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Start Date*</label>
-          <input
+          <FormInput
+            field="startDate"
             type="date"
             value={values.startDate}
-            onChange={(e) => handleChange("startDate", e.target.value)}
-            className="w-full p-2 border rounded"
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            required
           />
+          <FormErrorMessage error={errors["startDate"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">End Date</label>
-          <input
+          <FormInput
+            field="endDate"
             type="date"
             value={values.endDate}
-            onChange={(e) => handleChange("endDate", e.target.value)}
-            className="w-full p-2 border rounded"
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
           />
+          <FormErrorMessage error={errors["endDate"]} />
         </div>
 
         <CancelBtn resetForm={resetForm} />

@@ -1,16 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Education } from "./Educations/educations.types";
+import { Education } from "@/app/components/Educations/educations.types";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "@/app/components/ui/AddButton";
 import { EditButton } from "@/app/components/ui/EditButton";
 import { DoneButton } from "@/app/components/ui/DoneButton";
-import { NewEducation } from "./Educations/NewEducation/NewEducation";
+import { NewEducation } from "@/app/components/Educations/NewEducation";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
-import { EducationItem } from "./Educations/List/EducationItem";
-import { EducationForm } from "./Educations/List/EducationForm";
+import { EducationItem } from "@/app/components/Educations/List/EducationItem";
+import { EducationForm } from "@/app/components/Educations/List/EducationForm";
 
 // Helper to adapt Education type to match EducationItem requirements
 const adaptEducationForItem = (education: Education) => ({
@@ -52,34 +52,25 @@ export default function Educations({ userId }: EducationsProps) {
   const onAddNewEducation = () => setIsAddingNewItem(true);
 
   const onDeleteEducationList = async (id: string | null) => {
-    if (!window.confirm("Are you sure you want to delete this education?")) {
-      return;
-    }
-
     try {
+      console.log("Deleting education:", id);
       setIsSubmittingItem(true);
 
       const response = await fetch(`/api/educations/${id}`, {
         method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete education");
+        throw new Error("Failed to delete education");
       }
 
-      toast.success("Education deleted successfully");
-      mutate(); // Refresh the data
+      const data = await response.json();
+      console.log("data", data);
     } catch (error) {
       console.error("Error deleting education:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Error deleting education"
-      );
+      toast.error("Error deleting education");
     } finally {
+      mutate();
       setIsSubmittingItem(false);
     }
   };
@@ -90,7 +81,14 @@ export default function Educations({ userId }: EducationsProps) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(educationObject),
+      body: JSON.stringify({
+        institution: educationObject.institution,
+        degree: educationObject.degree,
+        fieldOfStudy: educationObject.fieldOfStudy,
+        startYear: educationObject.startYear,
+        endYear: educationObject.endYear,
+        description: educationObject.description,
+      }),
     });
   };
 
@@ -219,7 +217,7 @@ export default function Educations({ userId }: EducationsProps) {
             {!isAddingNewItem && !isEditingMode && (
               <AddButton onClick={onAddNewEducation} />
             )}
-            {!isEditingMode && !isAddingNewItem && (
+            {!isAddingNewItem && !isEditingMode && (
               <EditButton
                 onClick={() => {
                   setIsEditingMode(true);
@@ -233,7 +231,14 @@ export default function Educations({ userId }: EducationsProps) {
                 disabled={
                   !isEducationValidMap.values().every((isValid) => isValid)
                 }
-              />
+              >
+                {isSubmittingItem ? "Saving..." : "Done"}
+                {isSubmittingItem && (
+                  <span className="ml-2 inline-block">
+                    <LoadingSpinner size="sm" text="" />
+                  </span>
+                )}
+              </DoneButton>
             )}
           </div>
         </div>

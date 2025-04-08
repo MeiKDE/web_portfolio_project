@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { NameInput } from "@/app/components/Skills/NewSkill/NameInput";
-import { CategoryInput } from "@/app/components/Skills/NewSkill/CategoryInput";
-import { ProficiencyInput } from "@/app/components/Skills/NewSkill/ProficiencyInput";
 import { Skill } from "@/app/components/Skills/skills.types";
 import React from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { CancelBtn } from "@/app/components/ui/CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
+import { FormInput } from "@/app/components/ui/FormInput";
+import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface NewSkillProps {
   userId: string;
@@ -82,51 +81,58 @@ export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Skill Name*</label>
-          <NameInput
-            values={values} // The values of the input fields
+          <FormInput
+            field="name"
+            value={values.name}
             handleChange={(field, value) =>
               handleChange(field as keyof typeof values, value)
-            } // The function to handle the change of the input fields
-            setTouchedFields={(fields) => setTouchedFields(fields)} // The function to set the touched fields
-            getInputClassName={getInputClassName} // The function to get the input class name
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("name")}
+            required
           />
-          {errors["name"] && (
-            <p className="text-red-500 text-xs mt-1">{errors["name"]}</p>
-          )}
+          <FormErrorMessage error={errors["name"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Category*</label>
-          <CategoryInput
-            values={values} // The values of the input fields
+          <FormInput
+            field="category"
+            value={values.category}
             handleChange={(field, value) =>
               handleChange(field as keyof typeof values, value)
-            } // The function to handle the change of the input fields
-            setTouchedFields={setTouchedFields} // The function to set the touched fields
-            getInputClassName={getInputClassName} // The function to get the input class name
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("category")}
+            required
           />
-          {errors["category"] && (
-            <p className="text-red-500 text-xs mt-1">{errors["category"]}</p>
-          )}
+          <FormErrorMessage error={errors["category"]} />
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
             Proficiency Level* (1-5)
           </label>
-          <ProficiencyInput
-            values={values} // The values of the input fields
+          <FormInput
+            field="proficiencyLevel"
+            value={values.proficiencyLevel}
+            type="number"
+            min={1}
+            max={5}
             handleChange={(field, value) =>
               handleChange(field as keyof typeof values, value)
-            } // The function to handle the change of the input fields
-            setTouchedFields={setTouchedFields} // The function to set the touched fields
-            getInputClassName={getInputClassName} // The function to get the input class name
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("proficiencyLevel")}
+            required
           />
-          {errors["proficiencyLevel"] && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors["proficiencyLevel"]}
-            </p>
-          )}
+          <FormErrorMessage error={errors["proficiencyLevel"]} />
         </div>
 
         <CancelBtn resetForm={resetForm} />

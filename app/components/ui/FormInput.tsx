@@ -13,6 +13,7 @@ interface FormInputProps {
   touched?: Partial<Record<string, boolean>>;
   className?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 export const FormInput = ({
@@ -28,6 +29,7 @@ export const FormInput = ({
   touched,
   className = "",
   required = false,
+  disabled = false,
 }: FormInputProps) => {
   const hasError = errors?.[field] && touched?.[field];
 
@@ -42,6 +44,7 @@ export const FormInput = ({
       className={`${className} ${hasError ? "border-red-500" : ""}`}
       placeholder={placeholder}
       required={required}
+      disabled={disabled}
     />
   );
 };

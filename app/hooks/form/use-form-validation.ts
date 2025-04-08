@@ -3,7 +3,7 @@ import { useCallback } from "react";
 
 export function useFormValidation<T>(
   initialValues: T,
-  validationRules: Record<keyof T, (value: any) => string | null>
+  validationRules: Record<keyof T, (value: any, allValues?: T) => string | null>
 ) {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
@@ -23,7 +23,7 @@ export function useFormValidation<T>(
   };
 
   const validateField = (field: keyof T, value: any) => {
-    const error = validationRules[field](value);
+    const error = validationRules[field](value, values);
     setErrors((prev) => ({ ...prev, [field]: error }));
     return !error;
   };
@@ -34,7 +34,7 @@ export function useFormValidation<T>(
 
     Object.keys(validationRules).forEach((key) => {
       const field = key as keyof T;
-      const error = validationRules[field](values[field]);
+      const error = validationRules[field](values[field], values);
 
       if (error) {
         newErrors[field] = error;
