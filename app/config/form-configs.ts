@@ -38,18 +38,33 @@ export const certificationFormConfig: FormConfig = {
       label: "Certification Name",
       type: "text",
       required: true,
+      placeholder: "e.g., AWS Solutions Architect, PMP",
     },
     {
       name: "issuer",
       label: "Issuer",
       type: "text",
       required: true,
+      placeholder: "e.g., Amazon Web Services, PMI",
     },
     {
       name: "issueDate",
       label: "Issue Date",
       type: "date",
       required: true,
+    },
+    {
+      name: "expirationDate",
+      label: "Expiration Date",
+      type: "date",
+      required: false,
+    },
+    {
+      name: "credentialUrl",
+      label: "Credential URL",
+      type: "url",
+      required: false,
+      placeholder: "https://...",
     },
   ],
 };
