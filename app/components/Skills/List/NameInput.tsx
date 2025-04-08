@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/input";
+import { FormInput } from "@/app/components/ui/FormInput";
 
 interface NameInputProps {
   values: any;
@@ -16,15 +16,15 @@ export const NameInput = ({
   touched,
 }: NameInputProps) => {
   return (
-    <Input
-      type="text"
+    <FormInput
+      field="name"
       value={values.name}
-      onChange={(e) => {
-        handleChange("name", e.target.value);
-      }}
-      onBlur={() => handleBlur("name")}
-      className={`font-medium mb-2 ${errors.name ? "border-red-500" : ""}`}
+      handleChange={handleChange}
+      handleBlur={handleBlur}
+      errors={errors}
+      touched={touched}
       placeholder="Skill Name *"
+      className="font-medium mb-2"
       required
     />
   );

@@ -1,11 +1,8 @@
-import { NameInput } from "@/app/components/Certifications/List/NameInput";
-import { IssuerInput } from "@/app/components/Certifications/List/IssuerInput";
-import { IssueDateInput } from "@/app/components/Certifications/List/IssueDateInput";
 import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { Certification } from "@/app/components/Certifications/certifications.types";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import React from "react";
-import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
+import { FormField } from "@/app/components/ui/FormField";
 
 interface CertificationFormProps {
   certification: Certification;
@@ -43,42 +40,50 @@ export const CertificationForm = ({
     issueDate: (value) => (value.length > 0 ? null : "Issue date is required"),
   });
 
+  const handleFieldChange = (field: string, value: string) => {
+    onFormChange(certification.id, field, value, validateForm());
+    handleChange(field as keyof typeof values, value);
+  };
+
+  const handleFieldBlur = (field: string) => {
+    handleBlur(field as keyof typeof values);
+  };
+
   return (
     <div className="flex gap-2">
       <div className="w-full">
-        <NameInput
-          values={certification}
-          handleChange={(field, value) => {
-            onFormChange(certification.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+        <FormField
+          field="name"
+          value={certification.name}
+          label="Name"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.name} />
-        <IssuerInput
-          values={certification}
-          handleChange={(field, value) => {
-            onFormChange(certification.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+
+        <FormField
+          field="issuer"
+          value={certification.issuer}
+          label="Issuer"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.issuer} />
-        <IssueDateInput
-          values={certification}
-          handleChange={(field, value) => {
-            onFormChange(certification.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+
+        <FormField
+          field="issueDate"
+          value={certification.issueDate}
+          label="Issue Date"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.issueDate} />
       </div>
       <div className="flex items-start">
         <DeleteButton onDeleteClick={() => onDeleteClick(certification.id)} />

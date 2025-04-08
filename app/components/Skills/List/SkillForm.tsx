@@ -1,11 +1,8 @@
-import { NameInput } from "@/app/components/Skills/List/NameInput";
-import { CategoryInput } from "@/app/components/Skills/List/CategoryInput";
-import { ProficiencyInput } from "@/app/components/Skills/List/ProficiencyInput";
 import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { Skill } from "@/app/components/Skills/skills.types";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import React from "react";
-import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
+import { FormField } from "@/app/components/ui/FormField";
 
 interface SkillFormProps {
   skill: Skill;
@@ -46,48 +43,55 @@ export const SkillForm = ({
         : "Proficiency level must be between 1 and 5",
   });
 
+  const handleFieldChange = (field: string, value: string) => {
+    onFormChange(skill.id, field, value, validateForm());
+    handleChange(field as keyof typeof values, value);
+  };
+
+  const handleFieldBlur = (field: string) => {
+    handleBlur(field as keyof typeof values);
+  };
+
   return (
     <div className="flex gap-2">
       <div className="w-full">
-        <NameInput
-          values={skill}
-          handleChange={(field, value) => {
-            onFormChange(skill.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+        <FormField
+          field="name"
+          value={skill.name}
+          label="Skill Name"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.name} />
 
-        <CategoryInput
-          values={skill}
-          handleChange={(field, value) => {
-            onFormChange(skill.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+        <FormField
+          field="category"
+          value={skill.category}
+          label="Category"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.category} />
 
-        <ProficiencyInput
-          values={skill}
-          handleChange={(field, value) => {
-            onFormChange(skill.id, field, value, validateForm());
-            handleChange(field as keyof typeof values, value);
-          }}
-          handleBlur={(field) => handleBlur(field as keyof typeof values)}
+        <FormField
+          field="proficiencyLevel"
+          value={skill.proficiencyLevel}
+          type="number"
+          min={1}
+          max={5}
+          label="Proficiency Level"
+          handleChange={handleFieldChange}
+          handleBlur={handleFieldBlur}
           errors={errors}
           touched={touched}
+          required
         />
-        <FormErrorMessage error={errors.proficiencyLevel} />
       </div>
-      <div className="flex items-start">
-        <DeleteButton onDeleteClick={() => onDeleteClick(skill.id)} />
-      </div>
+      <DeleteButton onDeleteClick={() => onDeleteClick(skill.id)} />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Input } from "@/components/ui/input";
+import { FormInput } from "@/app/components/ui/FormInput";
 
 interface ProficiencyInputProps {
   values: any;
@@ -15,18 +15,19 @@ export const ProficiencyInput = ({
   errors,
   touched,
 }: ProficiencyInputProps) => {
-  const proficiencyLevel = values.proficiencyLevel || 1;
-
   return (
-    <Input
+    <FormInput
+      field="proficiencyLevel"
+      value={values.proficiencyLevel || 1}
       type="number"
-      min="1"
-      max="10"
-      value={proficiencyLevel}
-      onChange={(e) => handleChange("proficiencyLevel", e.target.value)}
-      onBlur={() => handleBlur("proficiencyLevel")}
-      className={`text-sm ${errors.proficiencyLevel ? "border-red-500" : ""}`}
+      min={1}
+      max={5}
+      handleChange={handleChange}
+      handleBlur={handleBlur}
+      errors={errors}
+      touched={touched}
       placeholder="Proficiency Level (1-5) *"
+      className="text-sm"
       required
     />
   );
