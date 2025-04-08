@@ -197,7 +197,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Header */}
-      {session?.user?.id && <ProfileHeader userId={session.user.id} />}
+      {session?.user?.id && <ProfileHeader id={session.user.id} />}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

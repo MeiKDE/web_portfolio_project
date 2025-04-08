@@ -81,16 +81,12 @@ export const userProfileSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email format"),
-  profile_email: z
-    .string()
-    .email("Invalid email format")
-    .optional()
-    .or(z.literal("")),
-  image: z.string().optional().or(z.literal("")),
-  title: z.string().optional().or(z.literal("")),
-  location: z.string().optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  bio: z.string().optional().or(z.literal("")),
+  profile_email: z.string().email("Invalid email format").optional().nullable(),
+  image: z.string().optional().nullable(),
+  title: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
   isAvailable: z.boolean().optional(),
 });
 

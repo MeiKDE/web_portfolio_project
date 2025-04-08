@@ -10,9 +10,10 @@ import { DoneButton } from "@/app/components/ui/DoneButton";
 import { toast } from "sonner";
 import { ProfileItem } from "@/app/components/Profile/List/ProfileItem";
 import { ProfileForm } from "@/app/components/Profile/List/ProfileForm";
+import { useSession } from "next-auth/react";
 
 interface ProfileHeaderProps {
-  userId: string;
+  id: string;
 }
 
 interface UserData {
@@ -28,8 +29,8 @@ interface UserData {
   isAvailable?: boolean;
 }
 
-export default function ProfileHeader({ userId }: ProfileHeaderProps) {
-  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
+export default function ProfileHeader({ id }: ProfileHeaderProps) {
+  const { data: session } = useSession();
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
   const [profileData, setProfileData] = useState<UserData | null>(null);
@@ -39,10 +40,21 @@ export default function ProfileHeader({ userId }: ProfileHeaderProps) {
     Map<string, boolean>
   >(new Map());
 
-  // Fetch profile data using the same pattern as Skills
+  // Add debugging logs
+  console.log("Profile ID:", id);
+  console.log("Session:", session);
+
   const { data, isLoading, error, mutate } = useFetchData<UserData>(
-    `/api/users/${userId}`
+    `/api/users/${id}`
   );
+
+  // Add debugging for API response
+  console.log("API Response data:", data);
+  console.log("API Error:", error);
+
+  // Add this check to determine if the current user can edit the profile
+  const canEditProfile = session?.user?.id === id;
+  console.log("canEditProfile", canEditProfile);
 
   useEffect(() => {
     if (data) {
@@ -54,25 +66,34 @@ export default function ProfileHeader({ userId }: ProfileHeaderProps) {
   // Update profile
   const updateProfile = async (profileData: UserData) => {
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      // Filter out null or undefined values
+      const cleanedData = Object.fromEntries(
+        Object.entries(profileData).filter(
+          ([_, value]) => value !== null && value !== undefined
+        )
+      );
+
+      const response = await fetch(`/api/users/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(profileData),
+        body: JSON.stringify(cleanedData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to update profile");
       }
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Profile updated successfully");
-      }
+      toast.success("Profile updated successfully");
+      return result.data;
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
       throw error;
     }
   };
@@ -80,6 +101,7 @@ export default function ProfileHeader({ userId }: ProfileHeaderProps) {
   // Handle profile updates
   const onUpdateProfile = async () => {
     setIsSubmittingItem(true);
+    console.log("updating profile - formData", formData);
     try {
       if (formData) {
         await updateProfile(formData);
@@ -110,49 +132,79 @@ export default function ProfileHeader({ userId }: ProfileHeaderProps) {
   };
 
   if (isLoading) return <LoadingSpinner />;
-  if (error) return <div>Error loading profile information</div>;
+  if (error) {
+    return (
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Error loading profile information</p>
+            <button
+              onClick={() => mutate()}
+              className="mt-2 text-blue-600 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="text-center text-gray-600">
+            <p>No profile data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Profile</h3>
-          <div className="flex gap-2">
-            {!isEditingMode && (
-              <EditButton
-                onClick={() => {
-                  setIsEditingMode(true);
-                }}
-              />
-            )}
-            {isEditingMode && (
-              <DoneButton
-                onClick={onUpdateProfile}
-                isSubmitting={isSubmittingItem}
-                disabled={
-                  !isProfileValidMap.values().every((isValid) => isValid)
-                }
-              >
-                {isSubmittingItem ? "Saving..." : "Done"}
-                {isSubmittingItem && (
-                  <span className="ml-2 inline-block">
-                    <LoadingSpinner size="sm" text="" />
-                  </span>
-                )}
-              </DoneButton>
-            )}
-          </div>
+          {/* Only show edit buttons if user can edit the profile */}
+          {canEditProfile && (
+            <div className="flex gap-2">
+              {!isEditingMode && (
+                <EditButton
+                  onClick={() => {
+                    setIsEditingMode(true);
+                  }}
+                />
+              )}
+              {isEditingMode && (
+                <DoneButton
+                  onClick={onUpdateProfile}
+                  isSubmitting={isSubmittingItem}
+                  disabled={
+                    !isProfileValidMap.values().every((isValid) => isValid)
+                  }
+                >
+                  {isSubmittingItem ? "Saving..." : "Done"}
+                  {isSubmittingItem && (
+                    <span className="ml-2 inline-block">
+                      <LoadingSpinner size="sm" text="" />
+                    </span>
+                  )}
+                </DoneButton>
+              )}
+            </div>
+          )}
         </div>
-
+        {/* Update ProfileImageUpload to respect editing permissions */}
         <div className="flex flex-col md:flex-row gap-6">
           <ProfileImageUpload
             user={formData || profileData}
-            editable={isEditingMode}
+            editable={isEditingMode && canEditProfile}
             onImageChange={(imageUrl) =>
               onProfileChange("image", imageUrl, true)
             }
           />
-
           <div className="flex-1">
             {!isEditingMode && profileData ? (
               <ProfileItem
@@ -160,6 +212,9 @@ export default function ProfileHeader({ userId }: ProfileHeaderProps) {
                   name: profileData.name,
                   title: profileData.title || "",
                   description: profileData.bio || "",
+                  location: profileData.location || "",
+                  phone: profileData.phone,
+                  profile_email: profileData.profile_email || profileData.email,
                 }}
               />
             ) : (
