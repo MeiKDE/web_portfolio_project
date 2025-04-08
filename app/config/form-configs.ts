@@ -117,3 +117,59 @@ export const educationFormConfig: FormConfig = {
   ],
   onFormChange: (id, field, value, isFormValid) => {},
 };
+
+export const profileFormConfig: FormConfig = {
+  fields: [
+    {
+      name: "name",
+      label: "Full Name",
+      type: "text",
+      required: true,
+      placeholder: "Enter your full name",
+    },
+    {
+      name: "title",
+      label: "Professional Title",
+      type: "text",
+      required: true,
+      placeholder: "e.g., Senior Software Engineer",
+    },
+    {
+      name: "bio",
+      label: "Bio",
+      type: "text",
+      required: true,
+      placeholder: "Write a brief professional summary",
+    },
+    {
+      name: "location",
+      label: "Location",
+      type: "text",
+      required: true,
+      placeholder: "e.g., San Francisco, CA",
+    },
+    {
+      name: "phone",
+      label: "Phone",
+      type: "text",
+      required: false,
+      placeholder: "Enter your phone number",
+      validation: (value) => {
+        const phoneRegex = /^\+?[\d\s-()]+$/;
+        return phoneRegex.test(value) ? null : "Invalid phone number format";
+      },
+    },
+    {
+      name: "profile_email",
+      label: "Contact Email",
+      type: "text",
+      required: true,
+      placeholder: "Enter your contact email",
+      validation: (value) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(value) ? null : "Invalid email format";
+      },
+    },
+  ],
+  onFormChange: (id, field, value, isFormValid) => {},
+};
