@@ -1,6 +1,6 @@
 import { JobDashboard } from "@/app/job-applications/components/JobDashboard";
-import { getJobListings } from "@/lib/job-data";
-import { getUserData } from "@/lib/user-data";
+import { getJobListings } from "@/app/lib/data/job-data";
+import { getUserData } from "@/app/lib/data/user-data";
 
 export default async function JobsPage() {
   // Fetch user data and job listings
