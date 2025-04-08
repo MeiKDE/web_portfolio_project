@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef, JSX } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, Link, Upload, X } from "lucide-react";
+import { CustomImageAvatar } from "@/app/components/ui/CustomImageAvatar";
 
 interface UserData {
   id?: string;
@@ -33,23 +33,18 @@ export const ProfileImageUpload = ({
   const [imageInputType, setImageInputType] = useState<"url" | "file">("url");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Size mappings
-  const sizeClasses = {
-    sm: "h-16 w-16",
-    md: "h-32 w-32",
-    lg: "h-40 w-40",
-  };
-
-  const containerClass = `relative ${sizeClasses[size]} overflow-hidden rounded-full border-4 border-white shadow-md ${className}`;
-  const fallbackClass = `flex h-full w-full items-center justify-center bg-gray-200 text-2xl font-bold text-gray-500`;
-
   // Get first letter of name for fallback
   const firstLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
 
+  // Handle image url change
+  // Sets the image url to the value of the input
   const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setImageUrl(e.target.value);
   };
 
+  // Handle file change
+  // Sets the image url to the value of the file
+  // The file comes from the file input
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -62,35 +57,43 @@ export const ProfileImageUpload = ({
     }
   };
 
+  // Handle save image
+  // Saves the image to the user
   const handleSaveImage = () => {
+    // If the image has changed, call the onImageChange function
     if (onImageChange && imageUrl !== user?.image) {
       onImageChange(imageUrl);
     }
+    // Close the edit mode
     setIsEditingImage(false);
   };
 
+  // Handle cancel edit
+  // Cancels the edit mode
   const handleCancelEdit = () => {
     setImageUrl(user?.image || "");
     setIsEditingImage(false);
   };
 
+  // Trigger file input
+  // Opens the file input
   const triggerFileInput = () => {
     fileInputRef.current?.click();
   };
 
+  // Render the component
   return (
     <div className="flex-shrink-0">
-      <div className={containerClass}>
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={user?.name || "User"}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <div className={fallbackClass}>{firstLetter}</div>
-        )}
+      <div className="relative">
+        <CustomImageAvatar
+          src={imageUrl}
+          alt={user?.name || "User"}
+          size={size}
+          className={className}
+          rounded
+          bordered
+          fallback={firstLetter}
+        />
 
         {editable && !isEditingImage && (
           <button
@@ -105,6 +108,7 @@ export const ProfileImageUpload = ({
       {editable && isEditingImage && (
         <div className="mt-4 p-4 border rounded-md shadow-sm bg-white">
           <div className="flex space-x-2 mb-3">
+            {/* url button, image input type is "url" */}
             <Button
               variant={imageInputType === "url" ? "default" : "outline"}
               size="sm"
@@ -114,6 +118,7 @@ export const ProfileImageUpload = ({
               <Link className="mr-2 h-4 w-4" />
               URL
             </Button>
+            {/* upload button, image input type is "file" */}
             <Button
               variant={imageInputType === "file" ? "default" : "outline"}
               size="sm"
@@ -124,7 +129,7 @@ export const ProfileImageUpload = ({
               Upload
             </Button>
           </div>
-
+          {/* If the image input type is url, show the url input */}
           {imageInputType === "url" ? (
             <Input
               type="text"
@@ -135,6 +140,7 @@ export const ProfileImageUpload = ({
             />
           ) : (
             <>
+              {/* If the image input type is file, show the file input */}
               <Input
                 ref={fileInputRef}
                 type="file"
@@ -142,6 +148,7 @@ export const ProfileImageUpload = ({
                 onChange={handleFileChange}
                 className="hidden"
               />
+              {/* If the image input type is file, show the button to choose the image file */}
               <Button
                 variant="outline"
                 onClick={triggerFileInput}
