@@ -78,41 +78,41 @@ export const educationFormConfig: FormConfig = {
       label: "School",
       type: "text",
       validation: (value: string) =>
-        value.length > 0 ? null : "School is required",
+        !value || value.trim().length === 0 ? "School is required" : null,
     },
     {
       name: "degree",
       label: "Degree",
       type: "text",
       validation: (value: string) =>
-        value.length > 0 ? null : "Degree is required",
+        !value || value.trim().length === 0 ? "Degree is required" : null,
     },
     {
       name: "fieldOfStudy",
       label: "Field of Study",
       type: "text",
       validation: (value: string) =>
-        value.length > 0 ? null : "Field of study is required",
+        !value || value.trim().length === 0
+          ? "Field of study is required"
+          : null,
     },
     {
       name: "startDate",
       label: "Start Date",
       type: "date",
-      validation: (value: string) =>
-        value.length > 0 ? null : "Start date is required",
+      validation: (value: string) => (!value ? "Start date is required" : null),
     },
     {
       name: "endDate",
       label: "End Date",
       type: "date",
-      validation: (value: string) =>
-        value.length > 0 ? null : "End date is required",
+      validation: (value: string) => (!value ? "End date is required" : null),
     },
     {
       name: "description",
       label: "Description",
       type: "text",
-      validation: (value: string) => null,
+      validation: () => null, // Optional field
     },
   ],
   onFormChange: (id, field, value, isFormValid) => {},

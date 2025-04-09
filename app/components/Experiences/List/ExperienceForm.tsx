@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
+import { formatDateForInput } from "@/app/lib/utils/date-utils";
 
 interface ExperienceFormProps {
   experience: Experience;
@@ -22,33 +23,38 @@ export const ExperienceForm = ({
   onFormChange,
 }: ExperienceFormProps) => {
   const initialValues = {
-    companyName: experience.companyName,
-    position: experience.position,
-    startDate: experience.startDate,
-    endDate: experience.endDate || "",
-    isCurrentPosition: experience.isCurrentPosition,
-    description: experience.description,
+    companyName: experience.companyName || "",
+    position: experience.position || "",
+    startDate: experience.startDate
+      ? formatDateForInput(experience.startDate)
+      : "",
+    endDate: experience.endDate ? formatDateForInput(experience.endDate) : "",
+    isCurrentPosition: experience.isCurrentPosition || false,
+    description: experience.description || "",
     location: experience.location || "",
   };
 
   const { values, errors, handleChange, validateForm } = useFormValidation(
     initialValues,
     {
-      companyName: (value: string) =>
-        value.length > 0 ? null : "Company name is required",
-      position: (value: string) =>
-        value.length > 0 ? null : "Position is required",
-      startDate: (value: string) =>
-        value.length > 0 ? null : "Start date is required",
-      endDate: (value: string, allValues?: typeof initialValues) => {
+      companyName: (value: string | undefined) =>
+        value && value.length > 0 ? null : "Company name is required",
+      position: (value: string | undefined) =>
+        value && value.length > 0 ? null : "Position is required",
+      startDate: (value: string | undefined) =>
+        value && value.length > 0 ? null : "Start date is required",
+      endDate: (
+        value: string | undefined,
+        allValues?: typeof initialValues
+      ) => {
         if (allValues?.isCurrentPosition) return null;
         if (!value) return "End date is required for past positions";
         if (value < allValues?.startDate!)
           return "End date must be after start date";
         return null;
       },
-      description: (value: string) =>
-        value.length > 0 ? null : "Description is required",
+      description: (value: string | undefined) =>
+        value && value.length > 0 ? null : "Description is required",
       isCurrentPosition: () => null,
       location: () => null,
     }

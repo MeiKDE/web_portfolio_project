@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuthError } from "@/app/hooks/auth/use-auth-error";
+import { handleAuthError } from "@/app/lib/auth/auth-errors";
 
 interface LoginFormProps {
   callbackUrl?: string;
@@ -21,14 +23,16 @@ export default function LoginForm({
 }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(initialError || "");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState("");
   const router = useRouter();
+  const { errorMessage, clearError } = useAuthError();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setIsLoading(true);
+    clearError();
+    setFormError("");
 
     try {
       const result = await signIn("credentials", {
@@ -38,14 +42,14 @@ export default function LoginForm({
       });
 
       if (result?.error) {
-        setError(result.error);
+        setFormError(handleAuthError(result.error));
       } else if (result?.ok) {
         router.push(callbackUrl);
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      setFormError(handleAuthError(err));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -66,9 +70,9 @@ export default function LoginForm({
         </p>
       </div>
 
-      {error && (
+      {formError && (
         <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{formError}</AlertDescription>
         </Alert>
       )}
 
@@ -111,8 +115,8 @@ export default function LoginForm({
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
         </Button>
 
         <div className="relative flex items-center justify-center">

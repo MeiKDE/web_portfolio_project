@@ -1,10 +1,7 @@
-import React, { JSX } from "react";
+import React from "react";
 import { Experience } from "@/app/components/Experiences/experiences.types";
 import { Briefcase } from "lucide-react";
-import {
-  formatDateForDisplay,
-  calculateDuration,
-} from "@/app/lib/utils/date-utils";
+import { formatDateForDisplay } from "@/app/lib/utils/date-utils";
 
 interface ExperienceItemProps {
   experience: Experience;
@@ -32,14 +29,11 @@ export const ExperienceItem = ({ experience }: ExperienceItemProps) => {
               {experience.isCurrentPosition
                 ? "Present"
                 : formatDateForDisplay(experience.endDate!)}
-              {" · "}
-              {calculateDuration(
-                experience.startDate,
-                experience.isCurrentPosition
-                  ? new Date().toISOString()
-                  : experience.endDate!
-              )}
             </span>
+
+            {experience.isCurrentPosition && (
+              <span className="text-primary text-sm">Current Position</span>
+            )}
           </div>
 
           {experience.description && (
