@@ -10,9 +10,10 @@ import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 interface NewSkillProps {
   userId: string;
   onSaveNewSkill: (values: Skill) => void | Promise<void>;
+  onCancel: () => void;
 }
 
-export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
+export function NewSkill({ userId, onSaveNewSkill, onCancel }: NewSkillProps) {
   const formValues = {
     name: "",
     category: "",
@@ -75,6 +76,11 @@ export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
     return errors[field as keyof typeof errors] ? "border-red-500" : "";
   };
 
+  const handleCancel = () => {
+    resetForm();
+    onCancel();
+  };
+
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Skill</h4>
@@ -135,7 +141,7 @@ export function NewSkill({ userId, onSaveNewSkill }: NewSkillProps) {
           <FormErrorMessage error={errors["proficiencyLevel"]} />
         </div>
 
-        <CancelBtn resetForm={resetForm} />
+        <CancelBtn resetForm={handleCancel} />
         <SaveBtn isSubmitting={isSubmitting} component="Skill" />
       </form>
     </div>

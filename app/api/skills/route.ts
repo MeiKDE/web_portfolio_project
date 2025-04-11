@@ -19,14 +19,19 @@ const skillSchema = z.object({
 });
 
 // CREATE a new skill
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session) {
+
+  if (!session?.user?.id) {
     return errorResponse("Unauthorized", 401);
   }
 
-  // Get the skill data from the request
-  const data = await request.json();
+  const data = await req.json();
+
+  // Verify the userId matches the authenticated user
+  if (data.userId !== session.user.id) {
+    return errorResponse("Unauthorized", 403);
+  }
 
   // Validate the data
   const validationResult = skillSchema.safeParse(data);

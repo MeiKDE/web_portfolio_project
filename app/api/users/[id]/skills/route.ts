@@ -18,35 +18,56 @@ const skillSchema = z.object({
 });
 
 // GET skills for a specific user
-export const GET = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { userId: string } },
-    user
-  ) => {
-    try {
-      console.log("Fetching skills for user:", params.userId);
-      const userId = params.userId;
+// export const GET = withAuth(
+//   async (
+//     request: NextRequest,
+//     { params }: { params: { userId: string } },
+//     user
+//   ) => {
+//     try {
+//       console.log("Fetching skills for user:", params.userId);
+//       const userId = params.userId;
 
-      // Fetch the skills for the specified user
-      const skills = await prisma.skill.findMany({
-        where: {
-          userId: userId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+//       // Fetch the skills for the specified user
+//       const skills = await prisma.skill.findMany({
+//         where: {
+//           userId: userId,
+//         },
+//         orderBy: {
+//           createdAt: "desc",
+//         },
+//       });
 
-      return successResponse(skills);
-    } catch (error) {
-      console.error("Error fetching skills:", error);
+//       return successResponse(skills);
+//     } catch (error) {
+//       console.error("Error fetching skills:", error);
 
-      if (error instanceof Error) {
-        return errorResponse(`Failed to fetch skills: ${error.message}`, 500);
-      }
+//       if (error instanceof Error) {
+//         return errorResponse(`Failed to fetch skills: ${error.message}`, 500);
+//       }
 
-      return errorResponse("Failed to fetch skills", 500);
-    }
+//       return errorResponse("Failed to fetch skills", 500);
+//     }
+//   }
+// );
+
+export async function GET(
+  request: Request,
+  { params }: { params: { userId: string } }
+) {
+  try {
+    const skills = await prisma.skill.findMany({
+      where: {
+        userId: params.userId, // Make sure this filtering is in place
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return successResponse(skills);
+  } catch (error) {
+    console.error("Error fetching skills:", error);
+    throw error;
   }
-);
+}
