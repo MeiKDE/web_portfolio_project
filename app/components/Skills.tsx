@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import { SkillItem } from "./Skills/List/SkillItem";
 import { SkillForm } from "./Skills/List/SkillForm";
+import { skillsService } from "@/app/services/skillsService";
 
 interface SkillsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
@@ -59,14 +60,14 @@ export default function Skills({ userId }: SkillsProps) {
       // Think Reduce as: I have a list,
       // and I want to turn it into a single thing by going through it one item at a time.
       //That "thing" could be an array, object, number — anything. In your case,
-      // it’s an object with two parts: editedMap and validationMap.
+      // it's an object with two parts: editedMap and validationMap.
       if (mode === "edit") {
         const { editedMap, validationMap } = data.reduce<{
           editedMap: Record<string, Skill>;
           validationMap: Record<string, boolean>;
         }>(
           // Skill is the current skill we're looping over — just one item from the data array.
-          // acc is short for "accumulator" — it's the object we’re building up with each step.
+          // acc is short for "accumulator" — it's the object we're building up with each step.
           // It's like a snowball that keeps growing as we go through the list.
 
           // Let's say the data looks like this:
@@ -147,7 +148,7 @@ export default function Skills({ userId }: SkillsProps) {
         } as Skill, // Type assertion to ensure correct typing
       },
       //This just updates whether the specific skill's form is valid or not.
-      //Let’s say you filled in the form correctly — then it might set:
+      //Let's say you filled in the form correctly — then it might set:
       // validation["1"] = true;
       validation: {
         ...prev.validation,
@@ -168,14 +169,7 @@ export default function Skills({ userId }: SkillsProps) {
   const onDeleteSkillList = async (id: string | null) => {
     try {
       setIsSubmitting(true);
-      const response = await fetch(`/api/skills/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete skill");
-      }
-
+      await skillsService.deleteSkill(id as string);
       toast.success("Skill deleted successfully");
     } catch (error) {
       console.error("Error deleting skill:", error);
@@ -186,27 +180,6 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
-  const updateSkill = async (id: string, skillObject: Skill) => {
-    const response = await fetch(`/api/skills/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        ...skillObject,
-        userId, // Include userId in the request
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to update skill");
-    }
-
-    return response.json();
-  };
-
   // Update a skill by id
   const onUpdateSkillList = async () => {
     setIsSubmitting(true);
@@ -215,7 +188,7 @@ export default function Skills({ userId }: SkillsProps) {
       // Process all edited skills in parallel and wait for all to complete
       await Promise.all(
         Object.entries(skills.edited).map(([id, skill]) =>
-          updateSkill(id, skill)
+          skillsService.updateSkill(id, skill, userId)
         )
       );
 
@@ -228,7 +201,6 @@ export default function Skills({ userId }: SkillsProps) {
         validation: {},
       }));
 
-      // Only change mode after everything is complete
       setMode("view");
     } catch (error) {
       console.error("Error updating skills:", error);
@@ -239,27 +211,10 @@ export default function Skills({ userId }: SkillsProps) {
     }
   };
 
-  // console.log("data", data);
-
   const onSaveNewSkill = async (skillObject: Skill) => {
     try {
       setIsSubmitting(true);
-
-      const response = await fetch(`/api/skills/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...skillObject,
-          userId, // Include userId in the request
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add skill");
-      }
-
+      await skillsService.createSkill(skillObject, userId);
       toast.success("Skill added successfully");
       setMode("view");
     } catch (error) {
