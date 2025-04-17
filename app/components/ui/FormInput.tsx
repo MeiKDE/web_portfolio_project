@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 
 interface FormInputProps {
   field: string;
-  value: string | number;
+  value: string | number | null | undefined;
   type?: "text" | "number" | "date";
   placeholder?: string;
   min?: number;
@@ -33,10 +33,12 @@ export const FormInput = ({
 }: FormInputProps) => {
   const hasError = errors?.[field] && touched?.[field];
 
+  const inputValue = value ?? "";
+
   return (
     <Input
       type={type}
-      value={value}
+      value={inputValue}
       min={min}
       max={max}
       onChange={(e) => handleChange(field, e.target.value)}
