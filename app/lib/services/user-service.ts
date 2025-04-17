@@ -4,7 +4,14 @@ import prisma from "@/app/lib/db/prisma";
 
 export async function getUserProfile(userId: string) {
   try {
-    console.log("ln07: Getting user profile for user ID:", userId);
+    console.log("Attempting to fetch user profile with ID:", userId);
+
+    // Verify userId is valid
+    if (!userId) {
+      console.error("Invalid userId provided:", userId);
+      throw new Error("Invalid user ID");
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -14,8 +21,29 @@ export async function getUserProfile(userId: string) {
       },
     });
 
+    // Log the query result
+    console.log(
+      "Database query result:",
+      user ? "User found" : "No user found"
+    );
+
     if (!user) {
-      throw new Error("User not found");
+      // Instead of throwing error, return null or default profile
+      return {
+        id: userId,
+        name: "",
+        email: "",
+        phone: "",
+        profile_email: "",
+        location: "",
+        title: "",
+        bio: "",
+        hasCompletedProfileSetup: false,
+        isUploadResumeForProfile: false,
+        experiences: [],
+        education: [],
+        skills: [],
+      };
     }
 
     return {
@@ -34,7 +62,12 @@ export async function getUserProfile(userId: string) {
       skills: user.skills,
     };
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    console.error("Detailed error in getUserProfile:", {
+      error,
+      userId,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw error;
   }
 }

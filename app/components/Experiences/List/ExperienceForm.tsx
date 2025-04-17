@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DeleteButton } from "@/app/components/ui/DeleteBtn";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { formatDateForInput } from "@/app/lib/utils/date-utils";
+import * as React from "react";
 
 interface ExperienceFormProps {
   experience: Experience;
