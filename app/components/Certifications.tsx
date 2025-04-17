@@ -16,6 +16,8 @@ import {
 
 import { CertificationForm } from "./Certifications/List/CertificationForm";
 import { CertificationItem } from "./Certifications/List/CertificationItem";
+import * as React from "react";
+
 interface CertificationsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
 }

@@ -1,5 +1,4 @@
 import { Skill } from "@/app/components/Skills/skills.types";
-import { successResponse, errorResponse } from "@/lib/api-helpers";
 
 export const skillsService = {
   async deleteSkill(id: string) {

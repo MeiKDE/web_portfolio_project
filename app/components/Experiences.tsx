@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ExperienceItem } from "./Experiences/List/ExperienceItem";
 import { ExperienceForm } from "./Experiences/List/ExperienceForm";
 import { Briefcase } from "lucide-react";
+import * as React from "react";
 
 interface ExperiencesProps {
   userId: string;

@@ -1,10 +1,10 @@
 "use client";
-
-import React, { useState, useRef, JSX } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, Link, Upload, X } from "lucide-react";
 import { CustomImageAvatar } from "@/app/components/ui/CustomImageAvatar";
+import * as React from "react";
+import { useRef, useState } from "react";
 
 interface UserData {
   id?: string;

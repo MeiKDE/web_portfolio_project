@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import { EducationItem } from "@/app/components/Educations/List/EducationItem";
 import { EducationForm } from "@/app/components/Educations/List/EducationForm";
+import * as React from "react";
 
 // Helper to adapt Education type to match EducationItem requirements
 const adaptEducationForItem = (education: Education) => ({

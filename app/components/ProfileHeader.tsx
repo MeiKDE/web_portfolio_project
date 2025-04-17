@@ -1,6 +1,4 @@
 "use client";
-
-import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { ProfileImageUpload } from "@/app/components/ProfileImageUpload";
@@ -11,6 +9,8 @@ import { toast } from "sonner";
 import { ProfileItem } from "@/app/components/Profile/List/ProfileItem";
 import { ProfileForm } from "@/app/components/Profile/List/ProfileForm";
 import { useSession } from "next-auth/react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 
 interface ProfileHeaderProps {
   id: string;

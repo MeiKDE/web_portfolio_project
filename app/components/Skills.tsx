@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skill } from "@/app/components/Skills/skills.types";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
@@ -12,6 +11,8 @@ import { toast } from "sonner";
 import { SkillItem } from "./Skills/List/SkillItem";
 import { SkillForm } from "./Skills/List/SkillForm";
 import { skillsService } from "@/app/services/skillsService";
+import * as React from "react";
+import { useState, useEffect } from "react";
 
 interface SkillsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
