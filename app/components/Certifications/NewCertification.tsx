@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { Certification } from "@/app/components/Certifications/certifications.types";
-import React from "react";
+import * as React from "react";
 import { CancelBtn } from "@/app/components/ui/CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
 

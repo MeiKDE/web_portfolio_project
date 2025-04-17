@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
@@ -16,9 +16,9 @@ interface RegisterFormProps {
 }
 
 export default function RegisterForm({ onSubmit, error }: RegisterFormProps) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +26,11 @@ export default function RegisterForm({ onSubmit, error }: RegisterFormProps) {
     setLoading(true);
 
     try {
-      await onSubmit({ name, email, password });
+      await onSubmit({
+        name: nameRef.current?.value || "",
+        email: emailRef.current?.value || "",
+        password: passwordRef.current?.value || "",
+      });
     } finally {
       setLoading(false);
     }
@@ -66,8 +70,7 @@ export default function RegisterForm({ onSubmit, error }: RegisterFormProps) {
               name="name"
               type="text"
               required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              ref={nameRef}
               className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               placeholder="Full Name"
             />
@@ -82,8 +85,7 @@ export default function RegisterForm({ onSubmit, error }: RegisterFormProps) {
               type="email"
               autoComplete="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              ref={emailRef}
               className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               placeholder="Email address"
             />
@@ -98,8 +100,7 @@ export default function RegisterForm({ onSubmit, error }: RegisterFormProps) {
               type="password"
               autoComplete="new-password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              ref={passwordRef}
               className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               placeholder="Password"
             />

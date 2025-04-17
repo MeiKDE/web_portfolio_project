@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { signIn } from "next-auth/react";
@@ -21,8 +21,8 @@ export default function LoginForm({
   callbackUrl = "/",
   error: initialError,
 }: LoginFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const router = useRouter();
@@ -33,6 +33,9 @@ export default function LoginForm({
     setIsLoading(true);
     clearError();
     setFormError("");
+
+    const email = emailRef.current?.value || "";
+    const password = passwordRef.current?.value || "";
 
     try {
       const result = await signIn("credentials", {
@@ -86,8 +89,7 @@ export default function LoginForm({
               type="email"
               autoComplete="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              ref={emailRef}
               className="mt-1"
               placeholder="you@example.com"
             />
@@ -108,8 +110,7 @@ export default function LoginForm({
               type="password"
               autoComplete="current-password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              ref={passwordRef}
               className="mt-1"
             />
           </div>

@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/db/prisma";
 import { randomBytes } from "crypto";
 
 export async function generateVerificationToken(email: string) {

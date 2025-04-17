@@ -1,5 +1,5 @@
 "use client";
-
+import * as React from "react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/app/hooks/ui/useToast";
-import { useMobile } from "@/app/hooks/ui/useMobile";
-import { getUserProfile } from "@/app/lib/services/user-service";
 
 interface JobListingsProps {
   jobListings: any[];
