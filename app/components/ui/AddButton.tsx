@@ -1,6 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-export function AddButton({ onClick }: { onClick: () => void }) {
+
+interface AddButtonProps {
+  onClick: () => void;
+}
+
+export function AddButton({ onClick }: AddButtonProps) {
   return (
     <Button variant="ghost" size="sm" onClick={onClick}>
       <>

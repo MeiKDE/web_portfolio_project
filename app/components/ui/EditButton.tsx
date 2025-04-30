@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 
-export function EditButton({ onClick }: { onClick: () => void }) {
+interface EditButtonProps {
+  onClick: () => void;
+}
+
+export function EditButton({ onClick }: EditButtonProps) {
   return (
     <Button variant="ghost" size="sm" onClick={onClick}>
       <>

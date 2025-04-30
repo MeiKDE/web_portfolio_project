@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { JSX } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Certification } from "@/app/components/Certifications/certifications.types";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
@@ -32,10 +33,10 @@ export default function Certifications({ userId }: CertificationsProps) {
   const [formData, setFormData] = useState<Certification[]>([]);
   const [changedCertificationId, setChangedCertificationId] = useState<
     Set<string>
-  >(new Set());
+  >(new Set()); //Set is a collection of unique values
   const [isCertificationValidMap, setIsCertificationValidMap] = useState<
     Map<string, boolean>
-  >(new Map());
+  >(new Map()); //Map is a collection of key-value pairs
 
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
     `/api/users/${userId}/certifications`
