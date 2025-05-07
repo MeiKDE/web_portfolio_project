@@ -11,7 +11,7 @@ interface NewCertificationProps {
 }
 
 export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
-  const formValues = {
+  const initialValues = {
     name: "",
     issuer: "",
     issueDate: "",
@@ -19,42 +19,37 @@ export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
     credentialUrl: "",
   };
 
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
-    name: false,
-    issuer: false,
-    issueDate: false,
-    expiryDate: false,
-    credentialUrl: false,
-  });
+  const validationRules = {
+    name: (value: string) =>
+      value.length > 0 ? null : "Certification name is required",
+    issuer: (value: string) => (value.length > 0 ? null : "Issuer is required"),
+    issueDate: (value: string) =>
+      value.length > 0 ? null : "Issue date is required",
+    expiryDate: (value: string) => null,
+    credentialUrl: (value: string) => null,
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  console.log("isSubmitting", isSubmitting);
-
   const { values, errors, handleChange, validateForm, resetForm } =
-    useFormValidation(formValues, {
-      name: (value) =>
-        value.length > 0 ? null : "Certification name is required",
-      issuer: (value) => (value.length > 0 ? null : "Issuer is required"),
-      issueDate: (value) =>
-        value.length > 0 ? null : "Issue date is required",
-      expiryDate: (value) => null,
-      credentialUrl: (value) => null,
+    useFormValidation({
+      initialValues,
+      validationRules,
+      validateOnChange: true,
+      validateOnBlur: true,
     });
 
-  const getCertificationModel = (values: any): Certification => {
-    return {
-      id: "",
-      userId,
-      name: values.name,
-      issuer: values.issuer,
-      issueDate: values.issueDate,
-      expirationDate: values.expiryDate || null,
-      credentialUrl: values.credentialUrl || null,
-    };
-  };
+  const getCertificationModel = (): Certification => ({
+    id: "",
+    userId,
+    name: values.name,
+    issuer: values.issuer,
+    issueDate: values.issueDate,
+    expirationDate: values.expiryDate || undefined,
+    credentialUrl: values.credentialUrl || undefined,
+  });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -64,12 +59,13 @@ export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
       return;
     }
 
-    onSaveNew(getCertificationModel(values));
+    await onSaveNew(getCertificationModel());
+    resetForm();
+    setIsSubmitting(false);
   };
 
-  const getInputClassName = (field: string) => {
-    return errors[field as keyof typeof errors] ? "border-red-500" : "";
-  };
+  const getInputClassName = (field: string) =>
+    errors[field as keyof typeof errors] ? "border-red-500" : "";
 
   return (
     <div className="mb-6 border p-4 rounded-md">
@@ -144,8 +140,10 @@ export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
           />
         </div>
 
-        <CancelBtn resetForm={resetForm} />
-        <SaveBtn isSubmitting={isSubmitting} component="Certification" />
+        <div className="flex gap-2">
+          <CancelBtn resetForm={resetForm} />
+          <SaveBtn isSubmitting={isSubmitting} component="Certification" />
+        </div>
       </form>
     </div>
   );

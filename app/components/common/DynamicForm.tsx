@@ -11,29 +11,33 @@ import {
 interface DynamicFormProps<T extends BaseFormData> {
   data: T;
   config: FormConfig;
+  onFieldChange: (field: string, value: string, isValid: boolean) => void;
+  onFieldBlur?: (field: string) => void;
 }
 
 export const DynamicForm = <T extends BaseFormData>({
   data,
   config,
+  onFieldChange,
+  onFieldBlur,
 }: DynamicFormProps<T>) => {
-  const formValues = config.fields.reduce((acc, field) => {
-    acc[field.name] = data[field.name];
-    return acc;
-  }, {} as Record<string, any>);
-
-  const validations = config.fields.reduce((acc, field) => {
-    acc[field.name] =
-      field.validation ||
-      ((value) =>
-        field.required && (!value || value.length === 0)
-          ? `${field.label} is required`
-          : null);
-    return acc;
-  }, {} as Record<string, (value: any) => string | null>);
-
   const { values, errors, touched, handleChange, handleBlur, validateForm } =
-    useFormValidation(formValues, validations);
+    useFormValidation<Record<string, any>>({
+      initialValues: config.fields.reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.name]: data[field.name],
+        }),
+        {} as Record<string, any>
+      ),
+      validationRules: config.fields.reduce(
+        (acc, field) => ({
+          ...acc,
+          [field.name]: field.validation || createDefaultValidation(field),
+        }),
+        {}
+      ),
+    });
 
   const handleFieldChange = (field: string, value: string) => {
     const newValue = value;
@@ -77,3 +81,9 @@ export const DynamicForm = <T extends BaseFormData>({
     </div>
   );
 };
+
+// Helper function to create default validation
+const createDefaultValidation = (field: FormFieldConfig) => (value: any) =>
+  field.required && (!value || value.length === 0)
+    ? `${field.label} is required`
+    : null;

@@ -27,5 +27,19 @@ export const CertificationForm = ({
     disabled: !isEditing,
   };
 
-  return <DynamicForm data={certification} config={config} />;
+  const handleFieldChange = (
+    field: string,
+    value: string,
+    isValid: boolean
+  ) => {
+    onChangeFormData(certification.id, field, value, isValid);
+  };
+
+  return (
+    <DynamicForm
+      data={certification}
+      config={config}
+      onFieldChange={handleFieldChange}
+    />
+  );
 };

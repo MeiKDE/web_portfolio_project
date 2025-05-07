@@ -48,52 +48,47 @@ export default function Certifications({ userId }: CertificationsProps) {
   });
 
   const onAddNew = () => setIsAdding(true);
-  const onDelete = async (id: string | null) => {
-    if (!id) return;
 
-    setIsSubmitting(true);
+  // Move these handlers to a custom hook for better separation of concerns
+  const useCertificationHandlers = (userId: string, mutate: () => void) => {
+    const handleDelete = async (id: string | null) => {
+      if (!id) return;
+      try {
+        const res = await fetch(`/api/certifications/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error();
+        toast.success("The certification is deleted successfully");
+        mutate();
+      } catch (err) {
+        console.error("Error deleting certification:", err);
+        toast.error("Error deleting certification");
+      }
+    };
 
-    try {
-      const res = await fetch(`/api/certifications/${id}`, {
-        method: "DELETE",
-      });
+    const handleUpdate = async (certification: Certification) => {
+      if (!certification.id) return;
+      try {
+        const res = await fetch(`/api/certifications/${certification.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formatFormData(certification)),
+        });
+        if (!res.ok) throw new Error();
+        toast.success("The certification has been updated");
+      } catch (err) {
+        console.error("Error updating certification:", err);
+        toast.error("Failed to update certification");
+      }
+    };
 
-      if (!res.ok) throw new Error();
-
-      toast.success("The certification is deleted successfully");
-      mutate();
-    } catch (err) {
-      console.error("Error deleting certification:", err);
-      toast.error("Error deleting certification");
-    } finally {
-      setIsSubmitting(false);
-    }
+    return { handleDelete, handleUpdate };
   };
 
-  const onUpdate = async (id: string) => {
-    if (!id) return;
-    try {
-      // Find the certification to update from formData
-      const certToUpdate = formData.find((cert) => {
-        cert.id === id;
-      });
-
-      if (!certToUpdate) return;
-
-      const res = await fetch(`/api/certifications/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formatFormData(certToUpdate)),
-      });
-
-      if (!res.ok) throw new Error();
-
-      toast.success("The certification has been updated");
-    } catch (err) {
-      console.error("Error updating certification:", err);
-      toast.error("Failed to update certification");
-    }
-  };
+  const { handleDelete, handleUpdate } = useCertificationHandlers(
+    userId,
+    mutate
+  );
 
   // This function checks formData against the changeId useState Set.
   // Then updates the database for all the records appear in the changeId useState Set
@@ -104,7 +99,7 @@ export default function Certifications({ userId }: CertificationsProps) {
     try {
       for (const cert of formData) {
         if (changedId.has(cert.id)) {
-          await onUpdate(cert.id);
+          await handleUpdate(cert);
         }
       }
 
@@ -225,7 +220,7 @@ export default function Certifications({ userId }: CertificationsProps) {
                 <CertificationForm
                   onChangeFormData={onChangeFormData}
                   certification={cert}
-                  onDelete={onDelete}
+                  onDelete={handleDelete}
                   isEditing={isEditing}
                 />
               </div>

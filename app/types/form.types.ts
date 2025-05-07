@@ -1,15 +1,22 @@
-export type FormFieldConfig = {
+export type ValidationFunction = (value: any, allValues?: any) => string | null;
+
+export type FormFieldType = "text" | "number" | "date" | "email" | "tel";
+
+export interface FormFieldConfig {
   name: string;
   label: string;
-  type?: "text" | "number" | "date";
+  type?: FormFieldType;
   required?: boolean;
   min?: number;
   max?: number;
   placeholder?: string;
-  validation?: (value: any) => string | null;
-};
+  validation?: ValidationFunction;
+  disabled?: boolean;
+  className?: string;
+  helpText?: string;
+}
 
-export type FormConfig = {
+export interface FormConfig {
   fields: FormFieldConfig[];
   onDelete?: (id: string) => void;
   onFormChange: (
@@ -19,7 +26,10 @@ export type FormConfig = {
     isFormValid: boolean
   ) => void;
   disabled?: boolean;
-};
+  showLabels?: boolean;
+  showErrors?: boolean;
+  className?: string;
+}
 
 export interface BaseFormData {
   id: string;

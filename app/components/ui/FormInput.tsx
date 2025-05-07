@@ -1,9 +1,10 @@
 import { Input } from "@/components/ui/input";
+import { FormFieldType } from "@/app/types/form.types";
 
 interface FormInputProps {
   field: string;
   value: string | number | null | undefined;
-  type?: "text" | "number" | "date";
+  type?: FormFieldType;
   placeholder?: string;
   min?: number;
   max?: number;

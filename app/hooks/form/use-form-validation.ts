@@ -1,13 +1,28 @@
 import { useState } from "react";
 import { useCallback } from "react";
 
-export function useFormValidation<T>(
-  initialValues: T,
-  validationRules: Record<keyof T, (value: any, allValues?: T) => string | null>
-) {
+type ValidationFunction = (value: any, allValues?: any) => string | null;
+
+interface ValidationOptions<T> {
+  initialValues: T;
+  validationRules: Record<keyof T, ValidationFunction>;
+  validateOnChange?: boolean;
+  validateOnBlur?: boolean;
+}
+
+export function useFormValidation<T>({
+  initialValues,
+  validationRules,
+  validateOnChange = true,
+  validateOnBlur = true,
+}: ValidationOptions<T>) {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
+
+  // Add form state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isValid, setIsValid] = useState(false);
 
   const handleChange = (field: keyof T, value: any) => {
     setValues((prev) => ({ ...prev, [field]: value }));
