@@ -227,8 +227,6 @@ export default function Certifications({ userId }: CertificationsProps) {
                   certification={cert}
                   onDelete={onDelete}
                   isEditing={isEditing}
-                  formData={formData}
-                  setFormData={setFormData}
                 />
               </div>
             ))}

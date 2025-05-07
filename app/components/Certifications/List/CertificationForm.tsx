@@ -12,8 +12,6 @@ interface CertificationFormProps {
     isFormValid: boolean
   ) => void;
   isEditing: boolean;
-  formData: Certification[];
-  setFormData: React.Dispatch<React.SetStateAction<Certification[]>>;
 }
 
 export const CertificationForm = ({
@@ -21,8 +19,6 @@ export const CertificationForm = ({
   onDelete,
   onChangeFormData,
   isEditing,
-  formData,
-  setFormData,
 }: CertificationFormProps) => {
   const config = {
     ...certificationFormConfig,
@@ -31,12 +27,5 @@ export const CertificationForm = ({
     disabled: !isEditing,
   };
 
-  return (
-    <DynamicForm
-      data={certification}
-      config={config}
-      formData={formData}
-      setFormData={setFormData}
-    />
-  );
+  return <DynamicForm data={certification} config={config} />;
 };

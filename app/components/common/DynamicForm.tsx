@@ -11,15 +11,11 @@ import {
 interface DynamicFormProps<T extends BaseFormData> {
   data: T;
   config: FormConfig;
-  formData: T[];
-  setFormData: React.Dispatch<React.SetStateAction<T[]>>;
 }
 
 export const DynamicForm = <T extends BaseFormData>({
   data,
   config,
-  formData,
-  setFormData,
 }: DynamicFormProps<T>) => {
   const formValues = config.fields.reduce((acc, field) => {
     acc[field.name] = data[field.name];
@@ -41,13 +37,6 @@ export const DynamicForm = <T extends BaseFormData>({
 
   const handleFieldChange = (field: string, value: string) => {
     const newValue = value;
-
-    // Update the form data in parent component
-    setFormData((prevData) =>
-      prevData.map((item) =>
-        item.id === data.id ? ({ ...item, [field]: newValue } as T) : item
-      )
-    );
 
     config.onFormChange(data.id, field, newValue, validateForm());
     handleChange(field as keyof typeof values, newValue);
