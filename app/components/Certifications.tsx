@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { JSX } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Certification } from "@/app/components/Certifications/certifications.types";
 import { useFetchData } from "@/app/hooks/data/use-fetch-data";
@@ -17,26 +16,18 @@ import {
 
 import { CertificationForm } from "./Certifications/List/CertificationForm";
 import { CertificationItem } from "./Certifications/List/CertificationItem";
-import * as React from "react";
 
 interface CertificationsProps {
   userId: string; // This is mapped to session.user.id from page.tsx
 }
 
 export default function Certifications({ userId }: CertificationsProps) {
-  const [isAddingNewItem, setIsAddingNewItem] = useState(false);
-  const [isEditingMode, setIsEditingMode] = useState(false);
-  const [isSubmittingItem, setIsSubmittingItem] = useState(false);
-  const [certificationsData, setCertificationsData] = useState<Certification[]>(
-    []
-  );
+  const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Certification[]>([]);
-  const [changedCertificationId, setChangedCertificationId] = useState<
-    Set<string>
-  >(new Set()); //Set is a collection of unique values
-  const [isCertificationValidMap, setIsCertificationValidMap] = useState<
-    Map<string, boolean>
-  >(new Map()); //Map is a collection of key-value pairs
+  const [changedId, setChangedId] = useState<Set<string>>(new Set()); //Set is a collection of unique values
+  const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map()); //Map is a collection of key-value pairs
 
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
     `/api/users/${userId}/certifications`
@@ -44,128 +35,137 @@ export default function Certifications({ userId }: CertificationsProps) {
 
   useEffect(() => {
     if (data) {
-      setCertificationsData(formatCertificationsForUI(data));
       setFormData(formatCertificationsForUI(data));
     }
   }, [data]);
 
-  const onAddNewCertification = () => setIsAddingNewItem(true);
+  const formatFormData = (cert: Certification) => ({
+    ...cert,
+    issueDate: formatDateForDatabase(cert.issueDate),
+    expirationDate: cert.expirationDate
+      ? formatDateForDatabase(cert.expirationDate)
+      : null,
+  });
 
-  const onDeleteCertification = async (id: string | null) => {
+  const onAddNew = () => setIsAdding(true);
+  const onDelete = async (id: string | null) => {
+    if (!id) return;
+
+    setIsSubmitting(true);
+
     try {
-      setIsSubmittingItem(true);
-      const response = await fetch(`/api/certifications/${id}`, {
+      const res = await fetch(`/api/certifications/${id}`, {
         method: "DELETE",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to delete certification");
-      }
-      toast.success("Certification deleted successfully");
-    } catch (error) {
-      console.error("Error deleting certification:", error);
+      if (!res.ok) throw new Error();
+
+      toast.success("The certification is deleted successfully");
+      mutate();
+    } catch (err) {
+      console.error("Error deleting certification:", err);
       toast.error("Error deleting certification");
     } finally {
-      mutate(); // Refresh the data thus re-fetches the skills data by calling the useFetchData hook again
-      setIsSubmittingItem(false);
+      setIsSubmitting(false);
     }
   };
 
-  const updateCertification = async (id: string, certObject: Certification) => {
-    const formattedCert = {
-      ...certObject,
-      issueDate: formatDateForDatabase(certObject.issueDate),
-      expirationDate: certObject.expirationDate
-        ? formatDateForDatabase(certObject.expirationDate)
-        : null,
-    };
+  const onUpdate = async (id: string) => {
+    if (!id) return;
+    try {
+      // Find the certification to update from formData
+      const certToUpdate = formData.find((cert) => {
+        cert.id === id;
+      });
 
-    const response = await fetch(`/api/certifications/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formattedCert),
-    });
+      if (!certToUpdate) return;
 
-    if (!response.ok) {
-      throw new Error("Failed to update certification");
+      const res = await fetch(`/api/certifications/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formatFormData(certToUpdate)),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.success("The certification has been updated");
+    } catch (err) {
+      console.error("Error updating certification:", err);
+      toast.error("Failed to update certification");
     }
   };
 
-  const onUpdateCertificationList = async () => {
-    setIsSubmittingItem(true);
-    setIsEditingMode(true);
+  // This function checks formData against the changeId useState Set.
+  // Then updates the database for all the records appear in the changeId useState Set
+  const onUpdateBatch = async () => {
+    setIsSubmitting(true);
+    setIsEditing(true);
 
     try {
       for (const cert of formData) {
-        if (changedCertificationId.has(cert.id)) {
-          await updateCertification(cert.id, cert);
+        if (changedId.has(cert.id)) {
+          await onUpdate(cert.id);
         }
       }
-      toast.success("Certifications updated successfully");
+
+      toast.success("List of certifications has been updated successfully");
+      mutate(); // refresh the UI to reflect latest data
     } catch (error) {
       console.error("Error updating certifications:", error);
       toast.error("Error updating certifications");
     } finally {
-      mutate();
-      setIsSubmittingItem(false);
-      setIsEditingMode(false);
+      setIsSubmitting(false);
+      setIsEditing(false);
     }
   };
 
-  const onSaveNewCertification = async (certObject: Certification) => {
+  const onSaveNew = async (newCert: Certification) => {
     try {
-      setIsSubmittingItem(true);
-      setIsAddingNewItem(false);
-
-      const formattedCert = {
-        ...certObject,
-        issueDate: formatDateForDatabase(certObject.issueDate),
-        expirationDate: certObject.expirationDate
-          ? formatDateForDatabase(certObject.expirationDate)
-          : null,
-      };
-
+      setIsSubmitting(true);
+      setIsAdding(false);
       const response = await fetch(`/api/certifications/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formattedCert),
+        body: JSON.stringify(formatFormData(newCert)),
       });
 
       if (!response.ok) {
         throw new Error("Failed to add certification");
       }
       toast.success("Certification added successfully");
+      mutate();
     } catch (error) {
       console.error("Error adding new certification:", error);
       toast.error("Error adding new certification");
     } finally {
-      mutate();
-      setIsSubmittingItem(false);
+      setIsSubmitting(false);
     }
   };
 
-  const onCertificationChange = (
+  const onChangeFormData = (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => {
-    setFormData((prev) => {
-      return prev.map((cert) => {
-        setIsCertificationValidMap((prev) => {
-          prev.set(id, isFormValid);
-          return prev;
-        });
-        if (cert.id === id) {
-          setChangedCertificationId((prev) => {
-            prev.add(id);
-            return prev;
-          });
-          return { ...cert, [field]: value };
-        }
-        return cert;
-      });
+    // Update the validity map with a new Map instance to avoid state mutation
+    setIsValidMap((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(id, isFormValid);
+      return newMap;
     });
+
+    // Track the changed certification IDs using a new Set instance to avoid state mutation
+    setChangedId((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+
+    // Update the specific field in formData
+    setFormData((prev) =>
+      prev.map((cert) => (cert.id === id ? { ...cert, [field]: value } : cert))
+    );
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -178,70 +178,60 @@ export default function Certifications({ userId }: CertificationsProps) {
           <h3 className="text-xl font-semibold">Certifications</h3>
           <div className="flex gap-2">
             {/* When not adding and editing, the Add button will be shown */}
-            {!isAddingNewItem && !isEditingMode && (
-              <AddButton onClick={onAddNewCertification} />
-            )}
+            {!isAdding && !isEditing && <AddButton onClick={onAddNew} />}
             {/* When not adding and editing, the Edit button will be shown */}
             {/* or When adding or editing, EDIT button will not be shown */}
-            {!isEditingMode && !isAddingNewItem && (
+            {!isEditing && !isAdding && (
               <EditButton
                 onClick={() => {
-                  setIsEditingMode(true);
+                  setIsEditing(true);
                 }}
               />
             )}
-            {isEditingMode && (
+            {isEditing && (
               <DoneButton
-                onClick={onUpdateCertificationList}
-                isSubmitting={isSubmittingItem}
-                disabled={
-                  !isCertificationValidMap.values().every((isValid) => isValid)
-                }
+                onClick={onUpdateBatch}
+                isSubmitting={isSubmitting}
+                // Disable the button unless every value in isValidMap is true.
+                disabled={!isValidMap.values().every((isValid) => isValid)}
               />
             )}
           </div>
         </div>
 
         {/* Add New Skill Entry */}
-        {isAddingNewItem && (
-          <NewCertification
-            onSaveNewCertification={onSaveNewCertification}
-            userId={userId}
-          />
-        )}
+        {isAdding && <NewCertification onSaveNew={onSaveNew} userId={userId} />}
 
-        {/* When not editing, the CertificationForm will be shown */}
-        {!isEditingMode ? (
+        {/* When not editing, show CertificationItem */}
+        {!isEditing ? (
           <>
-            {/* When not loading, not error, and certifications data is available,
-            and certifications data length is greater than 0, the
-            CertificationForm will be shown */}
             {!isLoading &&
               !error &&
-              certificationsData &&
-              certificationsData.length > 0 &&
-              certificationsData.map((certification: Certification) => (
+              formData &&
+              formData.length > 0 &&
+              formData.map((cert) => (
                 <div
-                  key={certification.id}
+                  key={cert.id}
                   className="relative border-b pb-4 last:border-0"
                 >
-                  <CertificationItem certification={certification} />
+                  <CertificationItem certification={cert} />
                 </div>
               ))}
           </>
         ) : (
           <>
-            {formData.map((certification: Certification) => {
-              return (
-                <div key={certification.id}>
-                  <CertificationForm
-                    onFormChange={onCertificationChange}
-                    certification={certification}
-                    onDeleteClick={onDeleteCertification}
-                  />
-                </div>
-              );
-            })}
+            {formData.map((cert) => (
+              <div key={cert.id}>
+                <CertificationForm
+                  onChangeFormData={onChangeFormData}
+                  certification={cert}
+                  onDelete={onDelete}
+                  isEditing={isEditing}
+                  formData={formData}
+                  setFormData={setFormData}
+                />
+              </div>
+            ))}
           </>
         )}
       </CardContent>

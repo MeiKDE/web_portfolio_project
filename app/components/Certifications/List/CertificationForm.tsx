@@ -4,25 +4,39 @@ import { Certification } from "@/app/components/Certifications/certifications.ty
 
 interface CertificationFormProps {
   certification: Certification;
-  onDeleteClick: (id: string) => void;
-  onFormChange: (
+  onDelete: (id: string) => void;
+  onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
+  isEditing: boolean;
+  formData: Certification[];
+  setFormData: React.Dispatch<React.SetStateAction<Certification[]>>;
 }
 
 export const CertificationForm = ({
   certification,
-  onDeleteClick,
-  onFormChange,
+  onDelete,
+  onChangeFormData,
+  isEditing,
+  formData,
+  setFormData,
 }: CertificationFormProps) => {
   const config = {
     ...certificationFormConfig,
-    onDelete: onDeleteClick,
-    onFormChange,
+    onDelete,
+    onFormChange: onChangeFormData,
+    disabled: !isEditing,
   };
 
-  return <DynamicForm data={certification} config={config} />;
+  return (
+    <DynamicForm
+      data={certification}
+      config={config}
+      formData={formData}
+      setFormData={setFormData}
+    />
+  );
 };

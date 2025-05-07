@@ -7,13 +7,10 @@ import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewCertificationProps {
   userId: string;
-  onSaveNewCertification: (values: Certification) => void | Promise<void>;
+  onSaveNew: (values: Certification) => void | Promise<void>;
 }
 
-export function NewCertification({
-  userId,
-  onSaveNewCertification,
-}: NewCertificationProps) {
+export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
   const formValues = {
     name: "",
     issuer: "",
@@ -67,7 +64,7 @@ export function NewCertification({
       return;
     }
 
-    onSaveNewCertification(getCertificationModel(values));
+    onSaveNew(getCertificationModel(values));
   };
 
   const getInputClassName = (field: string) => {

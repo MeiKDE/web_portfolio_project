@@ -8,12 +8,19 @@ import {
   FormFieldConfig,
 } from "@/app/types/form.types";
 
-interface DynamicFormProps {
-  data: BaseFormData;
+interface DynamicFormProps<T extends BaseFormData> {
+  data: T;
   config: FormConfig;
+  formData: T[];
+  setFormData: React.Dispatch<React.SetStateAction<T[]>>;
 }
 
-export const DynamicForm = ({ data, config }: DynamicFormProps) => {
+export const DynamicForm = <T extends BaseFormData>({
+  data,
+  config,
+  formData,
+  setFormData,
+}: DynamicFormProps<T>) => {
   const formValues = config.fields.reduce((acc, field) => {
     acc[field.name] = data[field.name];
     return acc;
@@ -33,8 +40,17 @@ export const DynamicForm = ({ data, config }: DynamicFormProps) => {
     useFormValidation(formValues, validations);
 
   const handleFieldChange = (field: string, value: string) => {
-    config.onFormChange(data.id, field, value, validateForm());
-    handleChange(field as keyof typeof values, value);
+    const newValue = value;
+
+    // Update the form data in parent component
+    setFormData((prevData) =>
+      prevData.map((item) =>
+        item.id === data.id ? ({ ...item, [field]: newValue } as T) : item
+      )
+    );
+
+    config.onFormChange(data.id, field, newValue, validateForm());
+    handleChange(field as keyof typeof values, newValue);
   };
 
   const handleFieldBlur = (field: string) => {
@@ -48,16 +64,19 @@ export const DynamicForm = ({ data, config }: DynamicFormProps) => {
           <FormField
             key={field.name}
             field={field.name}
-            value={data[field.name]}
+            value={values[field.name] || ""}
             label={field.label}
             type={field.type}
             min={field.min}
             max={field.max}
-            handleChange={handleFieldChange}
+            handleChange={(field: string, value: string) =>
+              handleFieldChange(field, value)
+            }
             handleBlur={handleFieldBlur}
             errors={errors}
             touched={touched}
             required={field.required}
+            disabled={config.disabled}
           />
         ))}
       </div>

@@ -18,6 +18,7 @@ export type FormConfig = {
     value: string,
     isFormValid: boolean
   ) => void;
+  disabled?: boolean;
 };
 
 export interface BaseFormData {
