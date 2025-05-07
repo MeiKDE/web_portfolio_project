@@ -5,6 +5,7 @@ import Navbar from "@/app/components/layout/Navbar";
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
+import { CertificationsProvider } from "@/context/CertificationsContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,7 +20,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   // Pre-fetch session to hydrate the session on first render
-  await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
@@ -46,8 +47,14 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
         <AuthProvider>
-          <Navbar />
-          <main>{children}</main>
+          {session?.user ? (
+            <CertificationsProvider userId={session.user.id}>
+              <Navbar />
+              <main>{children}</main>
+            </CertificationsProvider>
+          ) : (
+            <Navbar />
+          )}
         </AuthProvider>
       </body>
     </html>

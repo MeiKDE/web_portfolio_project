@@ -8,9 +8,14 @@ import { SaveBtn } from "@/app/components/ui/SaveBtn";
 interface NewCertificationProps {
   userId: string;
   onSaveNew: (values: Certification) => void | Promise<void>;
+  onCancel?: () => void;
 }
 
-export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
+export function NewCertification({
+  userId,
+  onSaveNew,
+  onCancel,
+}: NewCertificationProps) {
   const initialValues = {
     name: "",
     issuer: "",
@@ -62,6 +67,13 @@ export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
     await onSaveNew(getCertificationModel());
     resetForm();
     setIsSubmitting(false);
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    if (onCancel) {
+      onCancel();
+    }
   };
 
   const getInputClassName = (field: string) =>
@@ -141,7 +153,7 @@ export function NewCertification({ userId, onSaveNew }: NewCertificationProps) {
         </div>
 
         <div className="flex gap-2">
-          <CancelBtn resetForm={resetForm} />
+          <CancelBtn resetForm={handleCancel} />
           <SaveBtn isSubmitting={isSubmitting} component="Certification" />
         </div>
       </form>
