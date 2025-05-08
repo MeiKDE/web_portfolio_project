@@ -1,15 +1,7 @@
+"use client";
 import React from "react";
+import { Education } from "@/app/components/Educations/educations.types";
 import { GraduationCap } from "lucide-react";
-
-interface Education {
-  institution: string;
-  institutionLogoUrl?: string;
-  degree: string;
-  fieldOfStudy: string;
-  startYear: number;
-  endYear: number;
-  description?: string;
-}
 
 export const EducationItem = ({ education }: { education: Education }) => {
   return (
@@ -33,6 +25,11 @@ export const EducationItem = ({ education }: { education: Education }) => {
             </>
           )}
         </div>
+        {education.description && (
+          <p className="text-sm text-muted-foreground mt-1">
+            {education.description}
+          </p>
+        )}
       </div>
       {education.institutionLogoUrl && (
         <img

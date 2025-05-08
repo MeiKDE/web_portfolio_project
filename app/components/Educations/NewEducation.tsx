@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import { Education } from "@/app/components/Educations/educations.types";
-import React from "react";
+import * as React from "react";
 import { CancelBtn } from "@/app/components/ui/CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
 import { FormInput } from "@/app/components/ui/FormInput";
@@ -9,32 +9,35 @@ import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface NewEducationProps {
   userId: string;
-  onSaveNewEducation: (values: Education) => void | Promise<void>;
+  onSaveNew: (values: Education) => void | Promise<void>;
+  onCancel?: () => void;
 }
 
 export function NewEducation({
   userId,
-  onSaveNewEducation,
+  onSaveNew,
+  onCancel,
 }: NewEducationProps) {
-  const formValues = {
-    school: "",
+  const initialValues = {
+    institution: "",
     degree: "",
     fieldOfStudy: "",
-    startDate: "",
-    endDate: "",
+    startYear: "",
+    endYear: "",
     description: "",
-    location: "",
   };
 
-  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({
-    school: false,
-    degree: false,
-    fieldOfStudy: false,
-    startDate: false,
-    endDate: false,
-    description: false,
-    location: false,
-  });
+  const validationRules = {
+    institution: (value: string) =>
+      value.length > 0 ? null : "Institution is required",
+    degree: (value: string) => (value.length > 0 ? null : "Degree is required"),
+    fieldOfStudy: (value: string) =>
+      value.length > 0 ? null : "Field of study is required",
+    startYear: (value: string) =>
+      value.length > 0 ? null : "Start year is required",
+    endYear: (value: string) => null,
+    description: (value: string) => null,
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,35 +49,25 @@ export function NewEducation({
     handleBlur,
     validateForm,
     resetForm,
-  } = useFormValidation(formValues, {
-    school: (value) => (value.length > 0 ? null : "School name is required"),
-    degree: (value) => (value.length > 0 ? null : "Degree is required"),
-    fieldOfStudy: (value) =>
-      value.length > 0 ? null : "Field of study is required",
-    startDate: (value) => (value.length > 0 ? null : "Start date is required"),
-    endDate: (value) => null,
-    description: (value) => null,
-    location: (value) => null,
+  } = useFormValidation({
+    initialValues,
+    validationRules,
+    validateOnChange: true,
+    validateOnBlur: true,
   });
 
-  const getEducationModel = (values: any): Education => {
-    return {
-      id: "",
-      userId,
-      institution: values.school,
-      degree: values.degree,
-      fieldOfStudy: values.fieldOfStudy,
-      startYear: parseInt(values.startDate.split("-")[0]),
-      endYear: values.endDate
-        ? parseInt(values.endDate.split("-")[0])
-        : new Date().getFullYear(),
-      description: values.description,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-  };
+  const getEducationModel = (): Education => ({
+    id: "",
+    userId,
+    institution: values.institution,
+    degree: values.degree,
+    fieldOfStudy: values.fieldOfStudy,
+    startYear: parseInt(values.startYear),
+    endYear: parseInt(values.endYear) || new Date().getFullYear(),
+    description: values.description || undefined,
+  });
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -84,32 +77,40 @@ export function NewEducation({
       return;
     }
 
-    onSaveNewEducation(getEducationModel(values));
+    await onSaveNew(getEducationModel());
+    resetForm();
+    setIsSubmitting(false);
   };
 
-  const getInputClassName = (field: string) => {
-    return errors[field as keyof typeof errors] ? "border-red-500" : "";
+  const handleCancel = () => {
+    resetForm();
+    if (onCancel) {
+      onCancel();
+    }
   };
+
+  const getInputClassName = (field: string) =>
+    errors[field as keyof typeof errors] ? "border-red-500" : "";
 
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Education</h4>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="mb-2">
-          <label className="text-sm text-muted-foreground">School Name*</label>
-          <FormInput
-            field="school"
-            value={values.school}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
-            className={getInputClassName("school")}
-            required
+          <label className="text-sm text-muted-foreground">
+            Institution Name*
+          </label>
+          <input
+            type="text"
+            value={values.institution}
+            onChange={(e) => handleChange("institution", e.target.value)}
+            className={`w-full p-2 border rounded ${getInputClassName(
+              "institution"
+            )}`}
           />
-          <FormErrorMessage error={errors["school"]} />
+          {errors.institution && (
+            <p className="text-red-500 text-xs mt-1">{errors.institution}</p>
+          )}
         </div>
 
         <div className="mb-2">
@@ -149,11 +150,10 @@ export function NewEducation({
         </div>
 
         <div className="mb-2">
-          <label className="text-sm text-muted-foreground">Start Date*</label>
+          <label className="text-sm text-muted-foreground">Start Year*</label>
           <FormInput
-            field="startDate"
-            type="date"
-            value={values.startDate}
+            field="startYear"
+            value={values.startYear}
             handleChange={(field, value) =>
               handleChange(field as keyof typeof values, value)
             }
@@ -162,15 +162,14 @@ export function NewEducation({
             touched={touched}
             required
           />
-          <FormErrorMessage error={errors["startDate"]} />
+          <FormErrorMessage error={errors["startYear"]} />
         </div>
 
         <div className="mb-2">
-          <label className="text-sm text-muted-foreground">End Date</label>
+          <label className="text-sm text-muted-foreground">End Year</label>
           <FormInput
-            field="endDate"
-            type="date"
-            value={values.endDate}
+            field="endYear"
+            value={values.endYear}
             handleChange={(field, value) =>
               handleChange(field as keyof typeof values, value)
             }
@@ -178,11 +177,29 @@ export function NewEducation({
             errors={errors}
             touched={touched}
           />
-          <FormErrorMessage error={errors["endDate"]} />
+          <FormErrorMessage error={errors["endYear"]} />
         </div>
 
-        <CancelBtn resetForm={resetForm} />
-        <SaveBtn isSubmitting={isSubmitting} component="Education" />
+        <div className="mb-2">
+          <label className="text-sm text-muted-foreground">Description</label>
+          <FormInput
+            field="description"
+            value={values.description}
+            handleChange={(field, value) =>
+              handleChange(field as keyof typeof values, value)
+            }
+            handleBlur={(field) => handleBlur(field as keyof typeof values)}
+            errors={errors}
+            touched={touched}
+            className={getInputClassName("description")}
+          />
+          <FormErrorMessage error={errors["description"]} />
+        </div>
+
+        <div className="flex gap-2">
+          <CancelBtn resetForm={handleCancel} />
+          <SaveBtn isSubmitting={isSubmitting} component="Education" />
+        </div>
       </form>
     </div>
   );

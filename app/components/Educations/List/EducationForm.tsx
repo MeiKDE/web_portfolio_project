@@ -4,25 +4,42 @@ import { Education } from "@/app/components/Educations/educations.types";
 
 interface EducationFormProps {
   education: Education;
-  onDeleteClick: (id: string) => void;
-  onFormChange: (
+  onDelete: (id: string) => void;
+  onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
+  isEditing: boolean;
 }
 
 export const EducationForm = ({
   education,
-  onDeleteClick,
-  onFormChange,
+  onDelete,
+  onChangeFormData,
+  isEditing,
 }: EducationFormProps) => {
   const config = {
     ...educationFormConfig,
-    onDelete: onDeleteClick,
-    onFormChange,
+    onDelete,
+    onFormChange: onChangeFormData,
+    disabled: !isEditing,
   };
 
-  return <DynamicForm data={education} config={config} />;
+  const handleFieldChange = (
+    field: string,
+    value: string,
+    isValid: boolean
+  ) => {
+    onChangeFormData(education.id, field, value, isValid);
+  };
+
+  return (
+    <DynamicForm
+      data={education}
+      config={config}
+      onFieldChange={handleFieldChange}
+    />
+  );
 };

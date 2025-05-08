@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
 import { CertificationsProvider } from "@/context/CertificationsContext";
+import { EducationsProvider } from "@/context/EducationsContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -49,11 +50,16 @@ export default async function RootLayout({
         <AuthProvider>
           {session?.user ? (
             <CertificationsProvider userId={session.user.id}>
-              <Navbar />
-              <main>{children}</main>
+              <EducationsProvider userId={session.user.id}>
+                <Navbar />
+                <main>{children}</main>
+              </EducationsProvider>
             </CertificationsProvider>
           ) : (
-            <Navbar />
+            <>
+              <Navbar />
+              <main>{children}</main>
+            </>
           )}
         </AuthProvider>
       </body>
