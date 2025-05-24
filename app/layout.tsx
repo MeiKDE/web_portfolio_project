@@ -8,6 +8,7 @@ import { authOptions } from "@/app/lib/auth/auth-options";
 import { CertificationsProvider } from "@/context/CertificationsContext";
 import { EducationsProvider } from "@/context/EducationsContext";
 import { SkillsProvider } from "@/context/SkillsContext";
+import { ExperiencesProvider } from "@/context/ExperiencesContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,14 +27,16 @@ export default async function RootLayout({
   // Extract the content into a separate component for better organization
   const MainContent = () =>
     session?.user ? (
-      <CertificationsProvider userId={session.user.id}>
-        <EducationsProvider userId={session.user.id}>
-          <SkillsProvider userId={session.user.id}>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-          </SkillsProvider>
-        </EducationsProvider>
-      </CertificationsProvider>
+      <ExperiencesProvider userId={session.user.id}>
+        <CertificationsProvider userId={session.user.id}>
+          <EducationsProvider userId={session.user.id}>
+            <SkillsProvider userId={session.user.id}>
+              <Navbar />
+              <main className="min-h-screen">{children}</main>
+            </SkillsProvider>
+          </EducationsProvider>
+        </CertificationsProvider>
+      </ExperiencesProvider>
     ) : (
       <>
         <Navbar />

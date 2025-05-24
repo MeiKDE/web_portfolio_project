@@ -173,3 +173,49 @@ export const profileFormConfig: FormConfig = {
   ],
   onFormChange: (id, field, value, isFormValid) => {},
 };
+
+export const experienceFormConfig: FormConfig = {
+  fields: [
+    {
+      name: "companyName",
+      label: "Company Name",
+      type: "text",
+      required: true,
+      placeholder: "e.g., Google, Microsoft",
+    },
+    {
+      name: "position",
+      label: "Position",
+      type: "text",
+      required: true,
+      placeholder: "e.g., Software Engineer, Product Manager",
+    },
+    {
+      name: "location",
+      label: "Location",
+      type: "text",
+      required: false,
+      placeholder: "e.g., San Francisco, CA",
+    },
+    {
+      name: "startDate",
+      label: "Start Date",
+      type: "date",
+      required: true,
+    },
+    {
+      name: "endDate",
+      label: "End Date",
+      type: "date",
+      required: false,
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "text",
+      required: true,
+      placeholder: "Describe your responsibilities and achievements",
+    },
+  ],
+  onFormChange: (id, field, value, isFormValid) => {},
+};

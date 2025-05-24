@@ -11,14 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface NewExperienceProps {
   userId: string;
-  onSaveNewExperience: (values: Experience) => void | Promise<void>;
+  createNew: (exp: Experience) => void | Promise<void>;
+  onCancel?: () => void;
 }
 
 export function NewExperience({
   userId,
-  onSaveNewExperience,
+  createNew,
+  onCancel,
 }: NewExperienceProps) {
-  const formValues = {
+  const initialValues = {
     companyName: "",
     position: "",
     startDate: "",
@@ -28,49 +30,56 @@ export function NewExperience({
     location: "",
   };
 
+  const validationRules = {
+    companyName: (value: string) =>
+      value.length > 0 ? null : "Company name is required",
+    position: (value: string) =>
+      value.length > 0 ? null : "Position is required",
+    startDate: (value: string) =>
+      value.length > 0 ? null : "Start date is required",
+    endDate: (value: string, allValues: typeof initialValues) => {
+      if (allValues.isCurrentPosition) return null;
+      if (!value) return "End date is required for past positions";
+      if (allValues.startDate && value < allValues.startDate)
+        return "End date must be after start date";
+      return null;
+    },
+    description: (value: string) =>
+      value.length > 0 ? null : "Description is required",
+    isCurrentPosition: () => null,
+    location: () => null,
+  };
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     values,
     errors,
-    touched,
     handleChange,
     handleBlur,
+    touched,
     validateForm,
     resetForm,
-  } = useFormValidation(formValues, {
-    companyName: (value) =>
-      value.length > 0 ? null : "Company name is required",
-    position: (value) => (value.length > 0 ? null : "Position is required"),
-    startDate: (value) => (value.length > 0 ? null : "Start date is required"),
-    endDate: (value, allValues) => {
-      if (allValues?.isCurrentPosition) return null;
-      if (!value) return "End date is required for past positions";
-      if (allValues?.startDate && value < allValues.startDate)
-        return "End date must be after start date";
-      return null;
-    },
-    description: (value) =>
-      value.length > 0 ? null : "Description is required",
-    isCurrentPosition: () => null,
-    location: () => null,
+  } = useFormValidation({
+    initialValues,
+    validationRules,
+    validateOnChange: true,
+    validateOnBlur: true,
   });
 
-  const getExperienceModel = (values: typeof formValues): Experience => {
-    return {
-      id: "",
-      userId,
-      companyName: values.companyName,
-      position: values.position,
-      startDate: values.startDate,
-      endDate: values.isCurrentPosition ? undefined : values.endDate,
-      isCurrentPosition: values.isCurrentPosition,
-      description: values.description,
-      location: values.location,
-    };
-  };
+  const getExperienceModel = (): Experience => ({
+    id: "",
+    userId,
+    companyName: values.companyName,
+    position: values.position,
+    startDate: values.startDate,
+    endDate: values.isCurrentPosition ? undefined : values.endDate,
+    isCurrentPosition: values.isCurrentPosition,
+    description: values.description,
+    location: values.location || undefined,
+  });
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const createExpHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -80,18 +89,25 @@ export function NewExperience({
       return;
     }
 
-    await onSaveNewExperience(getExperienceModel(values));
+    await createNew(getExperienceModel());
+    resetForm();
     setIsSubmitting(false);
   };
 
-  const getInputClassName = (field: string) => {
-    return errors[field as keyof typeof errors] ? "border-red-500" : "";
+  const handleCancel = () => {
+    resetForm();
+    if (onCancel) {
+      onCancel();
+    }
   };
+
+  const getInputClassName = (field: string) =>
+    errors[field as keyof typeof errors] ? "border-red-500" : "";
 
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Experience</h4>
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={createExpHandler} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Company Name*</label>
           <FormInput
@@ -209,7 +225,7 @@ export function NewExperience({
         </div>
 
         <div className="flex gap-2">
-          <CancelBtn resetForm={resetForm} />
+          <CancelBtn resetForm={handleCancel} />
           <SaveBtn isSubmitting={isSubmitting} component="Experience" />
         </div>
       </form>
