@@ -4,7 +4,7 @@ import ResumeUpload from "@/app/components/common/ResumeUpload";
 import { redirect } from "next/navigation";
 import { getUserProfile } from "@/app/lib/services/user-service";
 
-export default async function Home() {
+export default async function Page() {
   const session = await getServerSession(authOptions);
 
   // If user is logged in, check if they're a new user

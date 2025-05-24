@@ -4,27 +4,27 @@ import { Certification } from "@/app/components/Certifications/certifications.ty
 
 interface CertificationFormProps {
   certification: Certification;
-  onDelete: (id: string) => void;
+  onDelete: (cert: Certification) => void;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  isEditing: boolean;
+  onDone: () => void;
 }
 
 export const CertificationForm = ({
   certification,
   onDelete,
   onChangeFormData,
-  isEditing,
+  onDone,
 }: CertificationFormProps) => {
   const config = {
     ...certificationFormConfig,
     onDelete,
     onFormChange: onChangeFormData,
-    disabled: !isEditing,
+    disabled: !onDone,
   };
 
   const handleFieldChange = (

@@ -14,10 +14,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/lib/auth/auth-options";
 
 // GET a single certification
-export async function GET(
+export const GET = async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const certification = await prisma.certification.findUnique({
       where: { id: params.id },
@@ -31,7 +31,7 @@ export async function GET(
   } catch (error) {
     return handleApiError(error);
   }
-}
+};
 
 // UPDATE a certification
 export const PUT = withOwnership(

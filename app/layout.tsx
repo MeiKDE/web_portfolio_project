@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
 import { CertificationsProvider } from "@/context/CertificationsContext";
 import { EducationsProvider } from "@/context/EducationsContext";
+import { SkillsProvider } from "@/context/SkillsContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,8 +21,25 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Pre-fetch session to hydrate the session on first render
   const session = await getServerSession(authOptions);
+
+  // Extract the content into a separate component for better organization
+  const MainContent = () =>
+    session?.user ? (
+      <CertificationsProvider userId={session.user.id}>
+        <EducationsProvider userId={session.user.id}>
+          <SkillsProvider userId={session.user.id}>
+            <Navbar />
+            <main className="min-h-screen">{children}</main>
+          </SkillsProvider>
+        </EducationsProvider>
+      </CertificationsProvider>
+    ) : (
+      <>
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
+      </>
+    );
 
   return (
     <html lang="en" suppressHydrationWarning={true}>
@@ -48,19 +66,7 @@ export default async function RootLayout({
       </head>
       <body suppressHydrationWarning={true} className={inter.className}>
         <AuthProvider>
-          {session?.user ? (
-            <CertificationsProvider userId={session.user.id}>
-              <EducationsProvider userId={session.user.id}>
-                <Navbar />
-                <main>{children}</main>
-              </EducationsProvider>
-            </CertificationsProvider>
-          ) : (
-            <>
-              <Navbar />
-              <main>{children}</main>
-            </>
-          )}
+          <MainContent />
         </AuthProvider>
       </body>
     </html>

@@ -18,7 +18,7 @@ export interface FormFieldConfig {
 
 export interface FormConfig {
   fields: FormFieldConfig[];
-  onDelete?: (id: string) => void;
+  onDelete?: (param: any) => void;
   onFormChange: (
     id: string,
     field: string,

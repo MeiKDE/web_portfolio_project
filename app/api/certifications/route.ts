@@ -12,7 +12,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/lib/auth/auth-options";
 
 // CREATE a new certification
-export async function POST(request: NextRequest) {
+export const POST = async (request: NextRequest) => {
   const session = await getServerSession(authOptions);
   if (!session) {
     return errorResponse("Unauthorized", 401);
@@ -37,4 +37,4 @@ export async function POST(request: NextRequest) {
   });
 
   return successResponse(certification);
-}
+};

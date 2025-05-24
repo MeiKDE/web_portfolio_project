@@ -1,13 +1,5 @@
 "use client";
-import React from "react";
-
-interface Certification {
-  name: string;
-  issuer: string;
-  issueDate: string;
-  expiryDate?: string;
-  credentialId?: string;
-}
+import { Certification } from "../certifications.types";
 
 export const CertificationItem = ({
   certification,
@@ -21,16 +13,16 @@ export const CertificationItem = ({
         <p className="text-sm text-muted-foreground">{certification.issuer}</p>
         <div className="flex mt-1 text-xs text-muted-foreground">
           <span>Issued: {certification.issueDate}</span>
-          {certification.expiryDate && (
+          {certification.expirationDate && (
             <>
               <span className="mx-2">•</span>
-              <span>Expires: {certification.expiryDate}</span>
+              <span>Expires: {certification.expirationDate}</span>
             </>
           )}
-          {certification.credentialId && (
+          {certification.credentialUrl && (
             <>
               <span className="mx-2">•</span>
-              <span>ID: {certification.credentialId}</span>
+              <span>URL: {certification.credentialUrl}</span>
             </>
           )}
         </div>

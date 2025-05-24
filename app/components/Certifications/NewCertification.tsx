@@ -7,15 +7,16 @@ import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewCertificationProps {
   userId: string;
-  onSaveNew: (values: Certification) => void | Promise<void>;
+  createNew: (cert: Certification) => void | Promise<void>;
   onCancel?: () => void;
 }
 
 export function NewCertification({
   userId,
-  onSaveNew,
+  createNew,
   onCancel,
 }: NewCertificationProps) {
+  // For useFormValidation
   const initialValues = {
     name: "",
     issuer: "",
@@ -24,6 +25,9 @@ export function NewCertification({
     credentialUrl: "",
   };
 
+  // For useFormValidation
+  // If field is not empty, return null meaning valid
+  // Otherwise, return an error message
   const validationRules = {
     name: (value: string) =>
       value.length > 0 ? null : "Certification name is required",
@@ -54,7 +58,7 @@ export function NewCertification({
     credentialUrl: values.credentialUrl || undefined,
   });
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const createCertHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -64,7 +68,7 @@ export function NewCertification({
       return;
     }
 
-    await onSaveNew(getCertificationModel());
+    await createNew(getCertificationModel());
     resetForm();
     setIsSubmitting(false);
   };
@@ -82,7 +86,7 @@ export function NewCertification({
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Certification</h4>
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={createCertHandler} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
             Certification Name*

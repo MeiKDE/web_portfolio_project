@@ -16,21 +16,18 @@ import { toast } from "sonner";
 
 interface CertificationsContextProps {
   formData: Certification[];
-  isEditing: boolean;
-  isAdding: boolean;
-  isSubmitting: boolean;
   isValidMap: Map<string, boolean>;
-  setIsEditing: (val: boolean) => void;
-  setIsAdding: (val: boolean) => void;
+  isProcessing: boolean;
+  formError: string;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  onUpdateBatch: () => Promise<void>;
-  onSaveNew: (cert: Certification) => Promise<void>;
-  onDelete: (id: string | null) => Promise<void>;
+  batchUpdate: () => Promise<void>;
+  createNewCertification: (cert: Certification) => Promise<void>;
+  deleteByIdHandler: (certification: Certification) => Promise<void>;
 }
 
 const CertificationsContext = createContext<
@@ -44,20 +41,25 @@ export const useCertificationsContext = () => {
   return context;
 };
 
+interface CertificationsProviderProps {
+  userId: string;
+  children: ReactNode;
+}
+
 export function CertificationsProvider({
   userId,
   children,
-}: {
-  userId: string;
-  children: ReactNode;
-}) {
+}: CertificationsProviderProps) {
   const [formData, setFormData] = useState<Certification[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [changedId, setChangedId] = useState<Set<string>>(new Set());
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
 
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  // When use mutate function, it'll re-render useFetchData
+  // thus data, isLoading and error variables will be changed
+  // then triggering useEffect
   const { data, isLoading, error, mutate } = useFetchData<Certification[]>(
     `/api/users/${userId}/certifications`
   );
@@ -68,7 +70,7 @@ export function CertificationsProvider({
     }
   }, [data]);
 
-  const formatFormData = (cert: Certification) => ({
+  const formatCertificationForDatabase = (cert: Certification) => ({
     ...cert,
     issueDate: formatDateForDatabase(cert.issueDate),
     expirationDate: cert.expirationDate
@@ -76,73 +78,107 @@ export function CertificationsProvider({
       : null,
   });
 
-  const onDelete = async (id: string | null) => {
-    if (!id) return;
-    try {
-      const res = await fetch(`/api/certifications/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error();
-      toast.success("The certification is deleted successfully");
-      mutate();
-    } catch (err) {
-      console.error("Error deleting certification:", err);
-      toast.error("Error deleting certification");
-    }
-  };
-
-  const onUpdate = async (certification: Certification) => {
+  // deleteHandler
+  const deleteByIdHandler = async (certification: Certification) => {
+    setIsProcessing(true);
     if (!certification.id) return;
     try {
-      const res = await fetch(`/api/certifications/${certification.id}`, {
-        method: "PUT",
+      const response = await fetch(`/api/certifications/${certification.id}`, {
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formatFormData(certification)),
       });
-      if (!res.ok) throw new Error();
-      toast.success("The certification has been updated");
+
+      if (!response.ok) {
+        toast.error("Http error in deleting certification.");
+        return;
+      }
+      //Otherwise
+      toast.success("The certification is deleted successfully");
+      setIsProcessing(false);
+      mutate();
     } catch (err) {
-      console.error("Error updating certification:", err);
-      toast.error("Failed to update certification");
+      console.error(
+        "Unexpected error occurred from deleting certification",
+        err
+      );
+      toast.error("Unexpected error occurred from deleting certification");
+      setFormError("Unexpected error occurred from deleting certification");
     }
   };
 
-  const onUpdateBatch = async () => {
-    setIsSubmitting(true);
+  const updateByIdHandler = async (certification: Certification) => {
+    setIsProcessing(true);
+    if (!certification.id) return;
+    try {
+      const response = await fetch(`/api/certifications/${certification.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formatCertificationForDatabase(certification)),
+      });
+
+      if (!response.ok) {
+        toast.error("Http error in updating certification.");
+        return;
+      }
+      //Otherwise
+      toast.success("The certification is updated successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error(
+        "Unexpected error occurred from updating certification",
+        err
+      );
+      toast.error("Unexpected error occurred from updating certification");
+      setFormError("Unexpected error occurred from updating certification");
+    }
+  };
+
+  const batchUpdate = async () => {
+    setIsProcessing(true);
     try {
       for (const cert of formData) {
         if (changedId.has(cert.id)) {
-          await onUpdate(cert);
+          await updateByIdHandler(cert);
         }
       }
       toast.success("List of certifications has been updated successfully");
+      setIsProcessing(false);
       mutate();
-    } catch (error) {
-      console.error("Error updating certifications:", error);
-      toast.error("Error updating certifications");
-    } finally {
-      setIsSubmitting(false);
-      setIsEditing(false);
+    } catch (err) {
+      console.error(
+        "Unexpected error occurred batch update certifications",
+        err
+      );
+      toast.error("Unexpected error occurred fom batch update certifications");
+      setFormError("Unexpected error occurred from batch update certification");
     }
   };
 
-  const onSaveNew = async (newCert: Certification) => {
+  const createNewCertification = async (newCert: Certification) => {
     try {
-      setIsSubmitting(true);
+      setIsProcessing(true);
       const response = await fetch(`/api/certifications/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formatFormData(newCert)),
+        body: JSON.stringify(formatCertificationForDatabase(newCert)),
       });
-      if (!response.ok) throw new Error("Failed to add certification");
+
+      if (!response.ok) {
+        toast.error("Http error in adding certification.");
+        return;
+      }
+
       toast.success("Certification added successfully");
+      setIsProcessing(false);
       mutate();
     } catch (error) {
-      console.error("Error adding new certification:", error);
-      toast.error("Error adding new certification");
-    } finally {
-      setIsSubmitting(false);
-      setIsAdding(false);
+      console.error(
+        "Unexpected error occurred while adding new certification:",
+        error
+      );
+      toast.error("Unexpected error occurred while adding new certification:");
+      setFormError("Unexpected error occurred from adding a new certification");
     }
   };
 
@@ -173,21 +209,18 @@ export function CertificationsProvider({
     <CertificationsContext.Provider
       value={{
         formData,
-        isEditing,
-        isAdding,
-        isSubmitting,
         isValidMap,
-        setIsEditing,
-        setIsAdding,
+        isProcessing,
+        formError,
         onChangeFormData,
-        onUpdateBatch,
-        onSaveNew,
-        onDelete,
+        batchUpdate,
+        createNewCertification,
+        deleteByIdHandler,
       }}
     >
       {isLoading ? (
         <div>Loading...</div>
-      ) : error ? (
+      ) : formError ? (
         <div>Error loading certifications</div>
       ) : (
         children

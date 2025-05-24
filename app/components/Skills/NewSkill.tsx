@@ -7,6 +7,12 @@ import { SaveBtn } from "@/app/components/ui/SaveBtn";
 import { FormInput } from "@/app/components/ui/FormInput";
 import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
+interface FormValues {
+  name: string;
+  category: string;
+  proficiencyLevel: string;
+}
+
 interface NewSkillProps {
   userId: string;
   onSaveNewSkill: (values: Skill) => void | Promise<void>;
@@ -14,7 +20,7 @@ interface NewSkillProps {
 }
 
 export function NewSkill({ userId, onSaveNewSkill, onCancel }: NewSkillProps) {
-  const formValues = {
+  const formValues: FormValues = {
     name: "",
     category: "",
     proficiencyLevel: "",
@@ -26,7 +32,7 @@ export function NewSkill({ userId, onSaveNewSkill, onCancel }: NewSkillProps) {
     proficiencyLevel: false,
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false); // Default is false
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     values,
@@ -36,13 +42,19 @@ export function NewSkill({ userId, onSaveNewSkill, onCancel }: NewSkillProps) {
     handleBlur,
     validateForm,
     resetForm,
-  } = useFormValidation(formValues, {
-    name: (value) => (value.length > 0 ? null : "Name is required"),
-    category: (value) => (value.length > 0 ? null : "Category is required"),
-    proficiencyLevel: (value) =>
-      value >= 1 && value <= 5
-        ? null
-        : "Proficiency level must be between 1 and 5",
+  } = useFormValidation<FormValues>({
+    initialValues: formValues,
+    validationRules: {
+      name: (value: string) => (value.length > 0 ? null : "Name is required"),
+      category: (value: string) =>
+        value.length > 0 ? null : "Category is required",
+      proficiencyLevel: (value: string) => {
+        const numValue = parseInt(value);
+        return numValue >= 1 && numValue <= 5
+          ? null
+          : "Proficiency level must be between 1 and 5";
+      },
+    },
   });
 
   const getSkillModel = (values: any) => {

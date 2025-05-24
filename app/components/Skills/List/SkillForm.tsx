@@ -4,25 +4,41 @@ import { Skill } from "@/app/components/Skills/skills.types";
 
 interface SkillFormProps {
   skill: Skill;
-  onDeleteClick: (id: string) => void;
-  onFormChange: (
+  onDelete: (id: string) => void;
+  onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
+  isEditing?: boolean;
 }
 
 export const SkillForm = ({
   skill,
-  onDeleteClick,
-  onFormChange,
+  onDelete,
+  onChangeFormData,
+  isEditing,
 }: SkillFormProps) => {
   const config = {
     ...skillFormConfig,
-    onDelete: onDeleteClick,
-    onFormChange,
+    onDelete: onDelete,
+    onFormChange: onChangeFormData,
   };
 
-  return <DynamicForm data={skill} config={config} />;
+  const handleFieldChange = (
+    field: string,
+    value: string,
+    isValid: boolean
+  ) => {
+    onChangeFormData(skill.id, field, value, isValid);
+  };
+
+  return (
+    <DynamicForm
+      data={skill}
+      config={config}
+      onFieldChange={handleFieldChange}
+    />
+  );
 };

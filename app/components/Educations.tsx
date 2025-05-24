@@ -32,8 +32,6 @@ export default function Educations({ userId }: EducationsProps) {
 
   const { isLoading, error } = useFetchData(`/api/users/${userId}/educations`);
 
-  const onAddNew = () => setIsAdding(true);
-
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading education information</div>;
 
@@ -43,7 +41,9 @@ export default function Educations({ userId }: EducationsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Education</h3>
           <div className="flex gap-2">
-            {!isAdding && !isEditing && <AddButton onClick={onAddNew} />}
+            {!isAdding && !isEditing && (
+              <AddButton onClick={() => setIsAdding(true)} />
+            )}
             {!isEditing && !isAdding && (
               <EditButton onClick={() => setIsEditing(true)} />
             )}
@@ -51,9 +51,9 @@ export default function Educations({ userId }: EducationsProps) {
               <DoneButton
                 onClick={onUpdateBatch}
                 isSubmitting={isSubmitting}
-                disabled={
-                  !Array.from(isValidMap.values()).every((isValid) => isValid)
-                }
+                // disabled={
+                //   !Array.from(isValidMap.values()).every((isValid) => isValid)
+                // }
               />
             )}
           </div>

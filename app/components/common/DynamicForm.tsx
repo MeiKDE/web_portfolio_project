@@ -75,7 +75,7 @@ export const DynamicForm = <T extends BaseFormData>({
       </div>
       {config.onDelete && (
         <div className="flex items-start">
-          <DeleteButton onDeleteClick={() => config.onDelete!(data.id)} />
+          <DeleteButton onDeleteClick={() => config.onDelete!(data)} />
         </div>
       )}
     </div>

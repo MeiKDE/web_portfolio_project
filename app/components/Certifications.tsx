@@ -1,6 +1,5 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
-import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "@/app/components/ui/AddButton";
 import { EditButton } from "@/app/components/ui/EditButton";
 import { DoneButton } from "@/app/components/ui/DoneButton";
@@ -8,7 +7,8 @@ import { NewCertification } from "@/app/components/Certifications/NewCertificati
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { CertificationForm } from "./Certifications/List/CertificationForm";
 import { CertificationItem } from "./Certifications/List/CertificationItem";
-import { useCertificationsContext } from "/Users/mei/projects/Web_Portfolio/context/CertificationsContext";
+import { useCertificationsContext } from "@/context/CertificationsContext";
+import { useState } from "react";
 
 interface CertificationsProps {
   userId: string;
@@ -16,28 +16,29 @@ interface CertificationsProps {
 
 export default function Certifications({ userId }: CertificationsProps) {
   const {
-    isAdding,
-    isEditing,
-    isSubmitting,
     formData,
     isValidMap,
-    setIsAdding,
-    setIsEditing,
-    onUpdateBatch,
-    onSaveNew,
+    isProcessing,
+    formError,
+    batchUpdate,
+    createNewCertification,
     onChangeFormData,
-    onDelete,
+    deleteByIdHandler,
   } = useCertificationsContext();
 
-  const { isLoading, error } = useFetchData(
-    `/api/users/${userId}/certifications`
-  );
+  if (isProcessing) return <LoadingSpinner />;
+  if (formError) return <div>Error loading certifications information</div>;
 
-  // Define onAddNew here since it's not in the context
-  const onAddNew = () => setIsAdding(true);
+  type Mode = "view" | "add" | "edit";
+  const [mode, setMode] = useState<Mode>("view");
 
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <div>Error loading certifications information</div>;
+  /*
+The component uses a single state called mode to switch between three views:
+view – Show the list of certifications and "Add" + "Edit" buttons.
+add – Show a form to add a new certification and a "Done" button.
+edit – Show editable forms for existing certifications and a "Done" button.
+The Done button is disabled if any form input is invalid.
+*/
 
   return (
     <Card>
@@ -45,14 +46,22 @@ export default function Certifications({ userId }: CertificationsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Certifications</h3>
           <div className="flex gap-2">
-            {!isAdding && !isEditing && <AddButton onClick={onAddNew} />}
-            {!isEditing && !isAdding && (
-              <EditButton onClick={() => setIsEditing(true)} />
+            {mode === "view" && (
+              <>
+                <AddButton
+                  onClick={() => {
+                    setMode("add");
+                  }}
+                />
+                <EditButton onClick={() => setMode("edit")} />
+              </>
             )}
-            {isEditing && (
+            {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={onUpdateBatch}
-                isSubmitting={isSubmitting}
+                onClick={() => {
+                  batchUpdate();
+                  setMode("view");
+                }}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -61,15 +70,15 @@ export default function Certifications({ userId }: CertificationsProps) {
           </div>
         </div>
 
-        {isAdding && (
+        {mode === "add" && (
           <NewCertification
-            onSaveNew={onSaveNew}
+            createNew={createNewCertification}
             userId={userId}
-            onCancel={() => setIsAdding(false)}
+            onCancel={() => setMode("view")}
           />
         )}
 
-        {!isEditing ? (
+        {mode === "view" ? (
           <>
             {formData.length > 0 &&
               formData.map((cert) => (
@@ -81,20 +90,20 @@ export default function Certifications({ userId }: CertificationsProps) {
                 </div>
               ))}
           </>
-        ) : (
+        ) : mode === "edit" ? (
           <>
             {formData.map((cert) => (
               <div key={cert.id}>
                 <CertificationForm
                   onChangeFormData={onChangeFormData}
                   certification={cert}
-                  onDelete={onDelete}
-                  isEditing={isEditing}
+                  onDelete={deleteByIdHandler}
+                  onDone={() => setMode("view")}
                 />
               </div>
             ))}
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
