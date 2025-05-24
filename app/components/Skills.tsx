@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { SkillForm } from "./Skills/List/SkillForm";
 import { SkillItem } from "./Skills/List/SkillItem";
 import { useSkillsContext } from "@/context/SkillsContext";
+import { useState } from "react";
 
 interface SkillsProps {
   userId: string;
@@ -15,23 +16,21 @@ interface SkillsProps {
 
 export default function Skills({ userId }: SkillsProps) {
   const {
-    isAdding,
-    isEditing,
-    isSubmitting,
     formData,
     isValidMap,
-    isLoading,
-    error,
-    setIsAdding,
-    setIsEditing,
-    onUpdateBatch,
-    onSaveNew,
+    isProcessing,
+    formError,
+    batchUpdate,
+    createNewSkill,
     onChangeFormData,
-    onDelete,
+    deleteByIdHandler,
   } = useSkillsContext();
 
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <div>Error loading skills information</div>;
+  if (isProcessing) return <LoadingSpinner />;
+  if (formError) return <div>Error loading skills information</div>;
+
+  type Mode = "view" | "add" | "edit";
+  const [mode, setMode] = useState<Mode>("view");
 
   return (
     <Card>
@@ -39,16 +38,18 @@ export default function Skills({ userId }: SkillsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Skills</h3>
           <div className="flex gap-2">
-            {!isAdding && !isEditing && (
-              <AddButton onClick={() => setIsAdding(true)} />
+            {mode === "view" && (
+              <>
+                <AddButton onClick={() => setMode("add")} />
+                <EditButton onClick={() => setMode("edit")} />
+              </>
             )}
-            {!isEditing && !isAdding && (
-              <EditButton onClick={() => setIsEditing(true)} />
-            )}
-            {isEditing && (
+            {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={onUpdateBatch}
-                isSubmitting={isSubmitting}
+                onClick={() => {
+                  batchUpdate();
+                  setMode("view");
+                }}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -57,15 +58,15 @@ export default function Skills({ userId }: SkillsProps) {
           </div>
         </div>
 
-        {isAdding && (
+        {mode === "add" && (
           <NewSkill
-            onSaveNewSkill={onSaveNew}
+            createNew={createNewSkill}
             userId={userId}
-            onCancel={() => setIsAdding(false)}
+            onCancel={() => setMode("view")}
           />
         )}
 
-        {!isEditing ? (
+        {mode === "view" ? (
           <>
             {formData.length > 0 &&
               formData.map((skill) => (
@@ -77,20 +78,20 @@ export default function Skills({ userId }: SkillsProps) {
                 </div>
               ))}
           </>
-        ) : (
+        ) : mode === "edit" ? (
           <>
             {formData.map((skill) => (
               <div key={skill.id}>
                 <SkillForm
                   onChangeFormData={onChangeFormData}
                   skill={skill}
-                  onDelete={onDelete}
-                  isEditing={isEditing}
+                  onDelete={deleteByIdHandler}
+                  onDone={() => setMode("view")}
                 />
               </div>
             ))}
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

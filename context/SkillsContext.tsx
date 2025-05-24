@@ -12,23 +12,18 @@ import { toast } from "sonner";
 
 interface SkillsContextProps {
   formData: Skill[];
-  isEditing: boolean;
-  isAdding: boolean;
-  isSubmitting: boolean;
   isValidMap: Map<string, boolean>;
-  isLoading: boolean;
-  error: Error | null;
-  setIsEditing: (val: boolean) => void;
-  setIsAdding: (val: boolean) => void;
+  isProcessing: boolean;
+  formError: string;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  onUpdateBatch: () => Promise<void>;
-  onSaveNew: (skill: Skill) => Promise<void>;
-  onDelete: (id: string | null) => Promise<void>;
+  batchUpdate: () => Promise<void>;
+  createNewSkill: (skill: Skill) => Promise<void>;
+  deleteByIdHandler: (skill: Skill) => Promise<void>;
 }
 
 const SkillsContext = createContext<SkillsContextProps | undefined>(undefined);
@@ -40,19 +35,17 @@ export const useSkillsContext = () => {
   return context;
 };
 
-export function SkillsProvider({
-  userId,
-  children,
-}: {
+interface SkillsProviderProps {
   userId: string;
   children: ReactNode;
-}) {
+}
+
+export function SkillsProvider({ userId, children }: SkillsProviderProps) {
   const [formData, setFormData] = useState<Skill[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [changedId, setChangedId] = useState<Set<string>>(new Set());
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const { data, isLoading, error, mutate } = useFetchData<Skill[]>(
     `/api/users/${userId}/skills`
@@ -61,11 +54,97 @@ export function SkillsProvider({
   useEffect(() => {
     if (data) {
       setFormData(data);
-      const validMap = new Map();
-      data.forEach((skill) => validMap.set(skill.id, true));
-      setIsValidMap(validMap);
     }
   }, [data]);
+
+  const deleteByIdHandler = async (skill: Skill) => {
+    setIsProcessing(true);
+    if (!skill.id) return;
+    try {
+      const response = await fetch(`/api/skills/${skill.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        toast.error("Http error in deleting skill.");
+        return;
+      }
+      toast.success("The skill is deleted successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred from deleting skill", err);
+      toast.error("Unexpected error occurred from deleting skill");
+      setFormError("Unexpected error occurred from deleting skill");
+    }
+  };
+
+  const updateByIdHandler = async (skill: Skill) => {
+    setIsProcessing(true);
+    if (!skill.id) return;
+    try {
+      const response = await fetch(`/api/skills/${skill.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(skill),
+      });
+
+      if (!response.ok) {
+        toast.error("Http error in updating skill.");
+        return;
+      }
+      toast.success("The skill is updated successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred from updating skill", err);
+      toast.error("Unexpected error occurred from updating skill");
+      setFormError("Unexpected error occurred from updating skill");
+    }
+  };
+
+  const batchUpdate = async () => {
+    setIsProcessing(true);
+    try {
+      for (const skill of formData) {
+        if (changedId.has(skill.id)) {
+          await updateByIdHandler(skill);
+        }
+      }
+      toast.success("List of skills has been updated successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred batch update skills", err);
+      toast.error("Unexpected error occurred from batch update skills");
+      setFormError("Unexpected error occurred from batch update skills");
+    }
+  };
+
+  const createNewSkill = async (newSkill: Skill) => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(`/api/skills/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newSkill),
+      });
+
+      if (!response.ok) {
+        toast.error("Http error in adding skill.");
+        return;
+      }
+
+      toast.success("Skill added successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (error) {
+      console.error("Unexpected error occurred while adding new skill:", error);
+      toast.error("Unexpected error occurred while adding new skill");
+      setFormError("Unexpected error occurred from adding a new skill");
+    }
+  };
 
   const onChangeFormData = (
     id: string,
@@ -73,96 +152,45 @@ export function SkillsProvider({
     value: string,
     isFormValid: boolean
   ) => {
+    setIsValidMap((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(id, isFormValid);
+      return newMap;
+    });
+
+    setChangedId((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+
     setFormData((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+      prev.map((skill) =>
+        skill.id === id ? { ...skill, [field]: value } : skill
+      )
     );
-    setIsValidMap((prev) => new Map(prev).set(id, isFormValid));
-    setChangedId((prev) => new Set(prev).add(id));
-  };
-
-  const onUpdateBatch = async () => {
-    try {
-      setIsSubmitting(true);
-      const updatedSkills = Array.from(changedId)
-        .map((id) => formData.find((skill) => skill.id === id))
-        .filter(Boolean) as Skill[];
-
-      await fetch(`/api/users/${userId}/skills/batch`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedSkills),
-      });
-
-      setChangedId(new Set());
-      setIsEditing(false);
-      mutate();
-      toast.success("Skills updated successfully");
-    } catch (error) {
-      toast.error("Failed to update skills");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onSaveNew = async (skill: Skill) => {
-    try {
-      setIsSubmitting(true);
-      await fetch(`/api/users/${userId}/skills`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(skill),
-      });
-
-      setIsAdding(false);
-      mutate();
-      toast.success("Skill added successfully");
-    } catch (error) {
-      toast.error("Failed to add skill");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onDelete = async (id: string | null) => {
-    if (!id) return;
-
-    try {
-      setIsSubmitting(true);
-      await fetch(`/api/users/${userId}/skills/${id}`, {
-        method: "DELETE",
-      });
-
-      mutate();
-      toast.success("Skill deleted successfully");
-    } catch (error) {
-      toast.error("Failed to delete skill");
-      console.error(error);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
     <SkillsContext.Provider
       value={{
         formData,
-        isEditing,
-        isAdding,
-        isSubmitting,
         isValidMap,
-        isLoading,
-        error,
-        setIsEditing,
-        setIsAdding,
+        isProcessing,
+        formError,
         onChangeFormData,
-        onUpdateBatch,
-        onSaveNew,
-        onDelete,
+        batchUpdate,
+        createNewSkill,
+        deleteByIdHandler,
       }}
     >
-      {children}
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : formError ? (
+        <div>Error loading skills</div>
+      ) : (
+        children
+      )}
     </SkillsContext.Provider>
   );
 }

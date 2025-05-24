@@ -4,26 +4,27 @@ import { Skill } from "@/app/components/Skills/skills.types";
 
 interface SkillFormProps {
   skill: Skill;
-  onDelete: (id: string) => void;
+  onDelete: (skill: Skill) => void;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  isEditing?: boolean;
+  onDone: () => void;
 }
 
 export const SkillForm = ({
   skill,
   onDelete,
   onChangeFormData,
-  isEditing,
+  onDone,
 }: SkillFormProps) => {
   const config = {
     ...skillFormConfig,
-    onDelete: onDelete,
+    onDelete,
     onFormChange: onChangeFormData,
+    disabled: !onDone,
   };
 
   const handleFieldChange = (

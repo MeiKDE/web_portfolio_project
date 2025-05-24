@@ -1,11 +1,6 @@
+"use client";
 import { Lightbulb } from "lucide-react";
-import React, { JSX } from "react";
-
-interface Skill {
-  name: string;
-  category: string;
-  proficiencyLevel: number;
-}
+import { Skill } from "../skills.types";
 
 export const SkillItem = ({ skill }: { skill: Skill }) => {
   return (
