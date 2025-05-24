@@ -31,6 +31,34 @@ export default function Experiences({ userId }: ExperiencesProps) {
 
   type Mode = "view" | "add" | "edit";
   const [mode, setMode] = useState<Mode>("view");
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
+
+  const toggleDeleteItem = (id: string) => {
+    setItemsToDelete((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDone = async () => {
+    if (itemsToDelete.size > 0) {
+      // Delete items individually
+      for (const id of itemsToDelete) {
+        const exp = formData.find((e) => e.id === id);
+        if (exp) {
+          await deleteByIdHandler(exp);
+        }
+      }
+      setItemsToDelete(new Set());
+    }
+    await batchUpdate();
+    setMode("view");
+  };
 
   /*
   The component uses a single state called mode to switch between three views:
@@ -58,10 +86,7 @@ export default function Experiences({ userId }: ExperiencesProps) {
             )}
             {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={() => {
-                  batchUpdate();
-                  setMode("view");
-                }}
+                onClick={handleDone}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -97,7 +122,8 @@ export default function Experiences({ userId }: ExperiencesProps) {
                 <ExperienceForm
                   onChangeFormData={onChangeFormData}
                   experience={exp}
-                  onDelete={deleteByIdHandler}
+                  onDelete={() => toggleDeleteItem(exp.id)}
+                  isMarkedForDeletion={itemsToDelete.has(exp.id)}
                   onDone={() => setMode("view")}
                 />
               </div>

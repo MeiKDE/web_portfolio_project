@@ -55,6 +55,7 @@ export function ExperiencesProvider({
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [formError, setFormError] = useState("");
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
 
   const { data, isLoading, error, mutate } = useFetchData<Experience[]>(
     `/api/users/${userId}/experiences`
@@ -72,7 +73,32 @@ export function ExperiencesProvider({
     endDate: exp.endDate ? formatDateForDatabase(exp.endDate) : null,
   });
 
-  // deleteHandler
+  const toggleDeleteItem = (id: string) => {
+    setItemsToDelete((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDone = async () => {
+    if (itemsToDelete.size > 0) {
+      // Delete items individually
+      for (const id of itemsToDelete) {
+        const exp = formData.find((e) => e.id === id);
+        if (exp) {
+          await deleteByIdHandler(exp);
+        }
+      }
+      setItemsToDelete(new Set());
+    }
+    await batchUpdate();
+  };
+
   const deleteByIdHandler = async (experience: Experience) => {
     setIsProcessing(true);
     if (!experience.id) return;
