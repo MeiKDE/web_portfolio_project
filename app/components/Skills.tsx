@@ -26,11 +26,37 @@ export default function Skills({ userId }: SkillsProps) {
     deleteByIdHandler,
   } = useSkillsContext();
 
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
+
   if (isProcessing) return <LoadingSpinner />;
   if (formError) return <div>Error loading skills information</div>;
 
-  type Mode = "view" | "add" | "edit";
-  const [mode, setMode] = useState<Mode>("view");
+  const toggleDeleteItem = (id: string) => {
+    setItemsToDelete((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDone = async () => {
+    if (itemsToDelete.size > 0) {
+      for (const id of itemsToDelete) {
+        const skill = formData.find((s) => s.id === id);
+        if (skill) {
+          await deleteByIdHandler(skill);
+        }
+      }
+      setItemsToDelete(new Set());
+    }
+    await batchUpdate();
+    setMode("view");
+  };
 
   return (
     <Card>
@@ -46,10 +72,7 @@ export default function Skills({ userId }: SkillsProps) {
             )}
             {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={() => {
-                  batchUpdate();
-                  setMode("view");
-                }}
+                onClick={handleDone}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -85,7 +108,8 @@ export default function Skills({ userId }: SkillsProps) {
                 <SkillForm
                   onChangeFormData={onChangeFormData}
                   skill={skill}
-                  onDelete={deleteByIdHandler}
+                  onDelete={() => toggleDeleteItem(skill.id)}
+                  isMarkedForDeletion={itemsToDelete.has(skill.id)}
                   onDone={() => setMode("view")}
                 />
               </div>
