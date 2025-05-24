@@ -25,7 +25,6 @@ export function CertificationForm({
 }: CertificationFormProps) {
   const config = {
     ...certificationFormConfig,
-    onDelete,
     onFormChange: onChangeFormData,
     disabled: !onDone,
   };

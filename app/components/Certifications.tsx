@@ -85,7 +85,7 @@ The Done button is disabled if any form input is invalid.
                 <EditButton onClick={() => setMode("edit")} />
               </>
             )}
-            {mode !== "view" && mode === "edit" && (
+            {mode === "edit" && (
               <DoneButton
                 onClick={handleDone}
                 disabled={
