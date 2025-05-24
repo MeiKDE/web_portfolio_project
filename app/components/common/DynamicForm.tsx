@@ -1,6 +1,6 @@
 import React from "react";
 import { FormField } from "@/app/components/ui/FormField";
-import { DeleteButton } from "@/app/components/ui/DeleteBtn";
+import { DeleteButton } from "@/app/components/ui/DeleteButton";
 import { useFormValidation } from "@/app/hooks/form/use-form-validation";
 import {
   FormConfig,
@@ -75,7 +75,10 @@ export const DynamicForm = <T extends BaseFormData>({
       </div>
       {config.onDelete && (
         <div className="flex items-start">
-          <DeleteButton onDeleteClick={() => config.onDelete!(data)} />
+          <DeleteButton
+            onClick={() => config.onDelete!(data)}
+            isMarkedForDeletion={false}
+          />
         </div>
       )}
     </div>

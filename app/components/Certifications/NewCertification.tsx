@@ -7,8 +7,8 @@ import { SaveBtn } from "@/app/components/ui/SaveBtn";
 
 interface NewCertificationProps {
   userId: string;
-  createNew: (cert: Certification) => void | Promise<void>;
-  onCancel?: () => void;
+  createNew: (certification: Certification) => Promise<void>;
+  onCancel: () => void;
 }
 
 export function NewCertification({
@@ -68,7 +68,13 @@ export function NewCertification({
       return;
     }
 
-    await createNew(getCertificationModel());
+    try {
+      await createNew(getCertificationModel());
+      onCancel();
+    } catch (error) {
+      console.error("Failed to create certification:", error);
+    }
+
     resetForm();
     setIsSubmitting(false);
   };

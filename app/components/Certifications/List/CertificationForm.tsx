@@ -1,6 +1,7 @@
 import { DynamicForm } from "@/app/components/common/DynamicForm";
 import { certificationFormConfig } from "@/app/config/form-configs";
 import { Certification } from "@/app/components/Certifications/certifications.types";
+import { DeleteButton } from "@/app/components/ui/DeleteButton";
 
 interface CertificationFormProps {
   certification: Certification;
@@ -12,14 +13,16 @@ interface CertificationFormProps {
     isFormValid: boolean
   ) => void;
   onDone: () => void;
+  isMarkedForDeletion: boolean;
 }
 
-export const CertificationForm = ({
+export function CertificationForm({
   certification,
   onDelete,
   onChangeFormData,
+  isMarkedForDeletion,
   onDone,
-}: CertificationFormProps) => {
+}: CertificationFormProps) {
   const config = {
     ...certificationFormConfig,
     onDelete,
@@ -36,10 +39,18 @@ export const CertificationForm = ({
   };
 
   return (
-    <DynamicForm
-      data={certification}
-      config={config}
-      onFieldChange={handleFieldChange}
-    />
+    <div className={`relative ${isMarkedForDeletion ? "opacity-50" : ""}`}>
+      <div className="absolute right-2 top-2">
+        <DeleteButton
+          onClick={() => onDelete(certification)}
+          isMarkedForDeletion={isMarkedForDeletion}
+        />
+      </div>
+      <DynamicForm
+        data={certification}
+        config={config}
+        onFieldChange={handleFieldChange}
+      />
+    </div>
   );
-};
+}

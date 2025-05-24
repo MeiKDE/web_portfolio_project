@@ -26,11 +26,40 @@ export default function Certifications({ userId }: CertificationsProps) {
     deleteByIdHandler,
   } = useCertificationsContext();
 
+  // Move all useState hooks to the top
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
+
+  // Early returns should come after all hooks
   if (isProcessing) return <LoadingSpinner />;
   if (formError) return <div>Error loading certifications information</div>;
 
-  type Mode = "view" | "add" | "edit";
-  const [mode, setMode] = useState<Mode>("view");
+  const toggleDeleteItem = (id: string) => {
+    setItemsToDelete((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDone = async () => {
+    if (itemsToDelete.size > 0) {
+      // Delete items individually
+      for (const id of itemsToDelete) {
+        const cert = formData.find((c) => c.id === id);
+        if (cert) {
+          await deleteByIdHandler(cert);
+        }
+      }
+      setItemsToDelete(new Set());
+    }
+    await batchUpdate();
+    setMode("view");
+  };
 
   /*
 The component uses a single state called mode to switch between three views:
@@ -58,10 +87,7 @@ The Done button is disabled if any form input is invalid.
             )}
             {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={() => {
-                  batchUpdate();
-                  setMode("view");
-                }}
+                onClick={handleDone}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -97,7 +123,8 @@ The Done button is disabled if any form input is invalid.
                 <CertificationForm
                   onChangeFormData={onChangeFormData}
                   certification={cert}
-                  onDelete={deleteByIdHandler}
+                  onDelete={() => toggleDeleteItem(cert.id)}
+                  isMarkedForDeletion={itemsToDelete.has(cert.id)}
                   onDone={() => setMode("view")}
                 />
               </div>
