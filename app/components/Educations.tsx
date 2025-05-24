@@ -1,6 +1,5 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
-import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { AddButton } from "@/app/components/ui/AddButton";
 import { EditButton } from "@/app/components/ui/EditButton";
 import { DoneButton } from "@/app/components/ui/DoneButton";
@@ -9,7 +8,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { EducationForm } from "./Educations/List/EducationForm";
 import { EducationItem } from "./Educations/List/EducationItem";
 import { useEducationsContext } from "@/context/EducationsContext";
-import { Education } from "@/app/components/Educations/educations.types";
+import { useState } from "react";
 
 interface EducationsProps {
   userId: string;
@@ -17,23 +16,21 @@ interface EducationsProps {
 
 export default function Educations({ userId }: EducationsProps) {
   const {
-    isAdding,
-    isEditing,
-    isSubmitting,
     formData,
     isValidMap,
-    setIsAdding,
-    setIsEditing,
-    onUpdateBatch,
-    onSaveNew,
+    isProcessing,
+    formError,
+    batchUpdate,
+    createNewEducation,
     onChangeFormData,
-    onDelete,
+    deleteByIdHandler,
   } = useEducationsContext();
 
-  const { isLoading, error } = useFetchData(`/api/users/${userId}/educations`);
+  if (isProcessing) return <LoadingSpinner />;
+  if (formError) return <div>Error loading education information</div>;
 
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <div>Error loading education information</div>;
+  type Mode = "view" | "add" | "edit";
+  const [mode, setMode] = useState<Mode>("view");
 
   return (
     <Card>
@@ -41,62 +38,60 @@ export default function Educations({ userId }: EducationsProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold">Education</h3>
           <div className="flex gap-2">
-            {!isAdding && !isEditing && (
-              <AddButton onClick={() => setIsAdding(true)} />
+            {mode === "view" && (
+              <>
+                <AddButton onClick={() => setMode("add")} />
+                <EditButton onClick={() => setMode("edit")} />
+              </>
             )}
-            {!isEditing && !isAdding && (
-              <EditButton onClick={() => setIsEditing(true)} />
-            )}
-            {isEditing && (
+            {mode !== "view" && mode === "edit" && (
               <DoneButton
-                onClick={onUpdateBatch}
-                isSubmitting={isSubmitting}
-                // disabled={
-                //   !Array.from(isValidMap.values()).every((isValid) => isValid)
-                // }
+                onClick={() => {
+                  batchUpdate();
+                  setMode("view");
+                }}
+                disabled={
+                  !Array.from(isValidMap.values()).every((isValid) => isValid)
+                }
               />
             )}
           </div>
         </div>
 
-        {isAdding && (
+        {mode === "add" && (
           <NewEducation
-            onSaveNew={onSaveNew}
+            createNew={createNewEducation}
             userId={userId}
-            onCancel={() => setIsAdding(false)}
+            onCancel={() => setMode("view")}
           />
         )}
 
-        {!isEditing ? (
+        {mode === "view" ? (
           <>
-            {Array.isArray(formData) && formData.length > 0 ? (
-              formData.map((edu: Education) => (
+            {formData.length > 0 &&
+              formData.map((edu) => (
                 <div
                   key={edu.id}
                   className="relative border-b pb-4 last:border-0"
                 >
                   <EducationItem education={edu} />
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No education entries yet</p>
-            )}
-          </>
-        ) : (
-          <>
-            {Array.isArray(formData) &&
-              formData.map((edu: Education) => (
-                <div key={edu.id}>
-                  <EducationForm
-                    onChangeFormData={onChangeFormData}
-                    education={edu}
-                    onDelete={onDelete}
-                    isEditing={isEditing}
-                  />
-                </div>
               ))}
           </>
-        )}
+        ) : mode === "edit" ? (
+          <>
+            {formData.map((edu) => (
+              <div key={edu.id}>
+                <EducationForm
+                  onChangeFormData={onChangeFormData}
+                  education={edu}
+                  onDelete={deleteByIdHandler}
+                  onDone={() => setMode("view")}
+                />
+              </div>
+            ))}
+          </>
+        ) : null}
       </CardContent>
     </Card>
   );

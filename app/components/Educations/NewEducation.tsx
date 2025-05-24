@@ -4,18 +4,16 @@ import { Education } from "@/app/components/Educations/educations.types";
 import * as React from "react";
 import { CancelBtn } from "@/app/components/ui/CancelBtn";
 import { SaveBtn } from "@/app/components/ui/SaveBtn";
-import { FormInput } from "@/app/components/ui/FormInput";
-import { FormErrorMessage } from "@/app/components/ui/FormErrorMessage";
 
 interface NewEducationProps {
   userId: string;
-  onSaveNew: (values: Education) => void | Promise<void>;
+  createNew: (edu: Education) => void | Promise<void>;
   onCancel?: () => void;
 }
 
 export function NewEducation({
   userId,
-  onSaveNew,
+  createNew,
   onCancel,
 }: NewEducationProps) {
   const initialValues = {
@@ -29,7 +27,7 @@ export function NewEducation({
 
   const validationRules = {
     institution: (value: string) =>
-      value.length > 0 ? null : "Institution is required",
+      value.length > 0 ? null : "Institution name is required",
     degree: (value: string) => (value.length > 0 ? null : "Degree is required"),
     fieldOfStudy: (value: string) =>
       value.length > 0 ? null : "Field of study is required",
@@ -41,20 +39,13 @@ export function NewEducation({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    validateForm,
-    resetForm,
-  } = useFormValidation({
-    initialValues,
-    validationRules,
-    validateOnChange: true,
-    validateOnBlur: true,
-  });
+  const { values, errors, handleChange, validateForm, resetForm } =
+    useFormValidation({
+      initialValues,
+      validationRules,
+      validateOnChange: true,
+      validateOnBlur: true,
+    });
 
   const getEducationModel = (): Education => ({
     id: "",
@@ -63,11 +54,15 @@ export function NewEducation({
     degree: values.degree,
     fieldOfStudy: values.fieldOfStudy,
     startYear: parseInt(values.startYear),
-    endYear: parseInt(values.endYear) || new Date().getFullYear(),
+    endYear: values.endYear
+      ? parseInt(values.endYear)
+      : new Date().getFullYear(),
     description: values.description || undefined,
   });
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const createEducationHandler = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
     setIsSubmitting(true);
 
@@ -77,7 +72,7 @@ export function NewEducation({
       return;
     }
 
-    await onSaveNew(getEducationModel());
+    await createNew(getEducationModel());
     resetForm();
     setIsSubmitting(false);
   };
@@ -95,7 +90,7 @@ export function NewEducation({
   return (
     <div className="mb-6 border p-4 rounded-md">
       <h4 className="font-medium mb-3">Add New Education</h4>
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={createEducationHandler} className="space-y-4">
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
             Institution Name*
@@ -115,85 +110,73 @@ export function NewEducation({
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Degree*</label>
-          <FormInput
-            field="degree"
+          <input
+            type="text"
             value={values.degree}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
-            className={getInputClassName("degree")}
-            required
+            onChange={(e) => handleChange("degree", e.target.value)}
+            className={`w-full p-2 border rounded ${getInputClassName(
+              "degree"
+            )}`}
           />
-          <FormErrorMessage error={errors["degree"]} />
+          {errors.degree && (
+            <p className="text-red-500 text-xs mt-1">{errors.degree}</p>
+          )}
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">
             Field of Study*
           </label>
-          <FormInput
-            field="fieldOfStudy"
+          <input
+            type="text"
             value={values.fieldOfStudy}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
-            className={getInputClassName("fieldOfStudy")}
-            required
+            onChange={(e) => handleChange("fieldOfStudy", e.target.value)}
+            className={`w-full p-2 border rounded ${getInputClassName(
+              "fieldOfStudy"
+            )}`}
           />
-          <FormErrorMessage error={errors["fieldOfStudy"]} />
+          {errors.fieldOfStudy && (
+            <p className="text-red-500 text-xs mt-1">{errors.fieldOfStudy}</p>
+          )}
         </div>
 
         <div className="mb-2">
           <label className="text-sm text-muted-foreground">Start Year*</label>
-          <FormInput
-            field="startYear"
+          <input
+            type="number"
             value={values.startYear}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
-            required
+            onChange={(e) => handleChange("startYear", e.target.value)}
+            className={`w-full p-2 border rounded ${getInputClassName(
+              "startYear"
+            )}`}
           />
-          <FormErrorMessage error={errors["startYear"]} />
+          {errors.startYear && (
+            <p className="text-red-500 text-xs mt-1">{errors.startYear}</p>
+          )}
         </div>
 
         <div className="mb-2">
-          <label className="text-sm text-muted-foreground">End Year</label>
-          <FormInput
-            field="endYear"
+          <label className="text-sm text-muted-foreground">
+            End Year (Optional)
+          </label>
+          <input
+            type="number"
             value={values.endYear}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
+            onChange={(e) => handleChange("endYear", e.target.value)}
+            className="w-full p-2 border rounded"
           />
-          <FormErrorMessage error={errors["endYear"]} />
         </div>
 
         <div className="mb-2">
-          <label className="text-sm text-muted-foreground">Description</label>
-          <FormInput
-            field="description"
+          <label className="text-sm text-muted-foreground">
+            Description (Optional)
+          </label>
+          <textarea
             value={values.description}
-            handleChange={(field, value) =>
-              handleChange(field as keyof typeof values, value)
-            }
-            handleBlur={(field) => handleBlur(field as keyof typeof values)}
-            errors={errors}
-            touched={touched}
-            className={getInputClassName("description")}
+            onChange={(e) => handleChange("description", e.target.value)}
+            className="w-full p-2 border rounded"
+            rows={3}
           />
-          <FormErrorMessage error={errors["description"]} />
         </div>
 
         <div className="flex gap-2">

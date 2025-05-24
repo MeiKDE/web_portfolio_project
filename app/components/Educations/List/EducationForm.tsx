@@ -4,27 +4,27 @@ import { Education } from "@/app/components/Educations/educations.types";
 
 interface EducationFormProps {
   education: Education;
-  onDelete: (id: string) => void;
+  onDelete: (edu: Education) => void;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  isEditing: boolean;
+  onDone: () => void;
 }
 
 export const EducationForm = ({
   education,
   onDelete,
   onChangeFormData,
-  isEditing,
+  onDone,
 }: EducationFormProps) => {
   const config = {
     ...educationFormConfig,
     onDelete,
     onFormChange: onChangeFormData,
-    disabled: !isEditing,
+    disabled: !onDone,
   };
 
   const handleFieldChange = (

@@ -3,207 +3,200 @@ import {
   createContext,
   useContext,
   useState,
-  useCallback,
   useEffect,
+  ReactNode,
 } from "react";
 import { Education } from "@/app/components/Educations/educations.types";
+import { useFetchData } from "@/app/hooks/data/use-fetch-data";
 import { toast } from "sonner";
 
-interface EducationsContextType {
-  isAdding: boolean;
-  isEditing: boolean;
-  isSubmitting: boolean;
+interface EducationsContextProps {
   formData: Education[];
   isValidMap: Map<string, boolean>;
-  setIsAdding: (value: boolean) => void;
-  setIsEditing: (value: boolean) => void;
-  onUpdateBatch: () => Promise<void>;
-  onSaveNew: (education: Education) => Promise<void>;
+  isProcessing: boolean;
+  formError: string;
   onChangeFormData: (
     id: string,
     field: string,
     value: string,
     isFormValid: boolean
   ) => void;
-  onDelete: (id: string) => Promise<void>;
+  batchUpdate: () => Promise<void>;
+  createNewEducation: (edu: Education) => Promise<void>;
+  deleteByIdHandler: (education: Education) => Promise<void>;
 }
 
-const EducationsContext = createContext<EducationsContextType | undefined>(
+const EducationsContext = createContext<EducationsContextProps | undefined>(
   undefined
 );
 
-export function EducationsProvider({
-  children,
-  userId,
-}: {
-  children: React.ReactNode;
+export const useEducationsContext = () => {
+  const context = useContext(EducationsContext);
+  if (!context)
+    throw new Error("useEducationsContext must be used within a Provider");
+  return context;
+};
+
+interface EducationsProviderProps {
   userId: string;
-}) {
-  const [isAdding, setIsAdding] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  children: ReactNode;
+}
+
+export function EducationsProvider({
+  userId,
+  children,
+}: EducationsProviderProps) {
   const [formData, setFormData] = useState<Education[]>([]);
-  const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
+  const [changedId, setChangedId] = useState<Set<string>>(new Set());
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  // Define fetchEducations function to be reusable
-  const fetchEducations = async () => {
-    try {
-      const response = await fetch(`/api/users/${userId}/educations`);
-      if (!response.ok) throw new Error("Failed to fetch educations");
-      const result = await response.json();
-      if (result.success && result.data) {
-        setFormData(result.data);
-        // Initialize validation map
-        const validMap = new Map();
-        result.data.forEach((edu: Education) => validMap.set(edu.id, true));
-        setIsValidMap(validMap);
-      }
-    } catch (error) {
-      console.error("Error fetching educations:", error);
-      toast.error("Error loading educations");
-    }
-  };
+  const { data, isLoading, error, mutate } = useFetchData<Education[]>(
+    `/api/users/${userId}/educations`
+  );
 
-  // Add this useEffect to fetch initial data
   useEffect(() => {
-    if (userId) {
-      fetchEducations();
+    if (data) {
+      setFormData(data);
     }
-  }, [userId]);
+  }, [data]);
 
-  const onUpdateBatch = async () => {
-    setIsSubmitting(true);
+  const deleteByIdHandler = async (education: Education) => {
+    setIsProcessing(true);
+    if (!education.id) return;
     try {
-      await Promise.all(
-        Array.from(changedIds).map(async (id) => {
-          const education = formData.find((edu) => edu.id === id);
-          if (education) {
-            const response = await fetch(`/api/educations/${id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(education),
-            });
-            if (!response.ok) throw new Error("Failed to update education");
-          }
-        })
-      );
-      toast.success("Education updated successfully");
-      setIsEditing(false);
+      const response = await fetch(`/api/educations/${education.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
 
-      // Clear the changed IDs set
-      setChangedIds(new Set());
-
-      // Refresh data from server
-      fetchEducations();
-    } catch (error) {
-      console.error("Error updating educations:", error);
-      toast.error("Error updating educations");
-    } finally {
-      setIsSubmitting(false);
+      if (!response.ok) {
+        toast.error("Http error in deleting education.");
+        return;
+      }
+      toast.success("The education is deleted successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred from deleting education", err);
+      toast.error("Unexpected error occurred from deleting education");
+      setFormError("Unexpected error occurred from deleting education");
     }
   };
 
-  const onSaveNew = async (education: Education) => {
-    setIsSubmitting(true);
+  const updateByIdHandler = async (education: Education) => {
+    setIsProcessing(true);
+    if (!education.id) return;
     try {
-      const response = await fetch("/api/educations", {
-        method: "POST",
+      const response = await fetch(`/api/educations/${education.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(education),
       });
-      if (!response.ok) throw new Error("Failed to add education");
 
-      // Extract data from the API response
-      const result = await response.json();
+      if (!response.ok) {
+        toast.error("Http error in updating education.");
+        return;
+      }
+      toast.success("The education is updated successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred from updating education", err);
+      toast.error("Unexpected error occurred from updating education");
+      setFormError("Unexpected error occurred from updating education");
+    }
+  };
 
-      if (result.success && result.data) {
-        // Update the form data with the new education
-        setFormData((prevData) => [...prevData, result.data]);
+  const batchUpdate = async () => {
+    setIsProcessing(true);
+    try {
+      for (const edu of formData) {
+        if (changedId.has(edu.id)) {
+          await updateByIdHandler(edu);
+        }
+      }
+      toast.success("List of educations has been updated successfully");
+      setIsProcessing(false);
+      mutate();
+    } catch (err) {
+      console.error("Unexpected error occurred batch update educations", err);
+      toast.error("Unexpected error occurred from batch update educations");
+      setFormError("Unexpected error occurred from batch update educations");
+    }
+  };
 
-        // Set validation for the new item
-        setIsValidMap((prev) => new Map(prev).set(result.data.id, true));
+  const createNewEducation = async (newEdu: Education) => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(`/api/educations/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEdu),
+      });
 
-        toast.success("Education added successfully");
-      } else {
-        throw new Error(result.message || "Unknown error occurred");
+      if (!response.ok) {
+        toast.error("Http error in adding education.");
+        return;
       }
 
-      setIsAdding(false);
-
-      // Refresh the education data from the server
-      fetchEducations();
+      toast.success("Education added successfully");
+      setIsProcessing(false);
+      mutate();
     } catch (error) {
-      console.error("Error adding education:", error);
-      toast.error("Error adding education");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const onChangeFormData = useCallback(
-    (id: string, field: string, value: string, isFormValid: boolean) => {
-      setFormData((prev) =>
-        prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
+      console.error(
+        "Unexpected error occurred while adding new education:",
+        error
       );
-      setChangedIds((prev) => new Set(prev).add(id));
-      setIsValidMap((prev) => new Map(prev).set(id, isFormValid));
-    },
-    []
-  );
-
-  const onDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/educations/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) throw new Error("Failed to delete education");
-
-      // Remove the item from formData
-      setFormData((prev) => prev.filter((edu) => edu.id !== id));
-
-      // Remove the item from isValidMap
-      const newValidMap = new Map(isValidMap);
-      newValidMap.delete(id);
-      setIsValidMap(newValidMap);
-
-      toast.success("Education deleted successfully");
-
-      // Refresh data from server
-      fetchEducations();
-    } catch (error) {
-      console.error("Error deleting education:", error);
-      toast.error("Error deleting education");
+      toast.error("Unexpected error occurred while adding new education");
+      setFormError("Unexpected error occurred from adding a new education");
     }
   };
 
-  const value = {
-    isAdding,
-    isEditing,
-    isSubmitting,
-    formData,
-    isValidMap,
-    setIsAdding,
-    setIsEditing,
-    onUpdateBatch,
-    onSaveNew,
-    onChangeFormData,
-    onDelete,
+  const onChangeFormData = (
+    id: string,
+    field: string,
+    value: string,
+    isFormValid: boolean
+  ) => {
+    setIsValidMap((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(id, isFormValid);
+      return newMap;
+    });
+
+    setChangedId((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+
+    setFormData((prev) =>
+      prev.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu))
+    );
   };
 
   return (
-    <EducationsContext.Provider value={value}>
-      {children}
+    <EducationsContext.Provider
+      value={{
+        formData,
+        isValidMap,
+        isProcessing,
+        formError,
+        onChangeFormData,
+        batchUpdate,
+        createNewEducation,
+        deleteByIdHandler,
+      }}
+    >
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : formError ? (
+        <div>Error loading educations</div>
+      ) : (
+        children
+      )}
     </EducationsContext.Provider>
   );
 }
-
-export const useEducationsContext = () => {
-  const context = useContext(EducationsContext);
-  if (context === undefined) {
-    throw new Error(
-      "useEducationsContext must be used within an EducationsProvider"
-    );
-  }
-  return context;
-};
