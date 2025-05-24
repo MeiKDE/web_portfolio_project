@@ -1,42 +1,27 @@
-import React from "react";
-
-interface Profile {
-  name: string;
-  title: string;
-  description: string;
-  location: string;
-  phone?: string;
-  profile_email: string;
-}
+"use client";
+import { Profile } from "../profile.types";
 
 export const ProfileItem = ({ profile }: { profile: Profile }) => {
+  console.log("Profile data:", profile); // Debug log to see what data we're receiving
+
   return (
-    <div className="flex flex-col gap-2">
-      <div>
+    <div className="flex items-center justify-between w-full">
+      <div className="w-full">
         <h4 className="font-medium">{profile.name}</h4>
         <p className="text-sm text-muted-foreground">{profile.title}</p>
-        <p className="mt-1 text-sm">{profile.description}</p>
-      </div>
-      <div className="mt-4 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Location:</span>
-          <span className="text-sm text-muted-foreground">
-            {profile.location}
-          </span>
-        </div>
-        {profile.phone && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Phone:</span>
-            <span className="text-sm text-muted-foreground">
-              {profile.phone}
-            </span>
+        <p className="mt-2 text-sm whitespace-pre-wrap">{profile.bio}</p>
+        <div className="mt-4 space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-center">
+            <span>Location: {profile.location}</span>
+            {profile.phone && (
+              <>
+                <span className="mx-2">•</span>
+                <span>Phone: {profile.phone}</span>
+              </>
+            )}
+            <span className="mx-2">•</span>
+            <span>Email: {profile.profile_email}</span>
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Contact Email:</span>
-          <span className="text-sm text-muted-foreground">
-            {profile.profile_email}
-          </span>
         </div>
       </div>
     </div>
