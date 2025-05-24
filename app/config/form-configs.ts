@@ -109,6 +109,34 @@ export const educationFormConfig: FormConfig = {
       validation: (value: string) => (!value ? "End date is required" : null),
     },
     {
+      name: "startYear",
+      label: "Start Year",
+      type: "number",
+      required: true,
+      validation: (value: string) => {
+        const year = Number(value);
+        if (!value) return "Start year is required";
+        if (year < 1900 || year > new Date().getFullYear()) {
+          return "Please enter a valid year between 1900 and present";
+        }
+        return null;
+      },
+    },
+    {
+      name: "endYear",
+      label: "End Year",
+      type: "number",
+      required: true,
+      validation: (value: string) => {
+        const year = Number(value);
+        if (!value) return "End year is required";
+        if (year < 1900 || year > 2100) {
+          return "Please enter a valid year between 1900 and 2100";
+        }
+        return null;
+      },
+    },
+    {
       name: "description",
       label: "Description",
       type: "text",

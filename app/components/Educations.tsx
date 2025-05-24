@@ -26,11 +26,37 @@ export default function Educations({ userId }: EducationsProps) {
     deleteByIdHandler,
   } = useEducationsContext();
 
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
+
   if (isProcessing) return <LoadingSpinner />;
   if (formError) return <div>Error loading education information</div>;
 
-  type Mode = "view" | "add" | "edit";
-  const [mode, setMode] = useState<Mode>("view");
+  const toggleDeleteItem = (id: string) => {
+    setItemsToDelete((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDone = async () => {
+    if (itemsToDelete.size > 0) {
+      for (const id of itemsToDelete) {
+        const edu = formData.find((e) => e.id === id);
+        if (edu) {
+          await deleteByIdHandler(edu);
+        }
+      }
+      setItemsToDelete(new Set());
+    }
+    await batchUpdate();
+    setMode("view");
+  };
 
   return (
     <Card>
@@ -44,12 +70,9 @@ export default function Educations({ userId }: EducationsProps) {
                 <EditButton onClick={() => setMode("edit")} />
               </>
             )}
-            {mode !== "view" && mode === "edit" && (
+            {mode === "edit" && (
               <DoneButton
-                onClick={() => {
-                  batchUpdate();
-                  setMode("view");
-                }}
+                onClick={handleDone}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }
@@ -60,7 +83,10 @@ export default function Educations({ userId }: EducationsProps) {
 
         {mode === "add" && (
           <NewEducation
-            createNew={createNewEducation}
+            createNew={async (...args) => {
+              await createNewEducation(...args);
+              setMode("view");
+            }}
             userId={userId}
             onCancel={() => setMode("view")}
           />
@@ -85,7 +111,8 @@ export default function Educations({ userId }: EducationsProps) {
                 <EducationForm
                   onChangeFormData={onChangeFormData}
                   education={edu}
-                  onDelete={deleteByIdHandler}
+                  onDelete={() => toggleDeleteItem(edu.id)}
+                  isMarkedForDeletion={itemsToDelete.has(edu.id)}
                   onDone={() => setMode("view")}
                 />
               </div>

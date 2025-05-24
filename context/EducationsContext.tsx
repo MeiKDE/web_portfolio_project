@@ -62,6 +62,12 @@ export function EducationsProvider({
     }
   }, [data]);
 
+  const formatEducationForDatabase = (edu: Education) => ({
+    ...edu,
+    startYear: Number(edu.startYear),
+    endYear: edu.endYear ? Number(edu.endYear) : null,
+  });
+
   const deleteByIdHandler = async (education: Education) => {
     setIsProcessing(true);
     if (!education.id) return;
@@ -92,7 +98,7 @@ export function EducationsProvider({
       const response = await fetch(`/api/educations/${education.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(education),
+        body: JSON.stringify(formatEducationForDatabase(education)),
       });
 
       if (!response.ok) {
@@ -133,7 +139,7 @@ export function EducationsProvider({
       const response = await fetch(`/api/educations/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEdu),
+        body: JSON.stringify(formatEducationForDatabase(newEdu)),
       });
 
       if (!response.ok) {
