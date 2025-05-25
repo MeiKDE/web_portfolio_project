@@ -25,7 +25,7 @@ interface CertificationsContextProps {
     value: string,
     isFormValid: boolean
   ) => void;
-  batchUpdate: () => Promise<void>;
+  batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewCertification: (cert: Certification) => Promise<void>;
   deleteByIdHandler: (certification: Certification) => Promise<void>;
 }
@@ -134,15 +134,25 @@ export function CertificationsProvider({
     }
   };
 
-  const batchUpdate = async () => {
+  const batchUpdate = async (itemsToDelete: string[] = []) => {
     setIsProcessing(true);
     try {
+      // Handle deletions first
+      for (const id of itemsToDelete) {
+        const cert = formData.find((c) => c.id === id);
+        if (cert) {
+          await deleteByIdHandler(cert);
+        }
+      }
+
+      // Handle updates
       for (const cert of formData) {
-        if (changedId.has(cert.id)) {
+        if (changedId.has(cert.id) && !itemsToDelete.includes(cert.id)) {
           await updateByIdHandler(cert);
         }
       }
-      toast.success("List of certifications has been updated successfully");
+
+      toast.success("Certifications have been updated successfully");
       setIsProcessing(false);
       mutate();
     } catch (err) {
@@ -150,7 +160,7 @@ export function CertificationsProvider({
         "Unexpected error occurred batch update certifications",
         err
       );
-      toast.error("Unexpected error occurred fom batch update certifications");
+      toast.error("Unexpected error occurred from batch update certifications");
       setFormError("Unexpected error occurred from batch update certification");
     }
   };

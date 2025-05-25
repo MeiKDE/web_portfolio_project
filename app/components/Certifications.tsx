@@ -47,17 +47,8 @@ export default function Certifications({ userId }: CertificationsProps) {
   };
 
   const handleDone = async () => {
-    if (itemsToDelete.size > 0) {
-      // Delete items individually
-      for (const id of itemsToDelete) {
-        const cert = formData.find((c) => c.id === id);
-        if (cert) {
-          await deleteByIdHandler(cert);
-        }
-      }
-      setItemsToDelete(new Set());
-    }
-    await batchUpdate();
+    await batchUpdate(Array.from(itemsToDelete));
+    setItemsToDelete(new Set());
     setMode("view");
   };
 
