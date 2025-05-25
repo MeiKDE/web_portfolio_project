@@ -86,7 +86,10 @@ export default function Experiences({ userId }: ExperiencesProps) {
 
         {mode === "add" && (
           <NewExperience
-            createNew={createNewExperience}
+            createNew={async (...args) => {
+              await createNewExperience(...args);
+              setMode("view");
+            }}
             userId={userId}
             onCancel={() => setMode("view")}
           />

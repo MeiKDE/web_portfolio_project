@@ -1,50 +1,73 @@
-// Create new skill
-// Create new certification
-import { NextRequest } from "next/server";
+// -----------------------------------------------------
+// GET /api/educations - Get all educations for the current user
+// POST /api/educations - Create a new education item
+// -----------------------------------------------------
+
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/db/prisma";
-import {
-  withAuth,
-  successResponse,
-  errorResponse,
-} from "@/app/lib/api/api-helpers";
-import { z } from "zod";
-import { handleApiError } from "@/app/lib/api/error-handler";
+import { educationSchema } from "@/app/hooks/validations";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/lib/auth/auth-options";
+import { withAuth } from "@/app/lib/api/api-helpers";
 
-// Define schema for validation
-const educationSchema = z.object({
-  institution: z.string().min(1, "Institution name is required"),
-  degree: z.string().min(1, "Degree is required"),
-  fieldOfStudy: z.string().min(1, "Field of study is required"),
-  startYear: z.number().int().min(1900).max(2100),
-  endYear: z.number().int().min(1900).max(2100),
-  description: z.string().optional(),
-});
-
-// CREATE a new education entry
-export const POST = withAuth(async (request: NextRequest, context, user) => {
+// GET all educations for the current user
+export const GET = withAuth(async (request: NextRequest, context, user) => {
   try {
-    const data = await request.json();
-
-    // Validate the data
-    const validationResult = educationSchema.safeParse(data);
-
-    if (!validationResult.success) {
-      return errorResponse(
-        "Invalid education data: " +
-          JSON.stringify(validationResult.error.format()),
-        400
-      );
-    }
-
-    const education = await prisma.education.create({
-      data: {
-        ...validationResult.data,
+    const educations = await prisma.education.findMany({
+      where: {
         userId: user.id,
+      },
+      orderBy: {
+        startYear: "desc",
       },
     });
 
-    return successResponse(education);
+    return NextResponse.json(educations);
   } catch (error) {
-    return handleApiError(error);
+    console.error("Error fetching educations:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch educations" },
+      { status: 500 }
+    );
   }
 });
+
+// CREATE a new education
+export const POST = async (request: NextRequest) => {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+
+  // Validate the request body using educationSchema
+  const validationResult = educationSchema.safeParse(body);
+  if (!validationResult.success) {
+    return NextResponse.json(
+      { error: validationResult.error.errors[0].message },
+      { status: 400 }
+    );
+  }
+
+  const { institution, degree, fieldOfStudy, startYear, endYear, description } =
+    validationResult.data;
+
+  const education = await prisma.education.create({
+    data: {
+      institution,
+      degree,
+      fieldOfStudy,
+      startYear,
+      endYear: endYear || new Date().getFullYear(),
+      description,
+      user: {
+        connect: {
+          id: session.user.id,
+        },
+      },
+    },
+  });
+
+  return NextResponse.json(education);
+};

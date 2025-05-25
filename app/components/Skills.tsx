@@ -49,6 +49,13 @@ export default function Skills({ userId }: SkillsProps) {
     setMode("view");
   };
 
+  const handleCreateNewSkill = async (
+    ...args: Parameters<typeof createNewSkill>
+  ) => {
+    await createNewSkill(...args);
+    setMode("view");
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -74,7 +81,7 @@ export default function Skills({ userId }: SkillsProps) {
 
         {mode === "add" && (
           <NewSkill
-            createNew={createNewSkill}
+            createNew={handleCreateNewSkill}
             userId={userId}
             onCancel={() => setMode("view")}
           />

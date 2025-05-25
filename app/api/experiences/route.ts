@@ -1,12 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/db/prisma";
-import {
-  withAuth,
-  withOwnership,
-  successResponse,
-  errorResponse,
-} from "@/app/lib/api/api-helpers";
 import { experienceSchema } from "@/app/hooks/validations";
+import { withAuth } from "@/app/lib/api/api-helpers";
 
 // POST Request: If you want to add a new job to a user's profile, you send a POST request with the job details, and it adds this job to the user's list of experiences.
 // When a POST request is made, it expects some data in the request body (like the job position, company, start date, etc.).
@@ -24,71 +19,93 @@ export const GET = withAuth(async (request: NextRequest, context, user) => {
       },
     });
 
-    return successResponse(experiences);
+    return NextResponse.json(experiences);
   } catch (error) {
     console.error("Error fetching experiences:", error);
-    return errorResponse("Failed to fetch experiences", 500);
+    return NextResponse.json(
+      { error: "Failed to fetch experiences" },
+      { status: 500 }
+    );
   }
 });
 
-// CREATE a new experience for the current user
+// -----------------------------------------------------
+// POST /api/experiences - Create a new experience item
+// -----------------------------------------------------
+
+// CREATE a new experience
 export const POST = withAuth(async (request: NextRequest, context, user) => {
   try {
-    // Parse the request body
     const body = await request.json();
-    console.log("Received data from client:", body);
 
-    // Map client field names to match Prisma schema field names
-    const experienceData = {
+    // Handle field mapping from frontend to backend
+    const mappedBody = {
+      company: body.company || body.companyName,
       position: body.position,
-      company: body.companyName || body.company, // Accept either name
-      location: body.location,
       startDate: body.startDate,
       endDate: body.endDate,
+      location: body.location,
       description: body.description,
-      isCurrentPosition: body.currentlyWorking || body.isCurrentPosition, // Accept either name
+      isCurrentPosition: body.isCurrentPosition || false,
     };
 
-    // Validate with our schema (which already matches Prisma field names)
-    const validation = experienceSchema.safeParse(experienceData);
-
-    if (!validation.success) {
-      console.error("Validation error:", validation.error.format());
-      return errorResponse(
-        "Invalid experience data",
-        400,
-        validation.error.format()
+    // Validate the request body using experienceSchema
+    const validationResult = experienceSchema.safeParse(mappedBody);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: validationResult.error.errors[0].message },
+        { status: 400 }
       );
     }
 
-    // Create record using Prisma schema field names
+    const {
+      company,
+      position,
+      startDate,
+      endDate,
+      location,
+      description,
+      isCurrentPosition,
+    } = validationResult.data;
+
+    // Convert string dates to Date objects for database
+    const startDateObj = new Date(startDate);
+    const endDateObj = endDate ? new Date(endDate) : null;
+
+    // Validate dates
+    if (isNaN(startDateObj.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid start date format" },
+        { status: 400 }
+      );
+    }
+
+    if (endDate && endDateObj && isNaN(endDateObj.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid end date format" },
+        { status: 400 }
+      );
+    }
+
     const experience = await prisma.experience.create({
       data: {
-        position: experienceData.position,
-        company: experienceData.company,
-        location: experienceData.location || null,
-        startDate: new Date(experienceData.startDate), // Convert string to DateTime
-        endDate: experienceData.endDate
-          ? new Date(experienceData.endDate)
-          : null,
-        description: experienceData.description || null,
-        isCurrentPosition: !!experienceData.isCurrentPosition,
+        company,
+        position,
+        startDate: startDateObj,
+        endDate: endDateObj,
+        location,
+        description,
+        isCurrentPosition,
         userId: user.id,
       },
     });
 
-    console.log("Created experience:", experience);
-    return successResponse(experience, "Experience created successfully", 201);
+    return NextResponse.json(experience, { status: 201 });
   } catch (error) {
     console.error("Error creating experience:", error);
-
-    if (error instanceof Error) {
-      return errorResponse(
-        `Failed to create experience: ${error.message}`,
-        500
-      );
-    }
-
-    return errorResponse("Failed to create experience", 500);
+    return NextResponse.json(
+      { error: "Failed to create experience" },
+      { status: 500 }
+    );
   }
 });
