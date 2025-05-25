@@ -27,7 +27,6 @@ interface ExperiencesContextProps {
   ) => void;
   batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewExperience: (exp: Experience) => Promise<void>;
-  deleteByIdHandler: (experience: Experience) => Promise<void>;
 }
 
 const ExperiencesContext = createContext<ExperiencesContextProps | undefined>(
@@ -141,9 +140,9 @@ export function ExperiencesProvider({
       setIsProcessing(false);
       mutate();
     } catch (err) {
-      console.error("Unexpected error occurred batch update experiences", err);
-      toast.error("Unexpected error occurred from batch update experiences");
-      setFormError("Unexpected error occurred from batch update experiences");
+      console.error("Unexpected error occurred batch update experience", err);
+      toast.error("Unexpected error occurred from batch update experience");
+      setFormError("Unexpected error occurred from batch update experience");
     }
   };
 
@@ -207,7 +206,6 @@ export function ExperiencesProvider({
         onChangeFormData,
         batchUpdate,
         createNewExperience,
-        deleteByIdHandler,
       }}
     >
       {isLoading ? (

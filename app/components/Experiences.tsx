@@ -23,7 +23,6 @@ export default function Experiences({ userId }: ExperiencesProps) {
     batchUpdate,
     createNewExperience,
     onChangeFormData,
-    deleteByIdHandler,
   } = useExperiencesContext();
 
   const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
@@ -74,7 +73,7 @@ export default function Experiences({ userId }: ExperiencesProps) {
                 <EditButton onClick={() => setMode("edit")} />
               </>
             )}
-            {mode !== "view" && mode === "edit" && (
+            {mode === "edit" && (
               <DoneButton
                 onClick={handleDone}
                 disabled={

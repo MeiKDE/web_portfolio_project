@@ -27,7 +27,6 @@ interface CertificationsContextProps {
   ) => void;
   batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewCertification: (cert: Certification) => Promise<void>;
-  deleteByIdHandler: (certification: Certification) => Promise<void>;
 }
 
 const CertificationsContext = createContext<
@@ -225,7 +224,6 @@ export function CertificationsProvider({
         onChangeFormData,
         batchUpdate,
         createNewCertification,
-        deleteByIdHandler,
       }}
     >
       {isLoading ? (

@@ -23,7 +23,6 @@ export default function Skills({ userId }: SkillsProps) {
     batchUpdate,
     createNewSkill,
     onChangeFormData,
-    deleteByIdHandler,
   } = useSkillsContext();
 
   const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());

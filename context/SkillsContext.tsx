@@ -23,7 +23,6 @@ interface SkillsContextProps {
   ) => void;
   batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewSkill: (skill: Skill) => Promise<void>;
-  deleteByIdHandler: (skill: Skill) => Promise<void>;
 }
 
 const SkillsContext = createContext<SkillsContextProps | undefined>(undefined);
@@ -191,7 +190,6 @@ export function SkillsProvider({ userId, children }: SkillsProviderProps) {
         onChangeFormData,
         batchUpdate,
         createNewSkill,
-        deleteByIdHandler,
       }}
     >
       {isLoading ? (

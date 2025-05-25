@@ -23,7 +23,6 @@ export default function Certifications({ userId }: CertificationsProps) {
     batchUpdate,
     createNewCertification,
     onChangeFormData,
-    deleteByIdHandler,
   } = useCertificationsContext();
 
   // Move all useState hooks to the top

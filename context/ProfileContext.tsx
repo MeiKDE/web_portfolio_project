@@ -21,7 +21,7 @@ interface ProfileContextProps {
     value: string,
     isFormValid: boolean
   ) => void;
-  updateProfile: () => Promise<void>;
+  batchUpdate: () => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextProps | undefined>(
@@ -42,7 +42,7 @@ interface ProfileProviderProps {
 
 export function ProfileProvider({ userId, children }: ProfileProviderProps) {
   const [formData, setFormData] = useState<Profile | null>(null);
-  const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
+  const [changedId, setChangedId] = useState<Set<string>>(new Set());
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [formError, setFormError] = useState("");
@@ -57,7 +57,7 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
     }
   }, [data]);
 
-  const updateProfile = async () => {
+  const batchUpdate = async () => {
     if (!formData) return;
     setIsProcessing(true);
     try {
@@ -74,7 +74,7 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
 
       toast.success("Profile updated successfully");
       setIsProcessing(false);
-      setChangedFields(new Set());
+      setChangedId(new Set());
       mutate();
     } catch (err) {
       console.error("Unexpected error occurred updating profile", err);
@@ -95,9 +95,9 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
       return newMap;
     });
 
-    setChangedFields((prev) => {
+    setChangedId((prev) => {
       const newSet = new Set(prev);
-      newSet.add(field);
+      newSet.add(id);
       return newSet;
     });
 
@@ -112,7 +112,7 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
         isProcessing,
         formError,
         onChangeFormData,
-        updateProfile,
+        batchUpdate,
       }}
     >
       {isLoading ? (

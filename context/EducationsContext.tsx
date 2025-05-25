@@ -23,7 +23,6 @@ interface EducationsContextProps {
   ) => void;
   batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewEducation: (edu: Education) => Promise<void>;
-  deleteByIdHandler: (education: Education) => Promise<void>;
 }
 
 const EducationsContext = createContext<EducationsContextProps | undefined>(
@@ -203,7 +202,6 @@ export function EducationsProvider({
         onChangeFormData,
         batchUpdate,
         createNewEducation,
-        deleteByIdHandler,
       }}
     >
       {isLoading ? (

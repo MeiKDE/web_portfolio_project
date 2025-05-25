@@ -18,7 +18,7 @@ export default function Profile({ userId }: ProfileProps) {
     isValidMap,
     isProcessing,
     formError,
-    updateProfile,
+    batchUpdate,
     onChangeFormData,
   } = useProfileContext();
 
@@ -28,7 +28,7 @@ export default function Profile({ userId }: ProfileProps) {
   if (formError) return <div>Error loading profile information</div>;
 
   const handleDone = async () => {
-    await updateProfile();
+    await batchUpdate();
     setMode("view");
   };
 
@@ -51,7 +51,9 @@ export default function Profile({ userId }: ProfileProps) {
         </div>
 
         {mode === "view" ? (
-          <ProfileItem profile={formData} />
+          <div className="relative border-b pb-4 last:border-0">
+            <ProfileItem profile={formData} />
+          </div>
         ) : (
           <ProfileForm profile={formData} onFormChange={onChangeFormData} />
         )}

@@ -23,7 +23,6 @@ export default function Educations({ userId }: EducationsProps) {
     batchUpdate,
     createNewEducation,
     onChangeFormData,
-    deleteByIdHandler,
   } = useEducationsContext();
 
   const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
