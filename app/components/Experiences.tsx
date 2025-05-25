@@ -26,12 +26,11 @@ export default function Experiences({ userId }: ExperiencesProps) {
     deleteByIdHandler,
   } = useExperiencesContext();
 
+  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
+  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
+
   if (isProcessing) return <LoadingSpinner />;
   if (formError) return <div>Error loading experiences information</div>;
-
-  type Mode = "view" | "add" | "edit";
-  const [mode, setMode] = useState<Mode>("view");
-  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
 
   const toggleDeleteItem = (id: string) => {
     setItemsToDelete((prev) => {
@@ -46,17 +45,8 @@ export default function Experiences({ userId }: ExperiencesProps) {
   };
 
   const handleDone = async () => {
-    if (itemsToDelete.size > 0) {
-      // Delete items individually
-      for (const id of itemsToDelete) {
-        const exp = formData.find((e) => e.id === id);
-        if (exp) {
-          await deleteByIdHandler(exp);
-        }
-      }
-      setItemsToDelete(new Set());
-    }
-    await batchUpdate();
+    await batchUpdate(Array.from(itemsToDelete));
+    setItemsToDelete(new Set());
     setMode("view");
   };
 

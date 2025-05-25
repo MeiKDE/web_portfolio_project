@@ -45,16 +45,8 @@ export default function Skills({ userId }: SkillsProps) {
   };
 
   const handleDone = async () => {
-    if (itemsToDelete.size > 0) {
-      for (const id of itemsToDelete) {
-        const skill = formData.find((s) => s.id === id);
-        if (skill) {
-          await deleteByIdHandler(skill);
-        }
-      }
-      setItemsToDelete(new Set());
-    }
-    await batchUpdate();
+    await batchUpdate(Array.from(itemsToDelete));
+    setItemsToDelete(new Set());
     setMode("view");
   };
 
@@ -70,7 +62,7 @@ export default function Skills({ userId }: SkillsProps) {
                 <EditButton onClick={() => setMode("edit")} />
               </>
             )}
-            {mode !== "view" && mode === "edit" && (
+            {mode === "edit" && (
               <DoneButton
                 onClick={handleDone}
                 disabled={

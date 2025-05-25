@@ -45,16 +45,8 @@ export default function Educations({ userId }: EducationsProps) {
   };
 
   const handleDone = async () => {
-    if (itemsToDelete.size > 0) {
-      for (const id of itemsToDelete) {
-        const edu = formData.find((e) => e.id === id);
-        if (edu) {
-          await deleteByIdHandler(edu);
-        }
-      }
-      setItemsToDelete(new Set());
-    }
-    await batchUpdate();
+    await batchUpdate(Array.from(itemsToDelete));
+    setItemsToDelete(new Set());
     setMode("view");
   };
 

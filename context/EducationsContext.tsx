@@ -21,7 +21,7 @@ interface EducationsContextProps {
     value: string,
     isFormValid: boolean
   ) => void;
-  batchUpdate: () => Promise<void>;
+  batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewEducation: (edu: Education) => Promise<void>;
   deleteByIdHandler: (education: Education) => Promise<void>;
 }
@@ -115,15 +115,25 @@ export function EducationsProvider({
     }
   };
 
-  const batchUpdate = async () => {
+  const batchUpdate = async (itemsToDelete: string[] = []) => {
     setIsProcessing(true);
     try {
+      // Handle deletions first
+      for (const id of itemsToDelete) {
+        const edu = formData.find((e) => e.id === id);
+        if (edu) {
+          await deleteByIdHandler(edu);
+        }
+      }
+
+      // Handle updates
       for (const edu of formData) {
-        if (changedId.has(edu.id)) {
+        if (changedId.has(edu.id) && !itemsToDelete.includes(edu.id)) {
           await updateByIdHandler(edu);
         }
       }
-      toast.success("List of educations has been updated successfully");
+
+      toast.success("Educations have been updated successfully");
       setIsProcessing(false);
       mutate();
     } catch (err) {

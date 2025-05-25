@@ -42,7 +42,7 @@ interface ProfileProviderProps {
 
 export function ProfileProvider({ userId, children }: ProfileProviderProps) {
   const [formData, setFormData] = useState<Profile | null>(null);
-  const [isChanged, setIsChanged] = useState(false);
+  const [changedFields, setChangedFields] = useState<Set<string>>(new Set());
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [formError, setFormError] = useState("");
@@ -68,12 +68,13 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
       });
 
       if (!response.ok) {
-        toast.error("Error updating profile");
+        toast.error("Http error in updating profile");
         return;
       }
 
       toast.success("Profile updated successfully");
       setIsProcessing(false);
+      setChangedFields(new Set());
       mutate();
     } catch (err) {
       console.error("Unexpected error occurred updating profile", err);
@@ -94,7 +95,12 @@ export function ProfileProvider({ userId, children }: ProfileProviderProps) {
       return newMap;
     });
 
-    setIsChanged(true);
+    setChangedFields((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(field);
+      return newSet;
+    });
+
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 

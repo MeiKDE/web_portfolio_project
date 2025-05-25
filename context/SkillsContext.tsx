@@ -21,7 +21,7 @@ interface SkillsContextProps {
     value: string,
     isFormValid: boolean
   ) => void;
-  batchUpdate: () => Promise<void>;
+  batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewSkill: (skill: Skill) => Promise<void>;
   deleteByIdHandler: (skill: Skill) => Promise<void>;
 }
@@ -104,15 +104,25 @@ export function SkillsProvider({ userId, children }: SkillsProviderProps) {
     }
   };
 
-  const batchUpdate = async () => {
+  const batchUpdate = async (itemsToDelete: string[] = []) => {
     setIsProcessing(true);
     try {
+      // Handle deletions first
+      for (const id of itemsToDelete) {
+        const skill = formData.find((s) => s.id === id);
+        if (skill) {
+          await deleteByIdHandler(skill);
+        }
+      }
+
+      // Handle updates
       for (const skill of formData) {
-        if (changedId.has(skill.id)) {
+        if (changedId.has(skill.id) && !itemsToDelete.includes(skill.id)) {
           await updateByIdHandler(skill);
         }
       }
-      toast.success("List of skills has been updated successfully");
+
+      toast.success("Skills have been updated successfully");
       setIsProcessing(false);
       mutate();
     } catch (err) {

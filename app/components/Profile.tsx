@@ -22,11 +22,15 @@ export default function Profile({ userId }: ProfileProps) {
     onChangeFormData,
   } = useProfileContext();
 
+  const [mode, setMode] = useState<"view" | "edit">("view");
+
   if (isProcessing) return <LoadingSpinner />;
   if (formError) return <div>Error loading profile information</div>;
 
-  type Mode = "view" | "edit";
-  const [mode, setMode] = useState<Mode>("view");
+  const handleDone = async () => {
+    await updateProfile();
+    setMode("view");
+  };
 
   return (
     <Card>
@@ -37,10 +41,7 @@ export default function Profile({ userId }: ProfileProps) {
             {mode === "view" && <EditButton onClick={() => setMode("edit")} />}
             {mode === "edit" && (
               <DoneButton
-                onClick={() => {
-                  updateProfile();
-                  setMode("view");
-                }}
+                onClick={handleDone}
                 disabled={
                   !Array.from(isValidMap.values()).every((isValid) => isValid)
                 }

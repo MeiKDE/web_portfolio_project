@@ -25,7 +25,7 @@ interface ExperiencesContextProps {
     value: string,
     isFormValid: boolean
   ) => void;
-  batchUpdate: () => Promise<void>;
+  batchUpdate: (itemsToDelete?: string[]) => Promise<void>;
   createNewExperience: (exp: Experience) => Promise<void>;
   deleteByIdHandler: (experience: Experience) => Promise<void>;
 }
@@ -55,7 +55,6 @@ export function ExperiencesProvider({
   const [isValidMap, setIsValidMap] = useState<Map<string, boolean>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
   const [formError, setFormError] = useState("");
-  const [itemsToDelete, setItemsToDelete] = useState<Set<string>>(new Set());
 
   const { data, isLoading, error, mutate } = useFetchData<Experience[]>(
     `/api/users/${userId}/experiences`
@@ -72,32 +71,6 @@ export function ExperiencesProvider({
     startDate: formatDateForDatabase(exp.startDate),
     endDate: exp.endDate ? formatDateForDatabase(exp.endDate) : null,
   });
-
-  const toggleDeleteItem = (id: string) => {
-    setItemsToDelete((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleDone = async () => {
-    if (itemsToDelete.size > 0) {
-      // Delete items individually
-      for (const id of itemsToDelete) {
-        const exp = formData.find((e) => e.id === id);
-        if (exp) {
-          await deleteByIdHandler(exp);
-        }
-      }
-      setItemsToDelete(new Set());
-    }
-    await batchUpdate();
-  };
 
   const deleteByIdHandler = async (experience: Experience) => {
     setIsProcessing(true);
@@ -146,15 +119,25 @@ export function ExperiencesProvider({
     }
   };
 
-  const batchUpdate = async () => {
+  const batchUpdate = async (itemsToDelete: string[] = []) => {
     setIsProcessing(true);
     try {
+      // Handle deletions first
+      for (const id of itemsToDelete) {
+        const exp = formData.find((e) => e.id === id);
+        if (exp) {
+          await deleteByIdHandler(exp);
+        }
+      }
+
+      // Handle updates
       for (const exp of formData) {
-        if (changedId.has(exp.id)) {
+        if (changedId.has(exp.id) && !itemsToDelete.includes(exp.id)) {
           await updateByIdHandler(exp);
         }
       }
-      toast.success("List of experiences has been updated successfully");
+
+      toast.success("Experiences have been updated successfully");
       setIsProcessing(false);
       mutate();
     } catch (err) {
