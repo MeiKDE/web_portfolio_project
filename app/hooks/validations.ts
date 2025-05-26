@@ -25,14 +25,11 @@ export const certificationSchema = z.object({
 
 // Education validation schema
 export const educationSchema = z.object({
-  institution: z.string().min(1, "Institution is required"),
+  institution: z.string().min(1, "Institution name is required"),
   degree: z.string().min(1, "Degree is required"),
-  fieldOfStudy: z.string().min(1, "Field of Study is required"),
-  startYear: z.number().min(1900, "Start Year must be greater than 1900"),
-  endYear: z
-    .number()
-    .min(1900, "End Year must be greater than 1900")
-    .optional(),
+  fieldOfStudy: z.string().min(1, "Field of study is required"),
+  startYear: z.number().int().min(1900).max(2100),
+  endYear: z.number().int().min(1900).max(2100),
   description: z.string().optional(),
 });
 

@@ -8,34 +8,45 @@ import {
   successResponse,
   errorResponse,
 } from "@/app/lib/api/api-helpers";
-import { handleApiError } from "@/app/lib/api/error-handler";
 import { experienceSchema } from "@/app/hooks/validations"; // Assuming you have this
 
 // GET a single experience
-export const GET = withOwnership(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
-    try {
-      const experience = await prisma.experience.findUnique({
-        where: {
-          id: params.id,
-        },
-      });
+export const GET = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  try {
+    const data = await prisma.experience.findUnique({
+      where: { id: params.id },
+    });
 
-      if (!experience) {
-        return errorResponse("Experience not found", 404);
-      }
-
-      return successResponse(experience);
-    } catch (error) {
-      return handleApiError(error);
+    if (!data) {
+      return errorResponse("Experience not found");
     }
-  },
-  "experience" // This should match your Prisma model name
-);
+
+    // Validate the database data against the schema
+    const validationResult = experienceSchema.safeParse(data);
+
+    if (!validationResult.success) {
+      return errorResponse("Invalid experience data in database");
+    }
+
+    return successResponse(validationResult.data);
+  } catch (err) {
+    return errorResponse(
+      err instanceof Error ? err.message : "Failed to fetch experience",
+      500
+    );
+  }
+};
 
 // UPDATE an experience
 export const PUT = withOwnership(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
     try {
       const data = await request.json();
 
@@ -51,15 +62,16 @@ export const PUT = withOwnership(
       }
 
       const updatedExperience = await prisma.experience.update({
-        where: {
-          id: params.id,
-        },
+        where: { id: params.id },
         data: validationResult.data,
       });
 
       return successResponse(updatedExperience);
     } catch (error) {
-      return handleApiError(error);
+      return errorResponse(
+        error instanceof Error ? error.message : "Failed to update experience",
+        500
+      );
     }
   },
   "experience"
@@ -67,17 +79,22 @@ export const PUT = withOwnership(
 
 // DELETE an experience
 export const DELETE = withOwnership(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string } },
+    user
+  ) => {
     try {
       await prisma.experience.delete({
-        where: {
-          id: params.id,
-        },
+        where: { id: params.id },
       });
 
       return successResponse({ message: "Experience deleted successfully" });
     } catch (error) {
-      return handleApiError(error);
+      return errorResponse(
+        error instanceof Error ? error.message : "Failed to delete experience",
+        500
+      );
     }
   },
   "experience"
