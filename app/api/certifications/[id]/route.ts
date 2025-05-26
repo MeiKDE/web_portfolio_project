@@ -9,9 +9,6 @@ import {
   successResponse,
   errorResponse,
 } from "@/app/lib/api/api-helpers";
-import { handleApiError, createApiError } from "@/app/lib/api/error-handler";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/lib/auth/auth-options";
 
 // GET a single certification
 export const GET = async (
@@ -19,17 +16,27 @@ export const GET = async (
   { params }: { params: { id: string } }
 ) => {
   try {
-    const certification = await prisma.certification.findUnique({
+    const data = await prisma.certification.findUnique({
       where: { id: params.id },
     });
 
-    if (!certification) {
-      throw createApiError.notFound("Certification not found");
+    if (!data) {
+      return errorResponse("Certification not found");
     }
 
-    return successResponse(certification);
-  } catch (error) {
-    return handleApiError(error);
+    // Validate the database data against the schema
+    const validationResult = certificationSchema.safeParse(data);
+
+    if (!validationResult.success) {
+      return errorResponse("Invalid certification data in database");
+    }
+
+    return successResponse(validationResult.data);
+  } catch (err) {
+    return errorResponse(
+      err instanceof Error ? err.message : "Failed to fetch certification",
+      500
+    );
   }
 };
 
@@ -47,13 +54,13 @@ export const PUT = withOwnership(
       const validationResult = certificationSchema.safeParse(data);
 
       if (!validationResult.success) {
-        throw createApiError.badRequest(
+        return errorResponse(
           "Invalid certification data",
+          400,
           validationResult.error.format()
         );
       }
 
-      // Update the certification in the database
       const updatedCertification = await prisma.certification.update({
         where: { id: params.id },
         data: validationResult.data,
@@ -61,7 +68,12 @@ export const PUT = withOwnership(
 
       return successResponse(updatedCertification);
     } catch (error) {
-      return handleApiError(error);
+      return errorResponse(
+        error instanceof Error
+          ? error.message
+          : "Failed to update certification",
+        500
+      );
     }
   },
   "certification"
@@ -81,7 +93,12 @@ export const DELETE = withOwnership(
 
       return successResponse({ message: "Certification deleted successfully" });
     } catch (error) {
-      return handleApiError(error);
+      return errorResponse(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete certification",
+        500
+      );
     }
   },
   "certification"
