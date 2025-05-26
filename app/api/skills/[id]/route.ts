@@ -8,7 +8,6 @@ import {
   withOwnership,
   successResponse,
   errorResponse,
-  withAuth,
 } from "@/app/lib/api/api-helpers";
 
 // GET a single skill
@@ -50,8 +49,6 @@ export const PUT = withOwnership(
   ) => {
     try {
       const data = await request.json();
-
-      // Validate the incoming data
       const validationResult = skillSchema.safeParse(data);
 
       if (!validationResult.success) {
@@ -99,56 +96,4 @@ export const DELETE = withOwnership(
     }
   },
   "skill"
-);
-
-// POST a new skill for a specific user
-export const POST = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { userId: string } },
-    user
-  ) => {
-    try {
-      const userId = params.userId;
-
-      // Only allow users to add skills to their own profile
-      if (user.id !== userId) {
-        return errorResponse("Forbidden", 403);
-      }
-
-      // Get the skill data from the request
-      const data = await request.json();
-
-      // Validate the data
-      const validationResult = skillSchema.safeParse(data);
-
-      if (!validationResult.success) {
-        return errorResponse(
-          "Invalid skill data: " +
-            JSON.stringify(validationResult.error.format()),
-          400
-        );
-      }
-
-      // Create the new skill
-      const skill = await prisma.skill.create({
-        data: {
-          name: validationResult.data.name,
-          category: validationResult.data.category,
-          proficiencyLevel: validationResult.data.proficiencyLevel || 1,
-          userId: userId,
-        },
-      });
-
-      return successResponse(skill);
-    } catch (error) {
-      console.error("Error creating skill:", error);
-
-      if (error instanceof Error) {
-        return errorResponse(`Failed to create skill: ${error.message}`, 500);
-      }
-
-      return errorResponse("Failed to create skill", 500);
-    }
-  }
 );
